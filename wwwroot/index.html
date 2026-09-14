@@ -3,57 +3,98 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BlogApp - Sistema de Blogs y Adjuntos .NET 10</title>
-  <meta name="description" content="Plataforma de publicación de blogs con módulos temáticos y carga de archivos adjuntos creada en ASP.NET Core .NET 10.">
+  <title>BlogApp - Sistema de Blogs con Directorio Activo .NET 10</title>
+  <meta name="description" content="Plataforma de publicación de blogs con autenticación de Directorio Activo LDAP, módulos temáticos y carga de fotos.">
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
 
-  <!-- Navbar Header -->
-  <header class="navbar">
-    <div class="container nav-container">
-      <a href="#" class="brand" onclick="loadPosts(); return false;">
-        <div class="brand-icon"><i class="fa-solid fa-blog"></i></div>
-        <span>BlogApp <small style="font-size:0.65rem; color:var(--accent-cyan); font-weight:normal;">.NET 10</small></span>
-      </a>
-
-      <div class="search-box">
-        <i class="fa-solid fa-magnifying-glass search-icon"></i>
-        <input type="text" id="searchInput" placeholder="Buscar publicaciones..." oninput="debounceSearch()">
+  <!-- Mandatory Active Directory Login Gate View -->
+  <section id="authGateScreen" class="auth-gate-screen">
+    <div class="auth-gate-card">
+      <div class="auth-gate-header">
+        <div class="brand" style="justify-content: center; margin-bottom: 1.25rem;">
+          <div class="brand-icon" style="width:48px; height:48px; font-size:1.5rem;"><i class="fa-solid fa-blog"></i></div>
+          <span style="font-size:1.75rem;">BlogApp</span>
+        </div>
+        <div class="auth-gate-badge">
+          <i class="fa-solid fa-shield-halved"></i> Directorio Activo (AD) CentroAguas
+        </div>
+        <h2 class="auth-gate-title">Iniciar Sesión</h2>
+        <p class="auth-gate-subtitle">Acceso restringido corporativo. Autentícate con tus credenciales de red para visualizar el portal y sus publicaciones.</p>
       </div>
 
-      <div class="nav-controls">
-        <button class="btn btn-secondary" onclick="openModuleModal()">
-          <i class="fa-solid fa-folder-plus"></i> Módulo
+      <form id="gateLoginForm" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label class="form-label" for="loginUser"><i class="fa-regular fa-user"></i> Usuario de Red / Correo</label>
+          <input type="text" id="loginUser" class="form-control" placeholder="Ej: jdperez o jdperez@centroaguas.com" required autocomplete="username">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="loginPass"><i class="fa-solid fa-key"></i> Contraseña de Red</label>
+          <input type="password" id="loginPass" class="form-control" placeholder="Tu contraseña de Directorio Activo" required autocomplete="current-password">
+        </div>
+
+        <div id="loginErrorMsg" style="display:none; color: var(--accent-rose); background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.3); padding: 0.75rem; border-radius: 8px; font-size: 0.85rem; margin-bottom: 1.25rem; text-align: center;"></div>
+
+        <button type="submit" class="btn btn-primary" id="btnLoginSubmit" style="width:100%; justify-content:center; padding:0.85rem; font-size:1rem; margin-top:0.5rem;">
+          <i class="fa-solid fa-right-to-bracket"></i> Autenticar y Entrar
         </button>
-        <button class="btn btn-primary" onclick="openCreateModal()">
-          <i class="fa-solid fa-pen-to-square"></i> Crear Post
-        </button>
-      </div>
+      </form>
     </div>
-  </header>
+  </section>
 
-  <main class="container">
-    <!-- Hero Section -->
-    <section class="hero">
-      <h1>Publicaciones & Blogs Temáticos</h1>
-      <p>Crea artículos, organiza por módulos según tus necesidades y adjunta fotos e imágenes de portada a cada publicación.</p>
+  <!-- Protected Main Application Area -->
+  <div id="appMainArea" class="view-hidden">
+    <!-- Navbar Header -->
+    <header class="navbar">
+      <div class="container nav-container">
+        <a href="#" class="brand" onclick="loadPosts(); return false;">
+          <div class="brand-icon"><i class="fa-solid fa-blog"></i></div>
+          <span>BlogApp <small style="font-size:0.65rem; color:var(--accent-cyan); font-weight:normal;">AD CentroAguas</small></span>
+        </a>
 
-      <!-- Category Filter Pills -->
-      <div class="modules-filter" id="modulesFilter">
-        <button class="module-pill active" onclick="filterByModule(null, this)">Todos</button>
+        <div class="search-box">
+          <i class="fa-solid fa-magnifying-glass search-icon"></i>
+          <input type="text" id="searchInput" placeholder="Buscar publicaciones..." oninput="debounceSearch()">
+        </div>
+
+        <div class="nav-controls">
+          <button class="btn btn-secondary" onclick="openModuleModal()">
+            <i class="fa-solid fa-folder-plus"></i> Módulo
+          </button>
+          <button class="btn btn-primary" onclick="openCreateModal()">
+            <i class="fa-solid fa-pen-to-square"></i> Crear Post
+          </button>
+          
+          <!-- Auth User Area -->
+          <div id="userNavArea"></div>
+        </div>
       </div>
-    </section>
+    </header>
 
-    <!-- Posts Grid -->
-    <section class="posts-grid" id="postsGrid">
-      <div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 3rem;">
-        <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
-        <p style="margin-top: 1rem;">Cargando publicaciones...</p>
-      </div>
-    </section>
-  </main>
+    <main class="container">
+      <!-- Hero Section -->
+      <section class="hero">
+        <h1>Publicaciones & Blogs Temáticos</h1>
+        <p>Plataforma empresarial integrada con Directorio Activo. Crea artículos por módulos temáticos y sube adjuntos e imágenes de portada.</p>
+
+        <!-- Category Filter Pills -->
+        <div class="modules-filter" id="modulesFilter">
+          <button class="module-pill active" onclick="filterByModule(null, this)">Todos</button>
+        </div>
+      </section>
+
+      <!-- Posts Grid -->
+      <section class="posts-grid" id="postsGrid">
+        <div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 3rem;">
+          <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+          <p style="margin-top: 1rem;">Cargando publicaciones...</p>
+        </div>
+      </section>
+    </main>
+  </div>
 
   <!-- Create Post Modal -->
   <div class="modal-overlay" id="createModal">
@@ -77,7 +118,7 @@
 
           <div class="form-group">
             <label class="form-label" for="postTitulo">Título de la Publicación</label>
-            <input type="text" id="postTitulo" class="form-control" placeholder="Ej: Guía completa de microservicios con .NET 10" required>
+            <input type="text" id="postTitulo" class="form-control" placeholder="Ej: Guía de procedimientos y soporte corporativo" required>
           </div>
 
           <div class="form-group">
@@ -124,7 +165,7 @@
         <form id="createModuleForm" onsubmit="handleCreateModule(event)">
           <div class="form-group">
             <label class="form-label" for="moduloNombre">Nombre del Módulo</label>
-            <input type="text" id="moduloNombre" class="form-control" placeholder="Ej: Inteligencia Artificial" required>
+            <input type="text" id="moduloNombre" class="form-control" placeholder="Ej: Gestión de Operaciones" required>
           </div>
           <div class="form-group">
             <label class="form-label" for="moduloDesc">Descripción</label>

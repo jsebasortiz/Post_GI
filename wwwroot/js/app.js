@@ -3,12 +3,121 @@ let currentSearch = '';
 let selectedFiles = [];
 let coverIndex = 0;
 let searchDebounceTimer = null;
+let currentUser = null;
 
 document.addEventListener('DOMContentLoaded', () => {
+  initUserSession();
+});
+
+// Inicializar la sesión del usuario guardada en localStorage
+function initUserSession() {
+  const savedUser = localStorage.getItem('currentUser');
+  if (savedUser) {
+    try {
+      currentUser = JSON.parse(savedUser);
+    } catch (e) {
+      currentUser = null;
+      localStorage.removeItem('currentUser');
+    }
+  }
+
+  if (currentUser) {
+    showMainApp();
+  } else {
+    showAuthGate();
+  }
+}
+
+function showMainApp() {
+  const authGate = document.getElementById('authGateScreen');
+  const mainApp = document.getElementById('appMainArea');
+  if (authGate) authGate.classList.add('view-hidden');
+  if (mainApp) mainApp.classList.remove('view-hidden');
+
+  renderUserNavArea();
   loadModulos();
   loadPostTipos();
   loadPosts();
-});
+}
+
+function showAuthGate() {
+  const authGate = document.getElementById('authGateScreen');
+  const mainApp = document.getElementById('appMainArea');
+  if (mainApp) mainApp.classList.add('view-hidden');
+  if (authGate) authGate.classList.remove('view-hidden');
+
+  renderUserNavArea();
+}
+
+function renderUserNavArea() {
+  const container = document.getElementById('userNavArea');
+  if (!container) return;
+
+  if (currentUser) {
+    container.innerHTML = `
+      <div style="display:flex; align-items:center; gap:0.75rem;">
+        <div class="avatar-sm" style="width:34px; height:34px; font-size:0.9rem;">${escapeHtml(currentUser.nombre.charAt(0).toUpperCase())}</div>
+        <div style="font-size:0.85rem; line-height:1.2;">
+          <strong style="color:white; display:block;">${escapeHtml(currentUser.nombre)}</strong>
+          <span style="font-size:0.72rem; color:var(--accent-cyan);"><i class="fa-solid fa-shield-halved"></i> AD Autenticado</span>
+        </div>
+        <button class="btn btn-secondary" onclick="handleLogout()" style="padding:0.4rem 0.75rem; margin-left:0.5rem; font-size:0.8rem;" title="Cerrar Sesión">
+          <i class="fa-solid fa-right-from-bracket"></i> Salir
+        </button>
+      </div>
+    `;
+  } else {
+    container.innerHTML = '';
+  }
+}
+
+// Autenticación con Directorio Activo via REST API
+async function handleLogin(event) {
+  event.preventDefault();
+  const errorMsg = document.getElementById('loginErrorMsg');
+  const btn = document.getElementById('btnLoginSubmit');
+
+  errorMsg.style.display = 'none';
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Conectando a AD...';
+
+  const correo = document.getElementById('loginUser').value.trim();
+  const password = document.getElementById('loginPass').value;
+
+  try {
+    const res = await fetch('/api/usuarios/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ correo, password })
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'Credenciales de Directorio Activo incorrectas o el usuario no existe en AD.');
+    }
+
+    const user = await res.json();
+    currentUser = user;
+    localStorage.setItem('currentUser', JSON.stringify(user));
+
+    const form = document.getElementById('gateLoginForm');
+    if (form) form.reset();
+
+    showMainApp();
+  } catch (err) {
+    errorMsg.innerText = err.message;
+    errorMsg.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Autenticar y Entrar';
+  }
+}
+
+function handleLogout() {
+  currentUser = null;
+  localStorage.removeItem('currentUser');
+  showAuthGate();
+}
 
 // Carga los módulos para los filtros y selectores
 async function loadModulos() {
@@ -17,7 +126,6 @@ async function loadModulos() {
     if (!res.ok) return;
     const modulos = await res.json();
 
-    // Renderizar Filtros
     const filterContainer = document.getElementById('modulesFilter');
     let filterHtml = `<button class="module-pill ${currentModuloId === null ? 'active' : ''}" onclick="filterByModule(null, this)">Todos</button>`;
     modulos.forEach(m => {
@@ -25,7 +133,6 @@ async function loadModulos() {
     });
     filterContainer.innerHTML = filterHtml;
 
-    // Renderizar Selector en Modal de Creación
     const selectModulo = document.getElementById('selectModulo');
     let selectHtml = '<option value="">-- Selecciona un Módulo --</option>';
     modulos.forEach(m => {
@@ -134,7 +241,6 @@ function renderPostCard(post) {
   `;
 }
 
-// Filtro por módulo
 function filterByModule(moduloId, btnElement) {
   currentModuloId = moduloId;
   document.querySelectorAll('.module-pill').forEach(el => el.classList.remove('active'));
@@ -142,7 +248,6 @@ function filterByModule(moduloId, btnElement) {
   loadPosts();
 }
 
-// Búsqueda en tiempo real
 function debounceSearch() {
   clearTimeout(searchDebounceTimer);
   searchDebounceTimer = setTimeout(() => {
@@ -151,7 +256,6 @@ function debounceSearch() {
   }, 350);
 }
 
-// Manejo de archivos seleccionados
 function handleFileSelect(event) {
   const files = Array.from(event.target.files);
   selectedFiles = [...selectedFiles, ...files];
@@ -187,9 +291,15 @@ function removeSelectedFile(index) {
   renderFilePreviews();
 }
 
-// Enviar creación de publicación con FormData (Archivos + datos)
+// Enviar creación de publicación
 async function handleCreatePost(event) {
   event.preventDefault();
+
+  if (!currentUser) {
+    alert('Por favor inicia sesión con tu usuario de Directorio Activo antes de publicar.');
+    openLoginModal();
+    return;
+  }
 
   const btn = document.getElementById('btnSubmitPost');
   btn.disabled = true;
@@ -197,7 +307,7 @@ async function handleCreatePost(event) {
 
   try {
     const formData = new FormData();
-    formData.append('UsuarioId', 1); // Usuario por defecto (Admin)
+    formData.append('UsuarioId', currentUser.id);
     formData.append('ModuloId', document.getElementById('selectModulo').value);
     formData.append('TipoId', document.getElementById('selectTipo').value);
     formData.append('Titulo', document.getElementById('postTitulo').value);
@@ -233,7 +343,6 @@ async function handleCreatePost(event) {
   }
 }
 
-// Enviar creación de módulo
 async function handleCreateModule(event) {
   event.preventDefault();
   const nombre = document.getElementById('moduloNombre').value;
@@ -256,7 +365,6 @@ async function handleCreateModule(event) {
   }
 }
 
-// Abrir detalle del post
 async function openDetailModal(postId) {
   try {
     const res = await fetch(`/api/posts/${postId}`);
@@ -286,7 +394,6 @@ async function openDetailModal(postId) {
 
     document.getElementById('detailContent').innerText = post.contenido;
 
-    // Galería de adjuntos
     const attachContainer = document.getElementById('detailAttachments');
     if (post.adjuntos && post.adjuntos.length > 0) {
       let galleryHtml = `<h4 style="color:white; font-size:1.1rem; margin-bottom:0.75rem;"><i class="fa-solid fa-paperclip"></i> Archivos y Fotos Adjuntas (${post.adjuntos.length})</h4><div class="attachments-grid">`;
@@ -314,8 +421,14 @@ async function openDetailModal(postId) {
   }
 }
 
-// Helpers Modal
-function openCreateModal() { openModal('createModal'); }
+function openCreateModal() {
+  if (!currentUser) {
+    showAuthGate();
+    return;
+  }
+  openModal('createModal');
+}
+
 function openModuleModal() { openModal('moduleModal'); }
 
 function openModal(id) {

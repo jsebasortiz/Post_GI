@@ -7,7 +7,7 @@ using MySqlConnector;
 var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
-    ?? "Server=localhost;Database=blog_db;Uid=root;Pwd=;";
+    ?? "Server=centroagsapo.mysql.database.azure.com;Port=3306;Database=blog_db;Uid=adminaurora;Pwd=b4s3d4t0sAurora2025;SslMode=Preferred;";
 
 bool useMySql = false;
 try
@@ -22,7 +22,6 @@ catch (Exception ex)
     Console.WriteLine($"[Database] Nota: MySQL no está accesible localmente ({ex.Message}). Usando proveedor InMemory compartido para desarrollo.");
 }
 
-// Root compartido para EF Core InMemory
 var inMemoryRoot = new InMemoryDatabaseRoot();
 
 if (useMySql)
@@ -36,7 +35,8 @@ else
         options.UseInMemoryDatabase("BlogAppSharedDb", inMemoryRoot));
 }
 
-// Registro de servicios
+// Registro de servicios de la aplicación
+builder.Services.AddScoped<IActiveDirectoryService, ActiveDirectoryService>();
 builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 builder.Services.AddScoped<IPostService, PostService>();
 builder.Services.AddScoped<IModuloService, ModuloService>();
@@ -69,6 +69,7 @@ app.MapControllers();
 
 Console.WriteLine("=================================================");
 Console.WriteLine("  BlogApp .NET 10 corriendo en http://localhost:5000");
+Console.WriteLine("  Autenticación por Directorio Activo (LDAP) Lista");
 Console.WriteLine("=================================================");
 
 app.Run();
