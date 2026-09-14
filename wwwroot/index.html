@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BlogApp - Sistema de Blogs y Adjuntos .NET 10</title>
+  <meta name="description" content="Plataforma de publicación de blogs con módulos temáticos y carga de archivos adjuntos creada en ASP.NET Core .NET 10.">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+  <!-- Navbar Header -->
+  <header class="navbar">
+    <div class="container nav-container">
+      <a href="#" class="brand" onclick="loadPosts(); return false;">
+        <div class="brand-icon"><i class="fa-solid fa-blog"></i></div>
+        <span>BlogApp <small style="font-size:0.65rem; color:var(--accent-cyan); font-weight:normal;">.NET 10</small></span>
+      </a>
+
+      <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+        <input type="text" id="searchInput" placeholder="Buscar publicaciones..." oninput="debounceSearch()">
+      </div>
+
+      <div class="nav-controls">
+        <button class="btn btn-secondary" onclick="openModuleModal()">
+          <i class="fa-solid fa-folder-plus"></i> Módulo
+        </button>
+        <button class="btn btn-primary" onclick="openCreateModal()">
+          <i class="fa-solid fa-pen-to-square"></i> Crear Post
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Hero Section -->
+    <section class="hero">
+      <h1>Publicaciones & Blogs Temáticos</h1>
+      <p>Crea artículos, organiza por módulos según tus necesidades y adjunta fotos e imágenes de portada a cada publicación.</p>
+
+      <!-- Category Filter Pills -->
+      <div class="modules-filter" id="modulesFilter">
+        <button class="module-pill active" onclick="filterByModule(null, this)">Todos</button>
+      </div>
+    </section>
+
+    <!-- Posts Grid -->
+    <section class="posts-grid" id="postsGrid">
+      <div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 3rem;">
+        <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+        <p style="margin-top: 1rem;">Cargando publicaciones...</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Create Post Modal -->
+  <div class="modal-overlay" id="createModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2><i class="fa-solid fa-pen-to-square" style="color:var(--primary);"></i> Nueva Publicación</h2>
+        <button class="close-btn" onclick="closeModal('createModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="createPostForm" onsubmit="handleCreatePost(event)">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="selectModulo">Módulo / Sección</label>
+              <select id="selectModulo" required></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="selectTipo">Tipo de Post</label>
+              <select id="selectTipo" required></select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="postTitulo">Título de la Publicación</label>
+            <input type="text" id="postTitulo" class="form-control" placeholder="Ej: Guía completa de microservicios con .NET 10" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="postResumen">Resumen o Introducción (Opcional)</label>
+            <textarea id="postResumen" rows="2" class="form-control" placeholder="Breve descripción del contenido..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="postContenido">Contenido Completo del Blog</label>
+            <textarea id="postContenido" rows="6" class="form-control" placeholder="Escribe el cuerpo principal del artículo..." required></textarea>
+          </div>
+
+          <!-- Attachments / Photo Upload -->
+          <div class="form-group">
+            <label class="form-label">Subir Adjuntos / Fotos</label>
+            <div class="file-upload-zone" onclick="document.getElementById('fileInput').click()">
+              <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+              <p>Arrastra fotos o haz clic para explorar tus archivos</p>
+              <span style="font-size:0.8rem; color:var(--text-muted);">Formatos admitidos: JPG, PNG, WEBP, GIF, PDF</span>
+              <input type="file" id="fileInput" multiple accept="image/*,application/pdf" style="display:none" onchange="handleFileSelect(event)">
+            </div>
+            <div class="file-previews" id="filePreviews"></div>
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:1.5rem;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('createModal')">Cancelar</button>
+            <button type="submit" class="btn btn-primary" id="btnSubmitPost">
+              <i class="fa-solid fa-paper-plane"></i> Publicar Ahora
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Module Modal -->
+  <div class="modal-overlay" id="moduleModal">
+    <div class="modal-card" style="max-width: 480px;">
+      <div class="modal-header">
+        <h2><i class="fa-solid fa-folder-plus" style="color:var(--accent-cyan);"></i> Nuevo Módulo</h2>
+        <button class="close-btn" onclick="closeModal('moduleModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="createModuleForm" onsubmit="handleCreateModule(event)">
+          <div class="form-group">
+            <label class="form-label" for="moduloNombre">Nombre del Módulo</label>
+            <input type="text" id="moduloNombre" class="form-control" placeholder="Ej: Inteligencia Artificial" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="moduloDesc">Descripción</label>
+            <textarea id="moduloDesc" rows="3" class="form-control" placeholder="Descripción temática del módulo..."></textarea>
+          </div>
+          <div style="display:flex; justify-content:flex-end; gap:1rem;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('moduleModal')">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Guardar Módulo</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Post Detail Modal -->
+  <div class="modal-overlay" id="detailModal">
+    <div class="modal-card" style="max-width: 840px;">
+      <div class="modal-header">
+        <div id="detailBadges"></div>
+        <button class="close-btn" onclick="closeModal('detailModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <h1 id="detailTitle" style="font-family:var(--font-heading); font-size:2rem; margin-bottom:1rem; color:white;"></h1>
+        <div id="detailMeta" style="color:var(--text-muted); font-size:0.88rem; margin-bottom:1.5rem; display:flex; gap:1.5rem;"></div>
+
+        <div id="detailCoverContainer"></div>
+
+        <div id="detailContent" style="white-space: pre-wrap; font-size:1.05rem; line-height:1.8; color:#e2e8f0; margin-bottom:2rem;"></div>
+
+        <div class="attachments-gallery" id="detailAttachments"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
