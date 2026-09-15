@@ -25,6 +25,11 @@ public class Modulo
     [Column("descripcion")]
     public string? Descripcion { get; set; }
 
+    [Required]
+    [MaxLength(50)]
+    [Column("categoria_padre")]
+    public string CategoriaPadre { get; set; } = "apps";
+
     [Column("estado")]
     public bool Estado { get; set; } = true;
 

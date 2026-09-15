@@ -8,7 +8,7 @@ namespace BlogApp.Services;
 
 public interface IPostService
 {
-    Task<List<PostResponseDto>> GetPostsAsync(ushort? moduloId = null, string? moduloSlug = null, byte? tipoId = null, string? search = null, string? estado = "publicado");
+    Task<PagedResultDto<PostResponseDto>> GetPostsAsync(ushort? moduloId = null, string? moduloSlug = null, string? categoriaPadre = null, byte? tipoId = null, string? search = null, string? estado = "publicado", int page = 1, int pageSize = 10);
     Task<PostResponseDto?> GetPostBySlugAsync(string slug);
     Task<PostResponseDto?> GetPostByIdAsync(ulong id);
     Task<PostResponseDto> CreatePostAsync(CreatePostDto dto);
@@ -29,14 +29,16 @@ public class PostService : IPostService
         _fileStorage = fileStorage;
     }
 
-    public async Task<List<PostResponseDto>> GetPostsAsync(ushort? moduloId = null, string? moduloSlug = null, byte? tipoId = null, string? search = null, string? estado = "publicado")
+    public async Task<PagedResultDto<PostResponseDto>> GetPostsAsync(ushort? moduloId = null, string? moduloSlug = null, string? categoriaPadre = null, byte? tipoId = null, string? search = null, string? estado = "publicado", int page = 1, int pageSize = 10)
     {
+        // Solo obtener publicaciones en estado_id = 1 (Activo)
         var query = _context.Posts
             .Include(p => p.Usuario)
             .Include(p => p.Modulo)
             .Include(p => p.Tipo)
             .Include(p => p.Adjuntos)
-            .AsNoTracking();
+            .AsNoTracking()
+            .Where(p => p.EstadoId == 1);
 
         if (moduloId.HasValue)
         {
@@ -48,14 +50,14 @@ public class PostService : IPostService
             query = query.Where(p => p.Modulo != null && p.Modulo.Slug == moduloSlug);
         }
 
+        if (!string.IsNullOrWhiteSpace(categoriaPadre))
+        {
+            query = query.Where(p => p.Modulo != null && p.Modulo.CategoriaPadre.ToLower() == categoriaPadre.Trim().ToLower());
+        }
+
         if (tipoId.HasValue)
         {
             query = query.Where(p => p.TipoId == tipoId.Value);
-        }
-
-        if (!string.IsNullOrWhiteSpace(estado))
-        {
-            query = query.Where(p => p.Estado == estado);
         }
 
         if (!string.IsNullOrWhiteSpace(search))
@@ -64,9 +66,23 @@ public class PostService : IPostService
             query = query.Where(p => p.Titulo.ToLower().Contains(term) || (p.Resumen != null && p.Resumen.ToLower().Contains(term)) || p.Contenido.ToLower().Contains(term));
         }
 
-        var posts = await query.OrderByDescending(p => p.CreadoEn).ToListAsync();
+        int totalItems = await query.CountAsync();
 
-        return posts.Select(MapToResponseDto).ToList();
+        var posts = await query
+            .OrderByDescending(p => p.CreadoEn)
+            .Skip((Math.Max(1, page) - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        var items = posts.Select(MapToResponseDto).ToList();
+
+        return new PagedResultDto<PostResponseDto>
+        {
+            Items = items,
+            TotalItems = totalItems,
+            Page = page,
+            PageSize = pageSize
+        };
     }
 
     public async Task<PostResponseDto?> GetPostBySlugAsync(string slug)
@@ -76,7 +92,7 @@ public class PostService : IPostService
             .Include(p => p.Modulo)
             .Include(p => p.Tipo)
             .Include(p => p.Adjuntos)
-            .FirstOrDefaultAsync(p => p.Slug == slug);
+            .FirstOrDefaultAsync(p => p.Slug == slug && p.EstadoId == 1);
 
         if (post == null) return null;
 
@@ -94,7 +110,7 @@ public class PostService : IPostService
             .Include(p => p.Modulo)
             .Include(p => p.Tipo)
             .Include(p => p.Adjuntos)
-            .FirstOrDefaultAsync(p => p.Id == id);
+            .FirstOrDefaultAsync(p => p.Id == id && p.EstadoId == 1);
 
         return post == null ? null : MapToResponseDto(post);
     }
@@ -108,11 +124,12 @@ public class PostService : IPostService
             UsuarioId = dto.UsuarioId,
             ModuloId = dto.ModuloId,
             TipoId = dto.TipoId,
+            EstadoId = 1, // 1 = Activo
             Titulo = dto.Titulo,
             Slug = slug,
             Resumen = dto.Resumen,
             Contenido = dto.Contenido,
-            Estado = string.IsNullOrWhiteSpace(dto.Estado) ? "publicado" : dto.Estado,
+            Estado = "publicado",
             Visitas = 0,
             CreadoEn = DateTime.UtcNow,
             ActualizadoEn = DateTime.UtcNow
@@ -152,7 +169,7 @@ public class PostService : IPostService
 
     public async Task<PostResponseDto?> UpdatePostAsync(ulong id, UpdatePostDto dto)
     {
-        var post = await _context.Posts.FirstOrDefaultAsync(p => p.Id == id);
+        var post = await _context.Posts.FirstOrDefaultAsync(p => p.Id == id && p.EstadoId == 1);
         if (post == null) return null;
 
         if (post.Titulo != dto.Titulo)
@@ -174,19 +191,14 @@ public class PostService : IPostService
 
     public async Task<bool> DeletePostAsync(ulong id)
     {
-        var post = await _context.Posts
-            .Include(p => p.Adjuntos)
-            .FirstOrDefaultAsync(p => p.Id == id);
-
+        var post = await _context.Posts.FirstOrDefaultAsync(p => p.Id == id);
         if (post == null) return false;
 
-        // Eliminar archivos físicos asociados
-        foreach (var adjunto in post.Adjuntos)
-        {
-            _fileStorage.DeleteFile(adjunto.ArchivoUrl);
-        }
+        // Eliminación Lógica: Cambiar estado_id de 1 (Activo) a 2 (Inactivo)
+        post.EstadoId = 2; // 2 = Inactivo
+        post.Estado = "inactivo";
+        post.ActualizadoEn = DateTime.UtcNow;
 
-        _context.Posts.Remove(post);
         await _context.SaveChangesAsync();
         return true;
     }
@@ -289,8 +301,11 @@ public class PostService : IPostService
             ModuloId = post.ModuloId,
             ModuloNombre = post.Modulo?.Nombre ?? "General",
             ModuloSlug = post.Modulo?.Slug ?? "general",
+            ModuloCategoriaPadre = post.Modulo?.CategoriaPadre ?? "apps",
             TipoId = post.TipoId,
             TipoNombre = post.Tipo?.Nombre ?? "Noticia",
+            EstadoId = post.EstadoId,
+            EstadoNombre = post.EstadoId == 1 ? "Activo" : "Inactivo",
             Titulo = post.Titulo,
             Slug = post.Slug,
             Resumen = post.Resumen,

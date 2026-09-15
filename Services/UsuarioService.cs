@@ -30,15 +30,13 @@ public class UsuarioService : IUsuarioService
 
     public async Task<List<UsuarioResponseDto>> GetUsuariosAsync()
     {
-        return await _context.Usuarios
-            .Select(u => new UsuarioResponseDto
-            {
-                Id = u.Id,
-                Nombre = u.Nombre,
-                Correo = u.Correo,
-                Estado = u.Estado,
-                CreadoEn = u.CreadoEn
-            }).ToListAsync();
+        var usuarios = await _context.Usuarios
+            .Include(u => u.Rol)
+            .ThenInclude(r => r!.RolPermisos)
+            .ThenInclude(rp => rp.Permiso)
+            .ToListAsync();
+
+        return usuarios.Select(MapToUsuarioDto).ToList();
     }
 
     public async Task<UsuarioResponseDto?> RegisterAsync(CreateUsuarioDto dto)
@@ -54,6 +52,7 @@ public class UsuarioService : IUsuarioService
             Correo = dto.Correo.ToLower(),
             Password = HashPassword(dto.Password),
             Estado = "activo",
+            RolId = 3, // Rol Lector por defecto
             CreadoEn = DateTime.UtcNow,
             ActualizadoEn = DateTime.UtcNow
         };
@@ -61,14 +60,13 @@ public class UsuarioService : IUsuarioService
         _context.Usuarios.Add(usuario);
         await _context.SaveChangesAsync();
 
-        return new UsuarioResponseDto
-        {
-            Id = usuario.Id,
-            Nombre = usuario.Nombre,
-            Correo = usuario.Correo,
-            Estado = usuario.Estado,
-            CreadoEn = usuario.CreadoEn
-        };
+        var loaded = await _context.Usuarios
+            .Include(u => u.Rol)
+            .ThenInclude(r => r!.RolPermisos)
+            .ThenInclude(rp => rp.Permiso)
+            .FirstOrDefaultAsync(u => u.Id == usuario.Id);
+
+        return loaded == null ? null : MapToUsuarioDto(loaded);
     }
 
     public async Task<UsuarioResponseDto?> LoginAsync(LoginDto dto)
@@ -88,7 +86,11 @@ public class UsuarioService : IUsuarioService
 
         // 2. Si existe en el Directorio Activo, verificar existencia en la BD MySQL local
         string searchEmail = string.IsNullOrWhiteSpace(adUser.Email) ? dto.Correo.ToLower() : adUser.Email.ToLower();
-        var usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.Correo.ToLower() == searchEmail || u.Nombre.ToLower() == adUser.Username.ToLower());
+        var usuario = await _context.Usuarios
+            .Include(u => u.Rol)
+            .ThenInclude(r => r!.RolPermisos)
+            .ThenInclude(rp => rp.Permiso)
+            .FirstOrDefaultAsync(u => u.Correo.ToLower() == searchEmail || u.Nombre.ToLower() == adUser.Username.ToLower());
 
         if (usuario == null)
         {
@@ -101,27 +103,41 @@ public class UsuarioService : IUsuarioService
                 Correo = searchEmail,
                 Password = "[AD_AUTHENTICATED]",
                 Estado = "activo",
+                RolId = 3, // Rol Lector por defecto
                 CreadoEn = DateTime.UtcNow,
                 ActualizadoEn = DateTime.UtcNow
             };
 
             _context.Usuarios.Add(usuario);
             await _context.SaveChangesAsync();
+
+            usuario = await _context.Usuarios
+                .Include(u => u.Rol)
+                .ThenInclude(r => r!.RolPermisos)
+                .ThenInclude(rp => rp.Permiso)
+                .FirstOrDefaultAsync(u => u.Id == usuario.Id);
         }
         else
         {
-            // Actualizar nombre/fechas si es necesario
             usuario.ActualizadoEn = DateTime.UtcNow;
             await _context.SaveChangesAsync();
         }
 
+        return MapToUsuarioDto(usuario!);
+    }
+
+    private static UsuarioResponseDto MapToUsuarioDto(Usuario u)
+    {
         return new UsuarioResponseDto
         {
-            Id = usuario.Id,
-            Nombre = usuario.Nombre,
-            Correo = usuario.Correo,
-            Estado = usuario.Estado,
-            CreadoEn = usuario.CreadoEn
+            Id = u.Id,
+            Nombre = u.Nombre,
+            Correo = u.Correo,
+            Estado = u.Estado,
+            RolId = u.RolId,
+            RolNombre = u.Rol?.Nombre ?? "Sin Rol",
+            Permisos = u.Rol?.RolPermisos?.Select(rp => rp.Permiso.Codigo).ToList() ?? new List<string>(),
+            CreadoEn = u.CreadoEn
         };
     }
 

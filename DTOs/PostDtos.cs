@@ -43,8 +43,11 @@ public class PostResponseDto
     public ushort ModuloId { get; set; }
     public string ModuloNombre { get; set; } = string.Empty;
     public string ModuloSlug { get; set; } = string.Empty;
+    public string ModuloCategoriaPadre { get; set; } = string.Empty;
     public byte TipoId { get; set; }
     public string TipoNombre { get; set; } = string.Empty;
+    public byte EstadoId { get; set; } = 1;
+    public string EstadoNombre { get; set; } = "Activo";
     public string Titulo { get; set; } = string.Empty;
     public string Slug { get; set; } = string.Empty;
     public string? Resumen { get; set; }
@@ -55,4 +58,13 @@ public class PostResponseDto
     public DateTime ActualizadoEn { get; set; }
     public string? PortadaUrl { get; set; }
     public List<AdjuntoResponseDto> Adjuntos { get; set; } = new();
+}
+
+public class PagedResultDto<T>
+{
+    public List<T> Items { get; set; } = new();
+    public int TotalItems { get; set; }
+    public int Page { get; set; }
+    public int PageSize { get; set; }
+    public int TotalPages => PageSize > 0 ? (int)Math.Ceiling((double)TotalItems / PageSize) : 0;
 }

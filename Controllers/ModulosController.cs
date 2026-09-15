@@ -16,9 +16,9 @@ public class ModulosController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetModulos()
+    public async Task<IActionResult> GetModulos([FromQuery] string? categoriaPadre)
     {
-        var modulos = await _moduloService.GetModulosAsync();
+        var modulos = await _moduloService.GetModulosAsync(categoriaPadre);
         return Ok(modulos);
     }
 

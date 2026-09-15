@@ -31,6 +31,11 @@ public class Usuario
     [Column("estado")]
     public string Estado { get; set; } = "activo";
 
+    [Column("rol_id")]
+    public byte RolId { get; set; } = 3;
+
+    public Rol? Rol { get; set; }
+
     [Column("creado_en")]
     public DateTime CreadoEn { get; set; } = DateTime.UtcNow;
 

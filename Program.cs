@@ -41,6 +41,7 @@ builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 builder.Services.AddScoped<IPostService, PostService>();
 builder.Services.AddScoped<IModuloService, ModuloService>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
+builder.Services.AddScoped<IRoleService, RoleService>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -68,7 +69,7 @@ app.UseAuthorization();
 app.MapControllers();
 
 Console.WriteLine("=================================================");
-Console.WriteLine("  BlogApp .NET 10 corriendo en http://localhost:5000");
+Console.WriteLine("  Prixma .NET 10 corriendo en http://localhost:5000");
 Console.WriteLine("  Autenticación por Directorio Activo (LDAP) Lista");
 Console.WriteLine("=================================================");
 

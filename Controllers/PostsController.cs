@@ -19,12 +19,15 @@ public class PostsController : ControllerBase
     public async Task<IActionResult> GetPosts(
         [FromQuery] ushort? moduloId,
         [FromQuery] string? moduloSlug,
+        [FromQuery] string? categoriaPadre,
         [FromQuery] byte? tipoId,
         [FromQuery] string? search,
-        [FromQuery] string? estado = "publicado")
+        [FromQuery] string? estado = "publicado",
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10)
     {
-        var posts = await _postService.GetPostsAsync(moduloId, moduloSlug, tipoId, search, estado);
-        return Ok(posts);
+        var result = await _postService.GetPostsAsync(moduloId, moduloSlug, categoriaPadre, tipoId, search, estado, page, pageSize);
+        return Ok(result);
     }
 
     [HttpGet("{id:long}")]

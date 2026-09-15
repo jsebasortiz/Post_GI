@@ -8,7 +8,7 @@ namespace BlogApp.Services;
 
 public interface IModuloService
 {
-    Task<List<Modulo>> GetModulosAsync();
+    Task<List<Modulo>> GetModulosAsync(string? categoriaPadre = null);
     Task<Modulo?> GetModuloByIdAsync(ushort id);
     Task<Modulo> CreateModuloAsync(CreateModuloDto dto);
     Task<List<PostTipo>> GetPostTiposAsync();
@@ -24,9 +24,16 @@ public class ModuloService : IModuloService
         _context = context;
     }
 
-    public async Task<List<Modulo>> GetModulosAsync()
+    public async Task<List<Modulo>> GetModulosAsync(string? categoriaPadre = null)
     {
-        return await _context.Modulos.OrderBy(m => m.Nombre).ToListAsync();
+        var query = _context.Modulos.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(categoriaPadre))
+        {
+            query = query.Where(m => m.CategoriaPadre.ToLower() == categoriaPadre.Trim().ToLower());
+        }
+
+        return await query.OrderBy(m => m.Nombre).ToListAsync();
     }
 
     public async Task<Modulo?> GetModuloByIdAsync(ushort id)
@@ -37,10 +44,13 @@ public class ModuloService : IModuloService
     public async Task<Modulo> CreateModuloAsync(CreateModuloDto dto)
     {
         string slug = Slugify(dto.Nombre);
+        string cat = string.IsNullOrWhiteSpace(dto.CategoriaPadre) ? "apps" : dto.CategoriaPadre.Trim().ToLower();
+
         var modulo = new Modulo
         {
             Nombre = dto.Nombre,
             Slug = slug,
+            CategoriaPadre = cat,
             Descripcion = dto.Descripcion,
             Estado = true,
             CreadoEn = DateTime.UtcNow

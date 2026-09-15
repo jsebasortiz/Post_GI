@@ -37,6 +37,9 @@ public class Post
     [Column("contenido")]
     public string Contenido { get; set; } = string.Empty;
 
+    [Column("estado_id")]
+    public byte EstadoId { get; set; } = 1;
+
     [Column("estado")]
     public string Estado { get; set; } = "publicado";
 
@@ -57,6 +60,9 @@ public class Post
 
     [ForeignKey(nameof(TipoId))]
     public PostTipo? Tipo { get; set; }
+
+    [ForeignKey(nameof(EstadoId))]
+    public PostEstado? EstadoEntidad { get; set; }
 
     public ICollection<AdjuntoPost> Adjuntos { get; set; } = new List<AdjuntoPost>();
 }
