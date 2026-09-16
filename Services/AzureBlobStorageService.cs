@@ -1,5 +1,6 @@
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
+using Azure.Storage.Sas;
 
 namespace BlogApp.Services;
 
@@ -72,8 +73,9 @@ public class AzureBlobStorageService : IFileStorageService
                 });
             }
 
-            var blobUrl = blobClient.Uri.ToString();
-            Console.WriteLine($"[Azure Blob SUCCESS] Archivo subido a Azure: {blobUrl}");
+            // 4. Generar URL segura con SAS Token (Shared Access Signature) para lecturas
+            var blobUrl = GetSasUrl(blobClient);
+            Console.WriteLine($"[Azure Blob SUCCESS] Archivo subido a Azure con SAS Token: {blobUrl}");
             _logger.LogInformation("[Azure Blob] Archivo subido exitosamente a Azure: {BlobUrl}", blobUrl);
 
             return new StoredFileInfo(
@@ -89,6 +91,33 @@ public class AzureBlobStorageService : IFileStorageService
             _logger.LogError(ex, "[Azure Blob] Error al subir el archivo a Azure Storage. Usando fallback a almacenamiento local.");
             return await _localStorageService.SaveFileAsync(file, subDirectory);
         }
+    }
+
+    private string GetSasUrl(BlobClient blobClient)
+    {
+        try
+        {
+            if (blobClient.CanGenerateSasUri)
+            {
+                var sasBuilder = new BlobSasBuilder
+                {
+                    BlobContainerName = blobClient.BlobContainerName,
+                    BlobName = blobClient.Name,
+                    Resource = "b",
+                    StartsOn = DateTimeOffset.UtcNow.AddMinutes(-10),
+                    ExpiresOn = DateTimeOffset.UtcNow.AddYears(10), // SAS Token para lectura pública de blogs
+                    Protocol = SasProtocol.Https
+                };
+                sasBuilder.SetPermissions(BlobSasPermissions.Read);
+                return blobClient.GenerateSasUri(sasBuilder).ToString();
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("[Azure SAS] No se pudo generar el SAS Token: {Message}", ex.Message);
+        }
+
+        return blobClient.Uri.ToString();
     }
 
     public bool DeleteFile(string relativeOrAbsoluteUrl)

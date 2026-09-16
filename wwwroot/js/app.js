@@ -555,6 +555,34 @@ function handleFileSelect(event) {
   renderFilePreviews();
 }
 
+function getFileMeta(fileName, mimeType = '') {
+  const ext = (fileName.split('.').pop() || '').toLowerCase();
+  const mime = (mimeType || '').toLowerCase();
+
+  if (mime.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) {
+    return { isImage: true, icon: 'fa-solid fa-file-image', color: '#3b82f6', label: 'Imagen' };
+  } else if (mime.includes('pdf') || ext === 'pdf') {
+    return { isImage: false, icon: 'fa-solid fa-file-pdf', color: '#ef4444', label: 'PDF' };
+  } else if (['doc', 'docx'].includes(ext) || mime.includes('word')) {
+    return { isImage: false, icon: 'fa-solid fa-file-word', color: '#2563eb', label: 'Word' };
+  } else if (['xls', 'xlsx', 'csv'].includes(ext) || mime.includes('excel') || mime.includes('spreadsheet')) {
+    return { isImage: false, icon: 'fa-solid fa-file-excel', color: '#16a34a', label: 'Excel' };
+  } else if (['ppt', 'pptx'].includes(ext) || mime.includes('powerpoint') || mime.includes('presentation')) {
+    return { isImage: false, icon: 'fa-solid fa-file-powerpoint', color: '#ea580c', label: 'PowerPoint' };
+  } else if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext) || mime.includes('zip') || mime.includes('compressed')) {
+    return { isImage: false, icon: 'fa-solid fa-file-zipper', color: '#eab308', label: 'Archivo ZIP' };
+  }
+  return { isImage: false, icon: 'fa-solid fa-file-lines', color: '#a855f7', label: 'Documento' };
+}
+
+function formatBytes(bytes) {
+  if (!bytes) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
 function renderFilePreviews() {
   const container = document.getElementById('filePreviews');
   if (selectedFiles.length === 0) {
@@ -563,13 +591,27 @@ function renderFilePreviews() {
   }
 
   container.innerHTML = selectedFiles.map((file, idx) => {
-    const isImage = file.type.startsWith('image/');
-    const previewUrl = isImage ? URL.createObjectURL(file) : null;
-    
+    const meta = getFileMeta(file.name, file.type);
+    const sizeStr = formatBytes(file.size);
+
+    let contentHtml = '';
+    if (meta.isImage) {
+      const previewUrl = URL.createObjectURL(file);
+      contentHtml = `<img src="${previewUrl}" alt="${escapeHtml(file.name)}">`;
+    } else {
+      contentHtml = `
+        <div class="file-preview-icon-box">
+          <i class="${meta.icon} fa-2x" style="color:${meta.color}; margin-bottom:4px;"></i>
+          <span class="file-preview-name" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</span>
+          <span class="file-preview-size">${sizeStr}</span>
+        </div>
+      `;
+    }
+
     return `
-      <div class="file-preview-card">
-        ${isImage ? `<img src="${previewUrl}">` : `<div style="height:100%; display:flex; align-items:center; justify-content:center; background:#0f172a;"><i class="fa-regular fa-file-pdf fa-2x" style="color:var(--accent-rose);"></i></div>`}
-        <button type="button" onclick="removeSelectedFile(${idx})" style="position:absolute; top:4px; right:4px; background:rgba(0,0,0,0.6); color:white; border:none; border-radius:50%; width:20px; height:20px; cursor:pointer;">&times;</button>
+      <div class="file-preview-card" title="${escapeHtml(file.name)} (${sizeStr})">
+        ${contentHtml}
+        <button type="button" onclick="removeSelectedFile(${idx})" style="position:absolute; top:4px; right:4px; z-index:5; background:rgba(239,68,68,0.85); color:white; border:none; border-radius:50%; width:22px; height:22px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-weight:bold;">&times;</button>
         <label class="cover-radio">
           <input type="radio" name="portadaRadio" ${coverIndex === idx ? 'checked' : ''} onchange="coverIndex = ${idx}"> Portada
         </label>
@@ -737,22 +779,33 @@ async function openDetailModal(postId) {
     const attachContainer = document.getElementById('detailAttachments');
     if (post.adjuntos && post.adjuntos.length > 0) {
       const canManageAdj = hasPermission('posts.edit') || hasPermission('posts.delete');
-      let galleryHtml = `<h4 style="color:white; font-size:1.1rem; margin-bottom:0.75rem;"><i class="fa-solid fa-paperclip"></i> Archivos y Fotos Adjuntas (${post.adjuntos.length})</h4><div class="attachments-grid">`;
+      let galleryHtml = `<h4 style="color:white; font-size:1.1rem; margin-bottom:0.75rem;"><i class="fa-solid fa-paperclip"></i> Archivos y Documentos Adjuntos (${post.adjuntos.length})</h4><div class="attachments-grid">`;
       post.adjuntos.forEach(att => {
-        const isImage = att.mimeType.startsWith('image/');
+        const meta = getFileMeta(att.archivoNombreOriginal, att.mimeType);
+        const sizeStr = formatBytes(att.tamanioBytes);
+
         const deleteBtn = canManageAdj ? `
-          <button type="button" onclick="event.stopPropagation(); handleDeleteAttachment(${att.id}, ${post.id})" title="Desactivar Adjunto" style="position:absolute; top:6px; right:6px; z-index:10; background:rgba(239, 68, 68, 0.85); color:white; width:28px; height:28px; border-radius:50%; border:none; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:transform 0.2s ease;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+          <button type="button" onclick="event.stopPropagation(); handleDeleteAttachment(${att.id}, ${post.id})" title="Inactivar Adjunto (Borrado Lógico)" style="position:absolute; top:6px; right:6px; z-index:10; background:rgba(239, 68, 68, 0.85); color:white; width:28px; height:28px; border-radius:50%; border:none; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:transform 0.2s ease;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
             <i class="fa-solid fa-trash-can" style="font-size:0.75rem;"></i>
           </button>
         ` : '';
 
+        const filePreviewContent = meta.isImage
+          ? `<a href="${att.archivoUrl}" target="_blank" title="Ver imagen en tamaño completo"><img src="${att.archivoUrl}" alt="${escapeHtml(att.archivoNombreOriginal)}"></a>`
+          : `<div style="height:110px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0.25rem; background:rgba(15,23,42,0.6); padding:0.5rem;">
+               <i class="${meta.icon} fa-3x" style="color:${meta.color};"></i>
+               <span style="font-size:0.72rem; color:var(--accent-cyan); font-weight:600; text-align:center; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(meta.label)}</span>
+             </div>`;
+
         galleryHtml += `
-          <div class="attachment-item" style="position:relative;">
+          <div class="attachment-item" style="position:relative; background:var(--bg-dark); border:1px solid var(--bg-card-border); border-radius:8px; overflow:hidden;">
             ${deleteBtn}
-            ${isImage ? `<a href="${att.archivoUrl}" target="_blank"><img src="${att.archivoUrl}" alt="${escapeHtml(att.archivoNombreOriginal)}"></a>` : `<div style="height:110px; display:flex; align-items:center; justify-content:center;"><i class="fa-regular fa-file-pdf fa-3x" style="color:var(--accent-rose);"></i></div>`}
-            <div class="attachment-info">
-              <a href="${att.archivoUrl}" target="_blank" style="color:var(--accent-cyan); text-decoration:none;">${escapeHtml(att.archivoNombreOriginal)}</a>
-              <div style="font-size:0.7rem; color:var(--text-muted);">${(att.tamanioBytes / 1024).toFixed(1)} KB ${att.esPortada ? '• 🌟 Portada' : ''}</div>
+            ${filePreviewContent}
+            <div class="attachment-info" style="padding:0.6rem;">
+              <a href="${att.archivoUrl}" target="_blank" style="color:var(--accent-cyan); text-decoration:none; font-weight:600; font-size:0.85rem; display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(att.archivoNombreOriginal)}">
+                <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.75rem;"></i> ${escapeHtml(att.archivoNombreOriginal)}
+              </a>
+              <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;">${sizeStr} ${att.esPortada ? '• 🌟 Portada' : ''}</div>
             </div>
           </div>
         `;
@@ -1268,12 +1321,31 @@ function renderEditFilePreviews() {
     return;
   }
 
-  container.innerHTML = selectedEditFiles.map((file, idx) => `
-    <div class="file-preview-item">
-      <span><i class="fa-regular fa-file"></i> ${escapeHtml(file.name)}</span>
-      <button type="button" class="remove-file-btn" onclick="removeEditFile(${idx})">&times;</button>
-    </div>
-  `).join('');
+  container.innerHTML = selectedEditFiles.map((file, idx) => {
+    const meta = getFileMeta(file.name, file.type);
+    const sizeStr = formatBytes(file.size);
+
+    let contentHtml = '';
+    if (meta.isImage) {
+      const previewUrl = URL.createObjectURL(file);
+      contentHtml = `<img src="${previewUrl}" alt="${escapeHtml(file.name)}">`;
+    } else {
+      contentHtml = `
+        <div class="file-preview-icon-box">
+          <i class="${meta.icon} fa-2x" style="color:${meta.color}; margin-bottom:4px;"></i>
+          <span class="file-preview-name" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</span>
+          <span class="file-preview-size">${sizeStr}</span>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="file-preview-card" title="${escapeHtml(file.name)} (${sizeStr})">
+        ${contentHtml}
+        <button type="button" onclick="removeEditFile(${idx})" style="position:absolute; top:4px; right:4px; z-index:5; background:rgba(239,68,68,0.85); color:white; border:none; border-radius:50%; width:22px; height:22px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-weight:bold;">&times;</button>
+      </div>
+    `;
+  }).join('');
 }
 
 function removeEditFile(index) {
