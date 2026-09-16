@@ -15,7 +15,10 @@ public class ActiveDirectoryService : IActiveDirectoryService
     private readonly IConfiguration _configuration;
     private readonly ILogger<ActiveDirectoryService> _logger;
 
-    public ActiveDirectoryService(IConfiguration configuration, ILogger<ActiveDirectoryService> logger)
+    public ActiveDirectoryService(
+        IConfiguration configuration,
+        ILogger<ActiveDirectoryService> logger
+    )
     {
         _configuration = configuration;
         _logger = logger;
@@ -31,7 +34,8 @@ public class ActiveDirectoryService : IActiveDirectoryService
         var server = _configuration["ActiveDirectory:Server"] ?? "cag01.centroaguas.com";
         var portStr = _configuration["ActiveDirectory:Port"] ?? "389";
         int.TryParse(portStr, out int port);
-        if (port == 0) port = 389;
+        if (port == 0)
+            port = 389;
 
         var domain = _configuration["ActiveDirectory:Domain"] ?? "CENTROAGUAS";
         var baseDn = _configuration["ActiveDirectory:BaseDn"] ?? "DC=centroaguas,DC=com";
@@ -54,17 +58,17 @@ public class ActiveDirectoryService : IActiveDirectoryService
         try
         {
             var identifier = new LdapDirectoryIdentifier(server, port);
-            using var connection = new LdapConnection(identifier)
-            {
-                AuthType = AuthType.Basic
-            };
+            using var connection = new LdapConnection(identifier) { AuthType = AuthType.Basic };
 
             connection.SessionOptions.ProtocolVersion = 3;
             // Autenticar credenciales del usuario en LDAP / Active Directory
             var credential = new NetworkCredential(adUserPrincipal, password);
             connection.Bind(credential);
 
-            _logger.LogInformation("Autenticación LDAP exitosa para usuario AD: {User}", adUserPrincipal);
+            _logger.LogInformation(
+                "Autenticación LDAP exitosa para usuario AD: {User}",
+                adUserPrincipal
+            );
 
             // Intentar buscar atributos adicionales (displayName, mail) usando la conexión autenticada
             try
@@ -74,16 +78,23 @@ public class ActiveDirectoryService : IActiveDirectoryService
                     baseDn,
                     filter,
                     SearchScope.Subtree,
-                    "displayName", "mail", "cn", "sAMAccountName"
+                    "displayName",
+                    "mail",
+                    "cn",
+                    "sAMAccountName"
                 );
 
                 var response = (SearchResponse)connection.SendRequest(searchRequest);
                 if (response.Entries.Count > 0)
                 {
                     var entry = response.Entries[0];
-                    if (entry.Attributes.Contains("displayName") && entry.Attributes["displayName"].Count > 0)
+                    if (
+                        entry.Attributes.Contains("displayName")
+                        && entry.Attributes["displayName"].Count > 0
+                    )
                     {
-                        displayName = entry.Attributes["displayName"][0].ToString() ?? cleanUsername;
+                        displayName =
+                            entry.Attributes["displayName"][0].ToString() ?? cleanUsername;
                     }
                     else if (entry.Attributes.Contains("cn") && entry.Attributes["cn"].Count > 0)
                     {
@@ -98,19 +109,31 @@ public class ActiveDirectoryService : IActiveDirectoryService
             }
             catch (Exception ex)
             {
-                _logger.LogWarning("No se pudieron obtener atributos extendidos de LDAP: {Message}", ex.Message);
+                _logger.LogWarning(
+                    "No se pudieron obtener atributos extendidos de LDAP: {Message}",
+                    ex.Message
+                );
             }
 
             return new AdUserInfo(cleanUsername, displayName, adUserEmail, true);
         }
         catch (LdapException ex)
         {
-            _logger.LogWarning("Fallo de autenticación LDAP para {User}: {Message} (Código: {ResultCode})", adUserPrincipal, ex.Message, ex.ErrorCode);
+            _logger.LogWarning(
+                "Fallo de autenticación LDAP para {User}: {Message} (Código: {ResultCode})",
+                adUserPrincipal,
+                ex.Message,
+                ex.ErrorCode
+            );
             return new AdUserInfo(cleanUsername, "", "", false);
         }
         catch (Exception ex)
         {
-            _logger.LogError("Error conectando al servidor de Directorio Activo {Server}: {Message}", server, ex.Message);
+            _logger.LogError(
+                "Error conectando al servidor de Directorio Activo {Server}: {Message}",
+                server,
+                ex.Message
+            );
             return new AdUserInfo(cleanUsername, "", "", false);
         }
     }

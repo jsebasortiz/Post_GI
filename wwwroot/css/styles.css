@@ -40,9 +40,10 @@ body {
 }
 
 .container {
-  max-width: 1280px;
+  max-width: 1680px;
+  width: 96%;
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding: 0 2rem;
 }
 
 /* Header Navbar */
@@ -314,8 +315,11 @@ header.navbar {
 
 .category-tab {
   display: inline-flex;
+  flex-direction: row;
   align-items: center;
+  justify-content: center;
   gap: 0.6rem;
+  white-space: nowrap;
   padding: 0.8rem 1.75rem;
   border-radius: var(--radius-lg);
   background: rgba(30, 41, 59, 0.5);
@@ -326,6 +330,12 @@ header.navbar {
   font-weight: 600;
   cursor: pointer;
   transition: var(--transition-fast);
+}
+
+.category-tab i {
+  flex-shrink: 0;
+  display: inline-block;
+  line-height: 1;
 }
 
 .category-tab:hover {
@@ -340,6 +350,16 @@ header.navbar {
   border-color: transparent;
   box-shadow: 0 8px 25px var(--primary-glow);
   transform: translateY(-2px);
+}
+
+.category-tab.cat-infra.active {
+  background: linear-gradient(135deg, #10b981, #06b6d4);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+}
+
+.category-tab.cat-apps.active {
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  box-shadow: 0 8px 25px var(--primary-glow);
 }
 
 .modules-filter-header {
@@ -375,11 +395,10 @@ header.navbar {
   box-shadow: 0 4px 12px var(--primary-glow);
 }
 
-/* Posts Grid */
 .posts-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.75rem;
   padding-bottom: 4rem;
 }
 
@@ -1073,5 +1092,33 @@ header.navbar {
   gap: 0.75rem !important;
 }
 
+/* Responsive Layout Breakpoints */
+@media (max-width: 1400px) {
+  .container {
+    max-width: 100%;
+    padding: 0 1.5rem;
+  }
+  .posts-grid {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+  }
+}
 
+@media (max-width: 768px) {
+  .container {
+    padding: 0 1rem;
+  }
+  .posts-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.25rem;
+  }
+  .hero h1 {
+    font-size: 2.25rem;
+  }
+}
 
+@media (max-width: 480px) {
+  .posts-grid {
+    grid-template-columns: 1fr;
+  }
+}

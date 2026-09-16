@@ -31,7 +31,7 @@ public class PostService : IPostService
 
     public async Task<PagedResultDto<PostResponseDto>> GetPostsAsync(ushort? moduloId = null, string? moduloSlug = null, string? categoriaPadre = null, byte? tipoId = null, string? search = null, string? estado = "publicado", int page = 1, int pageSize = 10)
     {
-        // Solo obtener publicaciones en estado_id = 1 (Activo)
+        // Solo obtener publicaciones activas (estado_id = 1)
         var query = _context.Posts
             .Include(p => p.Usuario)
             .Include(p => p.Modulo)
@@ -112,7 +112,13 @@ public class PostService : IPostService
             .Include(p => p.Adjuntos)
             .FirstOrDefaultAsync(p => p.Id == id && p.EstadoId == 1);
 
-        return post == null ? null : MapToResponseDto(post);
+        if (post == null) return null;
+
+        // Incrementar contador de visitas en BD al consultar la publicación
+        post.Visitas++;
+        await _context.SaveChangesAsync();
+
+        return MapToResponseDto(post);
     }
 
     public async Task<PostResponseDto> CreatePostAsync(CreatePostDto dto)
@@ -196,7 +202,6 @@ public class PostService : IPostService
 
         // Eliminación Lógica: Cambiar estado_id de 1 (Activo) a 2 (Inactivo)
         post.EstadoId = 2; // 2 = Inactivo
-        post.Estado = "inactivo";
         post.ActualizadoEn = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
@@ -251,8 +256,9 @@ public class PostService : IPostService
         var adjunto = await _context.AdjuntosPost.FirstOrDefaultAsync(a => a.Id == adjuntoId);
         if (adjunto == null) return false;
 
-        _fileStorage.DeleteFile(adjunto.ArchivoUrl);
-        _context.AdjuntosPost.Remove(adjunto);
+        // Borrado lógico del archivo adjunto (EstadoId = 2: Inactivo)
+        adjunto.EstadoId = 2;
+        adjunto.EsPortada = false;
         await _context.SaveChangesAsync();
         return true;
     }
@@ -291,7 +297,9 @@ public class PostService : IPostService
 
     private static PostResponseDto MapToResponseDto(Post post)
     {
-        var portada = post.Adjuntos.FirstOrDefault(a => a.EsPortada) ?? post.Adjuntos.FirstOrDefault();
+        // Filtrar solo los adjuntos con EstadoId == 1 (Activos)
+        var activeAdjuntos = post.Adjuntos.Where(a => a.EstadoId == 1).ToList();
+        var portada = activeAdjuntos.FirstOrDefault(a => a.EsPortada) ?? activeAdjuntos.FirstOrDefault();
 
         return new PostResponseDto
         {
@@ -315,7 +323,7 @@ public class PostService : IPostService
             CreadoEn = post.CreadoEn,
             ActualizadoEn = post.ActualizadoEn,
             PortadaUrl = portada?.ArchivoUrl,
-            Adjuntos = post.Adjuntos.Select(a => new AdjuntoResponseDto
+            Adjuntos = activeAdjuntos.Select(a => new AdjuntoResponseDto
             {
                 Id = a.Id,
                 PostId = a.PostId,
@@ -324,6 +332,7 @@ public class PostService : IPostService
                 MimeType = a.MimeType,
                 TamanioBytes = a.TamanioBytes,
                 EsPortada = a.EsPortada,
+                EstadoId = a.EstadoId,
                 CreadoEn = a.CreadoEn
             }).ToList()
         };

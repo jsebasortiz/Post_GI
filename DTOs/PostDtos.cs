@@ -32,6 +32,7 @@ public class AdjuntoResponseDto
     public string MimeType { get; set; } = string.Empty;
     public ulong TamanioBytes { get; set; }
     public bool EsPortada { get; set; }
+    public int EstadoId { get; set; } = 1;
     public DateTime CreadoEn { get; set; }
 }
 

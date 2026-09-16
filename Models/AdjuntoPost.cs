@@ -36,6 +36,9 @@ public class AdjuntoPost
     [Column("es_portada")]
     public bool EsPortada { get; set; } = false;
 
+    [Column("estado_id")]
+    public int EstadoId { get; set; } = 1; // 1 = Activo, 2 = Inactivo
+
     [Column("creado_en")]
     public DateTime CreadoEn { get; set; } = DateTime.UtcNow;
 

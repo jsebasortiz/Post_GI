@@ -1,6 +1,11 @@
 namespace BlogApp.Services;
 
-public record StoredFileInfo(string ArchivoUrl, string ArchivoNombreOriginal, string MimeType, ulong TamanioBytes);
+public record StoredFileInfo(
+    string ArchivoUrl,
+    string ArchivoNombreOriginal,
+    string MimeType,
+    ulong TamanioBytes
+);
 
 public interface IFileStorageService
 {
@@ -26,8 +31,16 @@ public class FileStorageService : IFileStorageService
 
         // Crear estructura de directorios wwwroot/uploads/{subDirectory}/{yyyy}/{MM}
         var now = DateTime.UtcNow;
-        var folderRelativePath = Path.Combine("uploads", subDirectory, now.ToString("yyyy"), now.ToString("MM"));
-        var uploadsFolder = Path.Combine(_env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"), folderRelativePath);
+        var folderRelativePath = Path.Combine(
+            "uploads",
+            subDirectory,
+            now.ToString("yyyy"),
+            now.ToString("MM")
+        );
+        var uploadsFolder = Path.Combine(
+            _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"),
+            folderRelativePath
+        );
 
         if (!Directory.Exists(uploadsFolder))
         {
@@ -56,10 +69,14 @@ public class FileStorageService : IFileStorageService
 
     public bool DeleteFile(string relativeUrl)
     {
-        if (string.IsNullOrWhiteSpace(relativeUrl)) return false;
+        if (string.IsNullOrWhiteSpace(relativeUrl))
+            return false;
 
         var cleanPath = relativeUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
-        var fullPath = Path.Combine(_env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"), cleanPath);
+        var fullPath = Path.Combine(
+            _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"),
+            cleanPath
+        );
 
         if (File.Exists(fullPath))
         {

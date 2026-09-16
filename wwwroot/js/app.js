@@ -736,11 +736,19 @@ async function openDetailModal(postId) {
 
     const attachContainer = document.getElementById('detailAttachments');
     if (post.adjuntos && post.adjuntos.length > 0) {
+      const canManageAdj = hasPermission('posts.edit') || hasPermission('posts.delete');
       let galleryHtml = `<h4 style="color:white; font-size:1.1rem; margin-bottom:0.75rem;"><i class="fa-solid fa-paperclip"></i> Archivos y Fotos Adjuntas (${post.adjuntos.length})</h4><div class="attachments-grid">`;
       post.adjuntos.forEach(att => {
         const isImage = att.mimeType.startsWith('image/');
+        const deleteBtn = canManageAdj ? `
+          <button type="button" onclick="event.stopPropagation(); handleDeleteAttachment(${att.id}, ${post.id})" title="Desactivar Adjunto" style="position:absolute; top:6px; right:6px; z-index:10; background:rgba(239, 68, 68, 0.85); color:white; width:28px; height:28px; border-radius:50%; border:none; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:transform 0.2s ease;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+            <i class="fa-solid fa-trash-can" style="font-size:0.75rem;"></i>
+          </button>
+        ` : '';
+
         galleryHtml += `
-          <div class="attachment-item">
+          <div class="attachment-item" style="position:relative;">
+            ${deleteBtn}
             ${isImage ? `<a href="${att.archivoUrl}" target="_blank"><img src="${att.archivoUrl}" alt="${escapeHtml(att.archivoNombreOriginal)}"></a>` : `<div style="height:110px; display:flex; align-items:center; justify-content:center;"><i class="fa-regular fa-file-pdf fa-3x" style="color:var(--accent-rose);"></i></div>`}
             <div class="attachment-info">
               <a href="${att.archivoUrl}" target="_blank" style="color:var(--accent-cyan); text-decoration:none;">${escapeHtml(att.archivoNombreOriginal)}</a>
@@ -758,6 +766,51 @@ async function openDetailModal(postId) {
     openModal('detailModal');
   } catch (err) {
     console.error('Error al abrir detalle:', err);
+  }
+}
+
+async function handleDeleteAttachment(adjuntoId, postId) {
+  const result = await getPrixmaSwal().fire({
+    title: '¿Inactivar archivo adjunto?',
+    text: 'El archivo cambiará a estado inactivo (borrado lógico) y dejará de mostrarse en la publicación.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#ef4444',
+    cancelButtonColor: '#475569',
+    confirmButtonText: '<i class="fa-solid fa-trash-can"></i> Sí, inactivar',
+    cancelButtonText: 'Cancelar'
+  });
+
+  if (!result.isConfirmed) return;
+
+  try {
+    const res = await fetch(`/api/posts/adjuntos/${adjuntoId}`, {
+      method: 'DELETE'
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'No fue posible inactivar el archivo adjunto.');
+    }
+
+    getPrixmaSwal().fire({
+      icon: 'success',
+      title: 'Adjunto Inactivado',
+      text: 'El archivo adjunto pasó a estado inactivo correctamente.',
+      timer: 1800,
+      showConfirmButton: false
+    });
+
+    if (postId) {
+      openDetailModal(postId);
+    }
+    loadPosts(currentPage);
+  } catch (err) {
+    getPrixmaSwal().fire({
+      icon: 'error',
+      title: 'Error de Inactivación',
+      text: err.message
+    });
   }
 }
 

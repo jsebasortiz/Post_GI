@@ -134,6 +134,7 @@ public class BlogDbContext : DbContext
         {
             entity.HasIndex(a => a.PostId).HasDatabaseName("idx_adjunto_post");
             entity.Property(a => a.EsPortada).HasDefaultValue(false);
+            entity.Property(a => a.EstadoId).HasDefaultValue(1);
             entity.Property(a => a.CreadoEn).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             entity.HasOne(a => a.Post)

@@ -19,6 +19,16 @@ public static class DbInitializer
                 await context.SaveChangesAsync();
             }
 
+            // Asegurar columna estado_id en adjunto_post para borrado lógico
+            try
+            {
+                await context.Database.ExecuteSqlRawAsync("ALTER TABLE `adjunto_post` ADD COLUMN `estado_id` INT NOT NULL DEFAULT 1;");
+            }
+            catch
+            {
+                // Ignorar si la columna ya existe en la base de datos
+            }
+
             // Seed PostTipo con IDs explícitos (byte)
             if (!await context.PostTipos.AnyAsync())
             {
