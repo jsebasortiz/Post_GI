@@ -37,7 +37,7 @@ else
 
 // Registro de servicios de la aplicación
 builder.Services.AddScoped<IActiveDirectoryService, ActiveDirectoryService>();
-builder.Services.AddScoped<IFileStorageService, FileStorageService>();
+builder.Services.AddScoped<IFileStorageService, AzureBlobStorageService>();
 builder.Services.AddScoped<IPostService, PostService>();
 builder.Services.AddScoped<IModuloService, ModuloService>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
