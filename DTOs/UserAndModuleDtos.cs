@@ -7,6 +7,13 @@ public class CreateModuloDto
     public string? Descripcion { get; set; }
 }
 
+public class UpdateModuloDto
+{
+    public string Nombre { get; set; } = string.Empty;
+    public string CategoriaPadre { get; set; } = "apps";
+    public string? Descripcion { get; set; }
+}
+
 public class ModuloResponseDto
 {
     public ushort Id { get; set; }
@@ -14,7 +21,9 @@ public class ModuloResponseDto
     public string Slug { get; set; } = string.Empty;
     public string CategoriaPadre { get; set; } = "apps";
     public string? Descripcion { get; set; }
-    public bool Estado { get; set; }
+    public byte EstadoId { get; set; } = 1;
+    public string EstadoNombre { get; set; } = "Activo";
+    public bool Estado => EstadoId == 1;
     public DateTime CreadoEn { get; set; }
 }
 

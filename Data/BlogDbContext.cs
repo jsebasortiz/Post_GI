@@ -12,6 +12,7 @@ public class BlogDbContext : DbContext
     public DbSet<Usuario> Usuarios => Set<Usuario>();
     public DbSet<PostTipo> PostTipos => Set<PostTipo>();
     public DbSet<PostEstado> PostEstados => Set<PostEstado>();
+    public DbSet<ModuloEstado> ModuloEstados => Set<ModuloEstado>();
     public DbSet<Modulo> Modulos => Set<Modulo>();
     public DbSet<Post> Posts => Set<Post>();
     public DbSet<AdjuntoPost> AdjuntosPost => Set<AdjuntoPost>();
@@ -96,19 +97,31 @@ public class BlogDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        // Tabla modulo_estado
+        modelBuilder.Entity<ModuloEstado>(entity =>
+        {
+            entity.HasIndex(me => me.Nombre).IsUnique();
+        });
+
         // Tabla modulo
         modelBuilder.Entity<Modulo>(entity =>
         {
             entity.HasIndex(m => m.Nombre).IsUnique();
             entity.HasIndex(m => m.Slug).IsUnique();
             entity.HasIndex(m => m.AreaId).HasDatabaseName("idx_modulo_area");
+            entity.HasIndex(m => m.EstadoId).HasDatabaseName("fk_modulo_estado");
             entity.Property(m => m.AreaId).HasDefaultValue((ushort)1);
-            entity.Property(m => m.Estado).HasDefaultValue(true);
+            entity.Property(m => m.EstadoId).HasDefaultValue((byte)1);
             entity.Property(m => m.CreadoEn).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             entity.HasOne(m => m.Area)
                 .WithMany()
                 .HasForeignKey(m => m.AreaId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(m => m.Estado)
+                .WithMany(me => me.Modulos)
+                .HasForeignKey(m => m.EstadoId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 

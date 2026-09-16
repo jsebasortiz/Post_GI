@@ -34,8 +34,11 @@ public class Modulo
     [NotMapped]
     public string CategoriaPadre => Area?.Codigo ?? "apps";
 
-    [Column("estado")]
-    public bool Estado { get; set; } = true;
+    [Column("estado_id")]
+    public byte EstadoId { get; set; } = 1;
+
+    [ForeignKey("EstadoId")]
+    public ModuloEstado? Estado { get; set; }
 
     [Column("creado_en")]
     public DateTime CreadoEn { get; set; } = DateTime.UtcNow;

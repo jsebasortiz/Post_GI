@@ -39,6 +39,24 @@ public static class DbInitializer
                 Console.WriteLine($"[DbInitializer] Verificación de columna estado_id: {ex.Message}");
             }
 
+            // Asegurar creación de tabla modulo_estado en MySQL si no existe
+            try
+            {
+                var createModuloEstadoSql = @"
+                CREATE TABLE IF NOT EXISTS `modulo_estado` (
+                  `id` tinyint unsigned NOT NULL AUTO_INCREMENT,
+                  `nombre` varchar(50) NOT NULL,
+                  `descripcion` varchar(255) DEFAULT NULL,
+                  PRIMARY KEY (`id`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
+
+                await context.Database.ExecuteSqlRawAsync(createModuloEstadoSql);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[DbInitializer] Verificación de tabla modulo_estado: {ex.Message}");
+            }
+
             // Asegurar creación de tabla area en MySQL si no existe
             try
             {
@@ -100,20 +118,28 @@ public static class DbInitializer
                 await context.SaveChangesAsync();
             }
 
+            // Seed ModuloEstado (1 = Activo, 2 = Inactivo)
+            if (!await context.ModuloEstados.AnyAsync())
+            {
+                context.ModuloEstados.Add(new ModuloEstado { Id = 1, Nombre = "Activo", Descripcion = "Módulo activo visible en el portal" });
+                context.ModuloEstados.Add(new ModuloEstado { Id = 2, Nombre = "Inactivo", Descripcion = "Módulo inactivo o borrado lógicamente" });
+                await context.SaveChangesAsync();
+            }
+
             // Seed Modulo con AreaId (1 = Apps, 2 = Infraestructura)
             if (!await context.Modulos.AnyAsync())
             {
                 // Submódulos de Apps (AreaId = 1)
-                context.Modulos.Add(new Modulo { Id = 1, Nombre = "Portales Web", Slug = "portales-web", AreaId = 1, Descripcion = "Aplicaciones web institucionales y portales de servicios", Estado = true });
-                context.Modulos.Add(new Modulo { Id = 2, Nombre = "Desarrollo & APIs", Slug = "desarrollo-apis", AreaId = 1, Descripcion = "Desarrollo de software, C#, .NET, microservicios y APIs", Estado = true });
-                context.Modulos.Add(new Modulo { Id = 3, Nombre = "ERP / CRM", Slug = "erp-crm", AreaId = 1, Descripcion = "Sistemas corporativos de gestión empresarial y clientes", Estado = true });
-                context.Modulos.Add(new Modulo { Id = 4, Nombre = "Sistemas Internos", Slug = "sistemas-internos", AreaId = 1, Descripcion = "Herramientas de automatización y aplicaciones internas", Estado = true });
+                context.Modulos.Add(new Modulo { Id = 1, Nombre = "Portales Web", Slug = "portales-web", AreaId = 1, Descripcion = "Aplicaciones web institucionales y portales de servicios", EstadoId = 1 });
+                context.Modulos.Add(new Modulo { Id = 2, Nombre = "Desarrollo & APIs", Slug = "desarrollo-apis", AreaId = 1, Descripcion = "Desarrollo de software, C#, .NET, microservicios y APIs", EstadoId = 1 });
+                context.Modulos.Add(new Modulo { Id = 3, Nombre = "ERP / CRM", Slug = "erp-crm", AreaId = 1, Descripcion = "Sistemas corporativos de gestión empresarial y clientes", EstadoId = 1 });
+                context.Modulos.Add(new Modulo { Id = 4, Nombre = "Sistemas Internos", Slug = "sistemas-internos", AreaId = 1, Descripcion = "Herramientas de automatización y aplicaciones internas", EstadoId = 1 });
 
                 // Submódulos de Infraestructura (AreaId = 2)
-                context.Modulos.Add(new Modulo { Id = 5, Nombre = "Servidores & Cloud", Slug = "servidores-cloud", AreaId = 2, Descripcion = "Servidores virtuales, Azure, Docker y cloud computing", Estado = true });
-                context.Modulos.Add(new Modulo { Id = 6, Nombre = "Redes & Comunicaciones", Slug = "redes-comunicaciones", AreaId = 2, Descripcion = "Conectividad, switches, firewalls, VPN y enlaces", Estado = true });
-                context.Modulos.Add(new Modulo { Id = 7, Nombre = "Seguridad AD / LDAP", Slug = "seguridad-ad-ldap", AreaId = 2, Descripcion = "Directorio Activo, políticas de grupo, accesos e identidades", Estado = true });
-                context.Modulos.Add(new Modulo { Id = 8, Nombre = "Bases de Datos", Slug = "bases-de-datos", AreaId = 2, Descripcion = "Administración, respaldos y optimización de SQL Server / MySQL", Estado = true });
+                context.Modulos.Add(new Modulo { Id = 5, Nombre = "Servidores & Cloud", Slug = "servidores-cloud", AreaId = 2, Descripcion = "Servidores virtuales, Azure, Docker y cloud computing", EstadoId = 1 });
+                context.Modulos.Add(new Modulo { Id = 6, Nombre = "Redes & Comunicaciones", Slug = "redes-comunicaciones", AreaId = 2, Descripcion = "Conectividad, switches, firewalls, VPN y enlaces", EstadoId = 1 });
+                context.Modulos.Add(new Modulo { Id = 7, Nombre = "Seguridad AD / LDAP", Slug = "seguridad-ad-ldap", AreaId = 2, Descripcion = "Directorio Activo, políticas de grupo, accesos e identidades", EstadoId = 1 });
+                context.Modulos.Add(new Modulo { Id = 8, Nombre = "Bases de Datos", Slug = "bases-de-datos", AreaId = 2, Descripcion = "Administración, respaldos y optimización de SQL Server / MySQL", EstadoId = 1 });
                 await context.SaveChangesAsync();
             }
 

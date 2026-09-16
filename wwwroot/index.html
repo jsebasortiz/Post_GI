@@ -250,6 +250,40 @@
     </div>
   </div>
 
+  <!-- Edit Module Modal -->
+  <div class="modal-overlay" id="editModuleModal">
+    <div class="modal-card" style="max-width: 480px;">
+      <div class="modal-header">
+        <h2><i class="fa-solid fa-pen-to-square" style="color:var(--accent-cyan);"></i> Editar Módulo</h2>
+        <button class="close-btn" onclick="closeModal('editModuleModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="editModuleForm" onsubmit="handleUpdateModule(event)">
+          <input type="hidden" id="editModuloId">
+          <div class="form-group">
+            <label class="form-label" for="editModuloCategoriaPadre"><i class="fa-solid fa-sitemap"></i> Área / Categoría Principal</label>
+            <select id="editModuloCategoriaPadre" class="form-control" required>
+              <option value="apps">Apps (Aplicaciones)</option>
+              <option value="infraestructura">Infraestructura</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="editModuloNombre">Nombre del Módulo Temático</label>
+            <input type="text" id="editModuloNombre" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="editModuloDesc">Descripción</label>
+            <textarea id="editModuloDesc" rows="3" class="form-control" placeholder="Descripción temática del módulo..."></textarea>
+          </div>
+          <div style="display:flex; justify-content:flex-end; gap:1rem;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('editModuleModal')">Cancelar</button>
+            <button type="submit" class="btn btn-primary" id="btnSubmitEditModulo">Guardar Cambios</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <!-- Create Area Modal -->
   <div class="modal-overlay" id="areaModal">
     <div class="modal-card" style="max-width: 480px;">

@@ -136,8 +136,8 @@ function renderAreaTabs() {
 
     const actionBtn = (canManage && area.id > 0) ? `
       <span class="area-tab-actions" onclick="event.stopPropagation();" style="margin-left:0.5rem; display:inline-flex; gap:0.25rem;">
-        <i class="fa-solid fa-pen" style="font-size:0.75rem; opacity:0.75; cursor:pointer;" onclick="openEditAreaModal(${area.id}, '${escapeHtml(area.name)}', '${escapeHtml(area.desc || '')}')" title="Editar Área"></i>
-        <i class="fa-solid fa-trash-can" style="font-size:0.75rem; opacity:0.75; color:var(--accent-rose); cursor:pointer;" onclick="handleInactivarArea(${area.id}, '${escapeHtml(area.name)}')" title="Inactivar Área (Borrado Lógico)"></i>
+        <i class="fa-solid fa-pen" style="font-size:0.75rem; opacity:0.75; cursor:pointer;" onclick="event.stopPropagation(); openEditAreaModal(${area.id});" title="Editar Área"></i>
+        <i class="fa-solid fa-trash-can" style="font-size:0.75rem; opacity:0.75; color:var(--accent-rose); cursor:pointer;" onclick="event.stopPropagation(); handleInactivarArea(${area.id});" title="Inactivar Área (Borrado Lógico)"></i>
       </span>
     ` : '';
 
@@ -154,7 +154,7 @@ function renderAreaTabs() {
 
 function populateAreaSelects() {
   const areas = getAllAreas();
-  const selectIds = ['moduloCategoriaPadre', 'selectCategoriaPadre', 'editSelectCategoriaPadre'];
+  const selectIds = ['moduloCategoriaPadre', 'editModuloCategoriaPadre', 'selectCategoriaPadre', 'editSelectCategoriaPadre'];
 
   selectIds.forEach(id => {
     const selectEl = document.getElementById(id);
@@ -436,7 +436,7 @@ function switchMainCategory(categoriaPadre, tabBtnElement) {
 // Carga los módulos para los filtros y selectores
 async function loadModulos() {
   try {
-    const res = await fetch('/api/modulos');
+    const res = await apiFetch('/api/modulos');
     if (!res.ok) return;
     allModulosCache = await res.json();
 
@@ -445,10 +445,17 @@ async function loadModulos() {
       modulosToRender = allModulosCache.filter(m => m.categoriaPadre && m.categoriaPadre.toLowerCase() === currentCategoriaPadre.toLowerCase());
     }
 
+    const canManage = hasPermission('modulos.create');
     const filterContainer = document.getElementById('modulesFilter');
     let filterHtml = `<button class="module-pill ${currentModuloId === null ? 'active' : ''}" onclick="filterByModule(null, this)">Todos los Módulos</button>`;
     modulosToRender.forEach(m => {
-      filterHtml += `<button class="module-pill ${currentModuloId === m.id ? 'active' : ''}" onclick="filterByModule(${m.id}, this)">${escapeHtml(m.nombre)}</button>`;
+      const actionBtn = canManage ? `
+        <span class="module-pill-actions" onclick="event.stopPropagation();" style="margin-left:0.4rem; display:inline-flex; gap:0.25rem;">
+          <i class="fa-solid fa-pen" style="font-size:0.75rem; opacity:0.85; cursor:pointer; padding:2px;" onclick="event.stopPropagation(); openEditModuleModal(${m.id});" title="Editar Módulo"></i>
+          <i class="fa-solid fa-trash-can" style="font-size:0.75rem; opacity:0.85; color:var(--accent-rose); cursor:pointer; padding:2px;" onclick="event.stopPropagation(); handleInactivarModulo(${m.id});" title="Inactivar Módulo"></i>
+        </span>
+      ` : '';
+      filterHtml += `<button class="module-pill ${currentModuloId === m.id ? 'active' : ''}" onclick="filterByModule(${m.id}, this)">${escapeHtml(m.nombre)}${actionBtn}</button>`;
     });
     filterContainer.innerHTML = filterHtml;
 
@@ -851,17 +858,20 @@ async function handleCreateModule(event) {
   const descripcion = document.getElementById('moduloDesc').value;
 
   try {
-    const res = await fetch('/api/modulos', {
+    const res = await apiFetch('/api/modulos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nombre, categoriaPadre, descripcion })
     });
 
-    if (!res.ok) throw new Error('Error al crear el módulo.');
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'Error al crear el módulo.');
+    }
 
     closeModal('moduleModal');
     document.getElementById('createModuleForm').reset();
-    loadModulos();
+    await loadModulos();
 
     getPrixmaSwal().fire({
       icon: 'success',
@@ -874,6 +884,122 @@ async function handleCreateModule(event) {
     getPrixmaSwal().fire({
       icon: 'error',
       title: 'Error al Crear Módulo',
+      text: err.message
+    });
+  }
+}
+
+function openEditModuleModal(id) {
+  populateAreaSelects();
+  const modulo = (allModulosCache || []).find(m => m.id === id || m.id === parseInt(id));
+  if (!modulo) return;
+
+  document.getElementById('editModuloId').value = modulo.id;
+  document.getElementById('editModuloNombre').value = modulo.nombre || '';
+  document.getElementById('editModuloDesc').value = modulo.descripcion || '';
+
+  const catSelect = document.getElementById('editModuloCategoriaPadre');
+  if (catSelect) {
+    const catCode = modulo.categoriaPadre || (modulo.area ? modulo.area.codigo : 'apps');
+    catSelect.value = catCode;
+  }
+  openModal('editModuleModal');
+}
+
+async function handleUpdateModule(event) {
+  event.preventDefault();
+  const id = document.getElementById('editModuloId').value;
+  const nombre = document.getElementById('editModuloNombre').value.trim();
+  const categoriaPadre = document.getElementById('editModuloCategoriaPadre').value;
+  const descripcion = document.getElementById('editModuloDesc').value.trim();
+
+  if (!id || !nombre) return;
+
+  const confirmResult = await getPrixmaSwal().fire({
+    title: '¿Guardar cambios?',
+    text: `¿Deseas guardar los cambios realizados en el módulo "${nombre}"?`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#3b82f6',
+    cancelButtonColor: '#475569',
+    confirmButtonText: '<i class="fa-solid fa-floppy-disk"></i> Sí, guardar',
+    cancelButtonText: 'Cancelar'
+  });
+
+  if (!confirmResult.isConfirmed) return;
+
+  try {
+    const res = await apiFetch(`/api/modulos/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, categoriaPadre, descripcion })
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'Error al actualizar el módulo.');
+    }
+
+    closeModal('editModuleModal');
+    await loadModulos();
+
+    getPrixmaSwal().fire({
+      icon: 'success',
+      title: 'Módulo Actualizado',
+      text: `El módulo "${nombre}" fue actualizado correctamente.`,
+      timer: 2000,
+      showConfirmButton: false
+    });
+  } catch (err) {
+    getPrixmaSwal().fire({
+      icon: 'error',
+      title: 'Error al Actualizar Módulo',
+      text: err.message
+    });
+  }
+}
+
+async function handleInactivarModulo(id) {
+  const modulo = (allModulosCache || []).find(m => m.id === id || m.id === parseInt(id));
+  const nombre = modulo ? modulo.nombre : 'este módulo';
+
+  const result = await getPrixmaSwal().fire({
+    title: '¿Inactivar módulo?',
+    text: `El módulo "${nombre}" cambiará a estado inactivo (borrado lógico) y dejará de mostrarse en los filtros.`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#ef4444',
+    cancelButtonColor: '#475569',
+    confirmButtonText: '<i class="fa-solid fa-trash-can"></i> Sí, inactivar',
+    cancelButtonText: 'Cancelar'
+  });
+
+  if (!result.isConfirmed) return;
+
+  try {
+    const res = await apiFetch(`/api/modulos/${id}`, {
+      method: 'DELETE'
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'No se pudo inactivar el módulo.');
+    }
+
+    getPrixmaSwal().fire({
+      icon: 'success',
+      title: 'Módulo Inactivado',
+      text: `El módulo "${nombre}" ha sido inactivado correctamente.`,
+      timer: 2000,
+      showConfirmButton: false
+    });
+
+    if (currentModuloId === id) filterByModule(null, null);
+    await loadModulos();
+  } catch (err) {
+    getPrixmaSwal().fire({
+      icon: 'error',
+      title: 'Error al Inactivar Módulo',
       text: err.message
     });
   }
@@ -967,7 +1093,7 @@ async function openDetailModal(postId) {
 async function handleDeleteAttachment(adjuntoId, postId, isFromEdit = false) {
   const result = await getPrixmaSwal().fire({
     title: '¿Eliminar archivo adjunto?',
-    text: 'El archivo será removido de esta publicación.',
+    text: 'El archivo adjunto será removido de esta publicación.',
     icon: 'warning',
     showCancelButton: true,
     confirmButtonColor: '#ef4444',
@@ -991,7 +1117,7 @@ async function handleDeleteAttachment(adjuntoId, postId, isFromEdit = false) {
     getPrixmaSwal().fire({
       icon: 'success',
       title: 'Adjunto Eliminado',
-      text: 'El archivo adjunto fue removido correctamente.',
+      text: 'El archivo adjunto ha sido eliminado correctamente.',
       timer: 1800,
       showConfirmButton: false
     });
@@ -1087,10 +1213,14 @@ async function handleCreateArea(event) {
   }
 }
 
-function openEditAreaModal(id, nombre, desc) {
-  document.getElementById('editAreaId').value = id;
-  document.getElementById('editAreaNombre').value = nombre;
-  document.getElementById('editAreaDesc').value = desc || '';
+function openEditAreaModal(id) {
+  const areas = getAllAreas();
+  const area = areas.find(a => a.id === id || a.id === parseInt(id));
+  if (!area) return;
+
+  document.getElementById('editAreaId').value = area.id;
+  document.getElementById('editAreaNombre').value = area.name || '';
+  document.getElementById('editAreaDesc').value = area.desc || '';
   openModal('editAreaModal');
 }
 
@@ -1101,6 +1231,19 @@ async function handleUpdateArea(event) {
   const descripcion = document.getElementById('editAreaDesc').value.trim();
 
   if (!id || !nombre) return;
+
+  const confirmResult = await getPrixmaSwal().fire({
+    title: '¿Guardar cambios?',
+    text: `¿Deseas guardar los cambios realizados en el área "${nombre}"?`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#3b82f6',
+    cancelButtonColor: '#475569',
+    confirmButtonText: '<i class="fa-solid fa-floppy-disk"></i> Sí, guardar',
+    cancelButtonText: 'Cancelar'
+  });
+
+  if (!confirmResult.isConfirmed) return;
 
   try {
     const res = await apiFetch(`/api/areas/${id}`, {
@@ -1133,7 +1276,11 @@ async function handleUpdateArea(event) {
   }
 }
 
-async function handleInactivarArea(id, nombre) {
+async function handleInactivarArea(id) {
+  const areas = getAllAreas();
+  const area = areas.find(a => a.id === id || a.id === parseInt(id));
+  const nombre = area ? area.name : 'esta área';
+
   const result = await getPrixmaSwal().fire({
     title: '¿Inactivar área corporativa?',
     text: `El área "${nombre}" cambiará a estado inactivo (borrado lógico) y dejará de mostrarse en el portal.`,
@@ -1160,7 +1307,7 @@ async function handleInactivarArea(id, nombre) {
     getPrixmaSwal().fire({
       icon: 'success',
       title: 'Área Inactivada',
-      text: `El área "${nombre}" fue pasada a estado inactivo (borrado lógico).`,
+      text: `El área "${nombre}" ha sido inactivada correctamente.`,
       timer: 2000,
       showConfirmButton: false
     });
@@ -1687,9 +1834,6 @@ async function handleSaveEditPost(event) {
   const postId = document.getElementById('editPostId').value;
   const btn = document.getElementById('btnSubmitEditPost');
 
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
-
   const updateDto = {
     moduloId: parseInt(document.getElementById('editSelectModulo').value),
     tipoId: parseInt(document.getElementById('editSelectTipo').value),
@@ -1698,6 +1842,22 @@ async function handleSaveEditPost(event) {
     contenido: document.getElementById('editPostContenido').value.trim(),
     estado: 'publicado'
   };
+
+  const confirmResult = await getPrixmaSwal().fire({
+    title: '¿Guardar cambios?',
+    text: `¿Deseas guardar los cambios realizados en la publicación "${updateDto.titulo}"?`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#3b82f6',
+    cancelButtonColor: '#475569',
+    confirmButtonText: '<i class="fa-solid fa-floppy-disk"></i> Sí, guardar',
+    cancelButtonText: 'Cancelar'
+  });
+
+  if (!confirmResult.isConfirmed) return;
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
 
   try {
     const res = await fetch(`/api/posts/${postId}`, {
@@ -1747,35 +1907,32 @@ async function handleDeletePost(postId) {
     getPrixmaSwal().fire({
       icon: 'error',
       title: 'Acceso Denegado',
-      text: 'No tienes permisos para eliminar publicaciones.'
+      text: 'No tienes permisos para inactivar publicaciones.'
     });
     return;
   }
 
   const result = await getPrixmaSwal().fire({
-    title: '¿Eliminar publicación?',
-    text: 'Esta acción eliminará el artículo y sus adjuntos de forma permanente.',
+    title: '¿Inactivar publicación?',
+    text: 'Esta publicación cambiará a estado inactivo (borrado lógico) y dejará de mostrarse en el portal.',
     icon: 'warning',
     showCancelButton: true,
-    confirmButtonText: '<i class="fa-solid fa-trash-can"></i> Sí, eliminar',
-    cancelButtonText: 'Cancelar',
-    reverseButtons: true,
-    customClass: {
-      confirmButton: 'btn btn-danger',
-      cancelButton: 'btn btn-secondary'
-    }
+    confirmButtonColor: '#ef4444',
+    cancelButtonColor: '#475569',
+    confirmButtonText: '<i class="fa-solid fa-trash-can"></i> Sí, inactivar',
+    cancelButtonText: 'Cancelar'
   });
 
   if (!result.isConfirmed) return;
 
   try {
     const res = await fetch(`/api/posts/${postId}`, { method: 'DELETE' });
-    if (!res.ok) throw new Error('No se pudo eliminar la publicación.');
+    if (!res.ok) throw new Error('No se pudo inactivar la publicación.');
 
     getPrixmaSwal().fire({
       icon: 'success',
-      title: 'Publicación Eliminada',
-      text: 'La publicación ha sido eliminada correctamente.',
+      title: 'Publicación Inactivada',
+      text: 'La publicación ha sido inactivada correctamente.',
       timer: 2000,
       showConfirmButton: false
     });
@@ -1784,7 +1941,7 @@ async function handleDeletePost(postId) {
   } catch (err) {
     getPrixmaSwal().fire({
       icon: 'error',
-      title: 'Error al Eliminar',
+      title: 'Error al Inactivar Publicación',
       text: err.message
     });
   }
