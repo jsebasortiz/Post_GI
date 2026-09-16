@@ -11,14 +11,46 @@ let totalPages = 1;
 let totalItems = 0;
 let allModulosCache = [];
 
-// SweetAlert2 Prixma Custom Dark Helper
+// Helper global para peticiones REST API
+async function apiFetch(url, options = {}) {
+  return fetch(url, options);
+}
+
+let currentTheme = localStorage.getItem('prixmaTheme') || 'light';
+
+function initTheme() {
+  setTheme(currentTheme);
+}
+
+function toggleTheme() {
+  const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+  setTheme(newTheme);
+}
+
+function setTheme(theme) {
+  currentTheme = theme;
+  document.body.setAttribute('data-theme', theme);
+  localStorage.setItem('prixmaTheme', theme);
+
+  const themeIcon = document.getElementById('themeIcon');
+  const themeText = document.getElementById('themeText');
+  if (themeIcon) {
+    themeIcon.className = theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+  }
+  if (themeText) {
+    themeText.textContent = theme === 'dark' ? 'Claro' : 'Oscuro';
+  }
+}
+
+// SweetAlert2 Prixma Custom Light/Dark Helper
 function getPrixmaSwal() {
+  const isDark = document.body.getAttribute('data-theme') === 'dark';
   if (typeof Swal !== 'undefined') {
     return Swal.mixin({
-      background: '#131927',
-      color: '#f8fafc',
-      confirmButtonColor: '#6366f1',
-      cancelButtonColor: '#f43f5e',
+      background: isDark ? '#1e293b' : '#ffffff',
+      color: isDark ? '#f8fafc' : '#0f172a',
+      confirmButtonColor: '#4f46e5',
+      cancelButtonColor: '#e11d48',
       customClass: {
         popup: 'prixma-swal-popup',
         title: 'prixma-swal-title',
@@ -33,7 +65,115 @@ function getPrixmaSwal() {
   };
 }
 
+// Areas Management State & Helpers (Conectados a MySQL API)
+let allAreasCache = [];
+
+const DEFAULT_AREAS = [
+  { id: 1, code: 'apps', name: 'Apps (Aplicaciones)', icon: 'fa-solid fa-rocket', desc: 'Aplicaciones corporativas' },
+  { id: 2, code: 'infraestructura', name: 'Infraestructura', icon: 'fa-solid fa-server', desc: 'Servidores y redes' }
+];
+
+async function loadAreas() {
+  try {
+    const res = await apiFetch('/api/areas?soloActivas=true');
+    if (res.ok) {
+      allAreasCache = await res.json();
+    } else {
+      allAreasCache = DEFAULT_AREAS;
+    }
+  } catch (e) {
+    console.error('Error cargando áreas desde MySQL API:', e);
+    allAreasCache = DEFAULT_AREAS;
+  }
+  renderAreaTabs();
+  populateAreaSelects();
+}
+
+function getAllAreas() {
+  if (allAreasCache && allAreasCache.length > 0) {
+    return allAreasCache.map(a => ({
+      id: a.id,
+      code: a.codigo,
+      name: a.nombre,
+      icon: getAreaIcon(a.codigo, a.nombre),
+      desc: a.descripcion
+    }));
+  }
+  return DEFAULT_AREAS.map(a => ({ id: a.id, code: a.code, name: a.name, icon: a.icon, desc: a.desc }));
+}
+
+function getAreaIcon(codigo, nombre) {
+  const codeLower = (codigo || '').toLowerCase();
+  const nameLower = (nombre || '').toLowerCase();
+  if (codeLower === 'apps' || nameLower.includes('app')) return 'fa-solid fa-rocket';
+  if (codeLower === 'infraestructura' || nameLower.includes('infra')) return 'fa-solid fa-server';
+  if (nameLower.includes('telecom') || nameLower.includes('red') || nameLower.includes('telefon')) return 'fa-solid fa-phone';
+  if (nameLower.includes('finanz') || nameLower.includes('contab') || nameLower.includes('pago')) return 'fa-solid fa-coins';
+  if (nameLower.includes('recurso') || nameLower.includes('rrhh') || nameLower.includes('personal')) return 'fa-solid fa-users';
+  if (nameLower.includes('sistem') || nameLower.includes('operacion') || nameLower.includes('ti')) return 'fa-solid fa-gears';
+  if (nameLower.includes('segurid') || nameLower.includes('auditor')) return 'fa-solid fa-shield-halved';
+  return 'fa-solid fa-sitemap';
+}
+
+function renderAreaTabs() {
+  const container = document.getElementById('mainCategoriesTabs');
+  if (!container) return;
+
+  const areas = getAllAreas();
+  const canManage = hasPermission('modulos.create');
+
+  let html = `
+    <button class="category-tab ${currentCategoriaPadre === null ? 'active' : ''}" onclick="switchMainCategory(null, this)">
+      <i class="fa-solid fa-layer-group"></i> Todas las Áreas
+    </button>
+  `;
+
+  areas.forEach(area => {
+    const isActive = currentCategoriaPadre && currentCategoriaPadre.toLowerCase() === area.code.toLowerCase();
+    let catClass = '';
+    if (area.code === 'apps') catClass = 'cat-apps';
+    else if (area.code === 'infraestructura') catClass = 'cat-infra';
+
+    const actionBtn = (canManage && area.id > 0) ? `
+      <span class="area-tab-actions" onclick="event.stopPropagation();" style="margin-left:0.5rem; display:inline-flex; gap:0.25rem;">
+        <i class="fa-solid fa-pen" style="font-size:0.75rem; opacity:0.75; cursor:pointer;" onclick="openEditAreaModal(${area.id}, '${escapeHtml(area.name)}', '${escapeHtml(area.desc || '')}')" title="Editar Área"></i>
+        <i class="fa-solid fa-trash-can" style="font-size:0.75rem; opacity:0.75; color:var(--accent-rose); cursor:pointer;" onclick="handleInactivarArea(${area.id}, '${escapeHtml(area.name)}')" title="Inactivar Área (Borrado Lógico)"></i>
+      </span>
+    ` : '';
+
+    html += `
+      <button class="category-tab ${catClass} ${isActive ? 'active' : ''}" onclick="switchMainCategory('${escapeHtml(area.code)}', this)">
+        <i class="${area.icon || 'fa-solid fa-sitemap'}"></i> ${escapeHtml(area.name)}
+        ${actionBtn}
+      </button>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+function populateAreaSelects() {
+  const areas = getAllAreas();
+  const selectIds = ['moduloCategoriaPadre', 'selectCategoriaPadre', 'editSelectCategoriaPadre'];
+
+  selectIds.forEach(id => {
+    const selectEl = document.getElementById(id);
+    if (!selectEl) return;
+
+    const currentVal = selectEl.value;
+    let html = '';
+    areas.forEach(area => {
+      html += `<option value="${escapeHtml(area.code)}">${escapeHtml(area.name)}</option>`;
+    });
+    selectEl.innerHTML = html;
+    if (currentVal && Array.from(selectEl.options).some(o => o.value === currentVal)) {
+      selectEl.value = currentVal;
+    }
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
   initUserSession();
 });
 
@@ -63,6 +203,7 @@ function showMainApp() {
   if (mainApp) mainApp.classList.remove('view-hidden');
 
   renderUserNavArea();
+  loadAreas();
   loadModulos();
   loadPostTipos();
   loadPosts();
@@ -87,10 +228,12 @@ function hasPermission(codigo) {
 function updateNavButtonsPermissions() {
   const btnPost = document.getElementById('btnOpenCreatePost');
   const btnModule = document.getElementById('btnOpenCreateModule');
+  const btnArea = document.getElementById('btnOpenCreateArea');
   const btnRbac = document.getElementById('btnOpenRbacModal');
 
   if (btnPost) btnPost.style.display = hasPermission('posts.create') ? 'inline-flex' : 'none';
   if (btnModule) btnModule.style.display = hasPermission('modulos.create') ? 'inline-flex' : 'none';
+  if (btnArea) btnArea.style.display = hasPermission('modulos.create') ? 'inline-flex' : 'none';
   if (btnRbac) btnRbac.style.display = hasPermission('roles.manage') ? 'inline-flex' : 'none';
 }
 
@@ -325,7 +468,14 @@ function updatePostSubmoduloSelect(cat) {
   const selectModulo = document.getElementById('selectModulo');
   if (!selectModulo) return;
 
-  const filtered = allModulosCache.filter(m => !cat || (m.categoriaPadre && m.categoriaPadre.toLowerCase() === cat.toLowerCase()));
+  const targetCat = (cat || '').toLowerCase().trim();
+  const filtered = allModulosCache.filter(m => {
+    if (!targetCat) return true;
+    const mCat = (m.categoriaPadre || '').toLowerCase().trim();
+    const mAreaCode = (m.area ? m.area.codigo : '').toLowerCase().trim();
+    return mCat === targetCat || mAreaCode === targetCat;
+  });
+
   let selectHtml = '<option value="">-- Selecciona un Módulo --</option>';
   filtered.forEach(m => {
     selectHtml += `<option value="${m.id}">${escapeHtml(m.nombre)}</option>`;
@@ -778,17 +928,10 @@ async function openDetailModal(postId) {
 
     const attachContainer = document.getElementById('detailAttachments');
     if (post.adjuntos && post.adjuntos.length > 0) {
-      const canManageAdj = hasPermission('posts.edit') || hasPermission('posts.delete');
       let galleryHtml = `<h4 style="color:white; font-size:1.1rem; margin-bottom:0.75rem;"><i class="fa-solid fa-paperclip"></i> Archivos y Documentos Adjuntos (${post.adjuntos.length})</h4><div class="attachments-grid">`;
       post.adjuntos.forEach(att => {
         const meta = getFileMeta(att.archivoNombreOriginal, att.mimeType);
         const sizeStr = formatBytes(att.tamanioBytes);
-
-        const deleteBtn = canManageAdj ? `
-          <button type="button" onclick="event.stopPropagation(); handleDeleteAttachment(${att.id}, ${post.id})" title="Inactivar Adjunto (Borrado Lógico)" style="position:absolute; top:6px; right:6px; z-index:10; background:rgba(239, 68, 68, 0.85); color:white; width:28px; height:28px; border-radius:50%; border:none; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:transform 0.2s ease;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-            <i class="fa-solid fa-trash-can" style="font-size:0.75rem;"></i>
-          </button>
-        ` : '';
 
         const filePreviewContent = meta.isImage
           ? `<a href="${att.archivoUrl}" target="_blank" title="Ver imagen en tamaño completo"><img src="${att.archivoUrl}" alt="${escapeHtml(att.archivoNombreOriginal)}"></a>`
@@ -799,7 +942,6 @@ async function openDetailModal(postId) {
 
         galleryHtml += `
           <div class="attachment-item" style="position:relative; background:var(--bg-dark); border:1px solid var(--bg-card-border); border-radius:8px; overflow:hidden;">
-            ${deleteBtn}
             ${filePreviewContent}
             <div class="attachment-info" style="padding:0.6rem;">
               <a href="${att.archivoUrl}" target="_blank" style="color:var(--accent-cyan); text-decoration:none; font-weight:600; font-size:0.85rem; display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(att.archivoNombreOriginal)}">
@@ -822,40 +964,44 @@ async function openDetailModal(postId) {
   }
 }
 
-async function handleDeleteAttachment(adjuntoId, postId) {
+async function handleDeleteAttachment(adjuntoId, postId, isFromEdit = false) {
   const result = await getPrixmaSwal().fire({
-    title: '¿Inactivar archivo adjunto?',
-    text: 'El archivo cambiará a estado inactivo (borrado lógico) y dejará de mostrarse en la publicación.',
+    title: '¿Eliminar archivo adjunto?',
+    text: 'El archivo será removido de esta publicación.',
     icon: 'warning',
     showCancelButton: true,
     confirmButtonColor: '#ef4444',
     cancelButtonColor: '#475569',
-    confirmButtonText: '<i class="fa-solid fa-trash-can"></i> Sí, inactivar',
+    confirmButtonText: '<i class="fa-solid fa-trash-can"></i> Sí, eliminar',
     cancelButtonText: 'Cancelar'
   });
 
   if (!result.isConfirmed) return;
 
   try {
-    const res = await fetch(`/api/posts/adjuntos/${adjuntoId}`, {
+    const res = await apiFetch(`/api/posts/adjuntos/${adjuntoId}`, {
       method: 'DELETE'
     });
 
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.message || 'No fue posible inactivar el archivo adjunto.');
+      throw new Error(errData.message || 'No fue posible eliminar el archivo adjunto.');
     }
 
     getPrixmaSwal().fire({
       icon: 'success',
-      title: 'Adjunto Inactivado',
-      text: 'El archivo adjunto pasó a estado inactivo correctamente.',
+      title: 'Adjunto Eliminado',
+      text: 'El archivo adjunto fue removido correctamente.',
       timer: 1800,
       showConfirmButton: false
     });
 
     if (postId) {
-      openDetailModal(postId);
+      if (isFromEdit) {
+        openEditModal(postId);
+      } else {
+        openDetailModal(postId);
+      }
     }
     loadPosts(currentPage);
   } catch (err) {
@@ -867,15 +1013,168 @@ async function handleDeleteAttachment(adjuntoId, postId) {
   }
 }
 
-function openCreateModal() {
+async function openCreateModal() {
   if (!currentUser) {
     showAuthGate();
     return;
   }
+  populateAreaSelects();
+  if (!allModulosCache || allModulosCache.length === 0) {
+    await loadModulos();
+  }
+  const modalCatSelect = document.getElementById('selectCategoriaPadre');
+  const selectedCategory = modalCatSelect ? modalCatSelect.value : '';
+  updatePostSubmoduloSelect(selectedCategory);
   openModal('createModal');
 }
 
-function openModuleModal() { openModal('moduleModal'); }
+function openModuleModal() {
+  populateAreaSelects();
+  openModal('moduleModal');
+}
+
+function openAreaModal() {
+  openModal('areaModal');
+}
+
+async function handleCreateArea(event) {
+  event.preventDefault();
+  const nombreInput = document.getElementById('areaNombre');
+  const descInput = document.getElementById('areaDesc');
+
+  const nombre = nombreInput ? nombreInput.value.trim() : '';
+  const descripcion = descInput ? descInput.value.trim() : '';
+
+  if (!nombre) return;
+
+  try {
+    const res = await apiFetch('/api/areas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, descripcion })
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'Error al crear el área.');
+    }
+
+    const newArea = await res.json();
+
+    closeModal('areaModal');
+    document.getElementById('createAreaForm').reset();
+
+    await loadAreas();
+
+    getPrixmaSwal().fire({
+      icon: 'success',
+      title: '¡Área Creada!',
+      text: `El área "${newArea.nombre}" ha sido registrada en la base de datos.`,
+      timer: 2000,
+      showConfirmButton: false
+    });
+
+    // Activar pestaña del área recién creada
+    const tabBtn = Array.from(document.querySelectorAll('#mainCategoriesTabs .category-tab'))
+      .find(btn => btn.getAttribute('onclick')?.includes(`'${newArea.codigo}'`));
+    switchMainCategory(newArea.codigo, tabBtn);
+  } catch (err) {
+    getPrixmaSwal().fire({
+      icon: 'error',
+      title: 'Error al Crear Área',
+      text: err.message
+    });
+  }
+}
+
+function openEditAreaModal(id, nombre, desc) {
+  document.getElementById('editAreaId').value = id;
+  document.getElementById('editAreaNombre').value = nombre;
+  document.getElementById('editAreaDesc').value = desc || '';
+  openModal('editAreaModal');
+}
+
+async function handleUpdateArea(event) {
+  event.preventDefault();
+  const id = document.getElementById('editAreaId').value;
+  const nombre = document.getElementById('editAreaNombre').value.trim();
+  const descripcion = document.getElementById('editAreaDesc').value.trim();
+
+  if (!id || !nombre) return;
+
+  try {
+    const res = await apiFetch(`/api/areas/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, descripcion })
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'Error al actualizar el área.');
+    }
+
+    closeModal('editAreaModal');
+    await loadAreas();
+
+    getPrixmaSwal().fire({
+      icon: 'success',
+      title: 'Área Actualizada',
+      text: 'Los cambios del área han sido guardados correctamente.',
+      timer: 2000,
+      showConfirmButton: false
+    });
+  } catch (err) {
+    getPrixmaSwal().fire({
+      icon: 'error',
+      title: 'Error al Actualizar Área',
+      text: err.message
+    });
+  }
+}
+
+async function handleInactivarArea(id, nombre) {
+  const result = await getPrixmaSwal().fire({
+    title: '¿Inactivar área corporativa?',
+    text: `El área "${nombre}" cambiará a estado inactivo (borrado lógico) y dejará de mostrarse en el portal.`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#ef4444',
+    cancelButtonColor: '#475569',
+    confirmButtonText: '<i class="fa-solid fa-trash-can"></i> Sí, inactivar',
+    cancelButtonText: 'Cancelar'
+  });
+
+  if (!result.isConfirmed) return;
+
+  try {
+    const res = await apiFetch(`/api/areas/${id}`, {
+      method: 'DELETE'
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'No se pudo inactivar el área.');
+    }
+
+    getPrixmaSwal().fire({
+      icon: 'success',
+      title: 'Área Inactivada',
+      text: `El área "${nombre}" fue pasada a estado inactivo (borrado lógico).`,
+      timer: 2000,
+      showConfirmButton: false
+    });
+
+    if (currentCategoriaPadre) switchMainCategory(null, null);
+    await loadAreas();
+  } catch (err) {
+    getPrixmaSwal().fire({
+      icon: 'error',
+      title: 'Error al Inactivar Área',
+      text: err.message
+    });
+  }
+}
 
 function openModal(id) {
   document.getElementById(id).classList.add('active');
@@ -1227,6 +1526,11 @@ async function openEditModal(postId) {
     document.getElementById('editPostResumen').value = post.resumen || '';
     document.getElementById('editPostContenido').value = post.contenido;
 
+    if (!allModulosCache || allModulosCache.length === 0) {
+      await loadModulos();
+    }
+    populateAreaSelects();
+
     const catSelect = document.getElementById('editSelectCategoriaPadre');
     if (catSelect) {
       catSelect.value = post.moduloCategoriaPadre || 'apps';
@@ -1236,16 +1540,34 @@ async function openEditModal(postId) {
     // Cargar tipos de post
     await loadEditPostTipos(post.tipoId);
 
-    // Cargar adjuntos existentes
+    // Cargar adjuntos existentes con opción de inactivación/eliminación
     const existingContainer = document.getElementById('editExistingAdjuntos');
     if (existingContainer) {
       if (post.adjuntos && post.adjuntos.length > 0) {
-        existingContainer.innerHTML = post.adjuntos.map(att => `
-          <div class="file-preview-item">
-            <span><i class="fa-solid fa-paperclip"></i> ${escapeHtml(att.archivoNombreOriginal)}</span>
-            <a href="${att.archivoUrl}" target="_blank" style="color:var(--accent-cyan); font-size:0.75rem; text-decoration:none;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Ver</a>
-          </div>
-        `).join('');
+        existingContainer.innerHTML = post.adjuntos.map(att => {
+          const meta = getFileMeta(att.archivoNombreOriginal, att.mimeType);
+          const sizeStr = formatBytes(att.tamanioBytes);
+
+          let contentHtml = '';
+          if (meta.isImage) {
+            contentHtml = `<a href="${att.archivoUrl}" target="_blank"><img src="${att.archivoUrl}" style="width:100%; height:100%; object-fit:cover;"></a>`;
+          } else {
+            contentHtml = `
+              <div class="file-preview-icon-box">
+                <i class="${meta.icon} fa-2x" style="color:${meta.color}; margin-bottom:4px;"></i>
+                <span class="file-preview-name" title="${escapeHtml(att.archivoNombreOriginal)}">${escapeHtml(att.archivoNombreOriginal)}</span>
+                <span class="file-preview-size">${sizeStr}</span>
+              </div>
+            `;
+          }
+
+          return `
+            <div class="file-preview-card" style="position:relative; width:120px; aspect-ratio:1;" title="${escapeHtml(att.archivoNombreOriginal)} (${sizeStr})">
+              <button type="button" onclick="event.stopPropagation(); handleDeleteAttachment(${att.id}, ${post.id}, true)" title="Inactivar Adjunto (Borrado Lógico)" style="position:absolute; top:4px; right:4px; z-index:10; background:rgba(239, 68, 68, 0.9); color:white; width:22px; height:22px; border-radius:50%; border:none; display:flex; align-items:center; justify-content:center; cursor:pointer; font-weight:bold;">&times;</button>
+              ${contentHtml}
+            </div>
+          `;
+        }).join('');
       } else {
         existingContainer.innerHTML = '<span style="font-size:0.8rem; color:var(--text-muted);">Sin archivos adjuntos actualmente.</span>';
       }
@@ -1277,7 +1599,14 @@ function updateEditPostSubmoduloSelect(cat, selectedModuloId = null) {
   const selectModulo = document.getElementById('editSelectModulo');
   if (!selectModulo) return;
 
-  const filtered = allModulosCache.filter(m => !cat || (m.categoriaPadre && m.categoriaPadre.toLowerCase() === cat.toLowerCase()));
+  const targetCat = (cat || '').toLowerCase().trim();
+  const filtered = allModulosCache.filter(m => {
+    if (!targetCat) return true;
+    const mCat = (m.categoriaPadre || '').toLowerCase().trim();
+    const mAreaCode = (m.area ? m.area.codigo : '').toLowerCase().trim();
+    return mCat === targetCat || mAreaCode === targetCat;
+  });
+
   let selectHtml = '<option value="">-- Selecciona un Módulo --</option>';
   filtered.forEach(m => {
     const isSel = selectedModuloId && m.id === selectedModuloId ? 'selected' : '';

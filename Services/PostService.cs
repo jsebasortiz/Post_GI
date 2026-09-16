@@ -34,7 +34,7 @@ public class PostService : IPostService
         // Solo obtener publicaciones activas (estado_id = 1)
         var query = _context.Posts
             .Include(p => p.Usuario)
-            .Include(p => p.Modulo)
+            .Include(p => p.Modulo).ThenInclude(m => m!.Area)
             .Include(p => p.Tipo)
             .Include(p => p.Adjuntos)
             .AsNoTracking()
@@ -52,7 +52,7 @@ public class PostService : IPostService
 
         if (!string.IsNullOrWhiteSpace(categoriaPadre))
         {
-            query = query.Where(p => p.Modulo != null && p.Modulo.CategoriaPadre.ToLower() == categoriaPadre.Trim().ToLower());
+            query = query.Where(p => p.Modulo != null && p.Modulo.Area != null && p.Modulo.Area.Codigo.ToLower() == categoriaPadre.Trim().ToLower());
         }
 
         if (tipoId.HasValue)
@@ -89,7 +89,7 @@ public class PostService : IPostService
     {
         var post = await _context.Posts
             .Include(p => p.Usuario)
-            .Include(p => p.Modulo)
+            .Include(p => p.Modulo).ThenInclude(m => m!.Area)
             .Include(p => p.Tipo)
             .Include(p => p.Adjuntos)
             .FirstOrDefaultAsync(p => p.Slug == slug && p.EstadoId == 1);
@@ -107,7 +107,7 @@ public class PostService : IPostService
     {
         var post = await _context.Posts
             .Include(p => p.Usuario)
-            .Include(p => p.Modulo)
+            .Include(p => p.Modulo).ThenInclude(m => m!.Area)
             .Include(p => p.Tipo)
             .Include(p => p.Adjuntos)
             .FirstOrDefaultAsync(p => p.Id == id && p.EstadoId == 1);
@@ -309,7 +309,7 @@ public class PostService : IPostService
             ModuloId = post.ModuloId,
             ModuloNombre = post.Modulo?.Nombre ?? "General",
             ModuloSlug = post.Modulo?.Slug ?? "general",
-            ModuloCategoriaPadre = post.Modulo?.CategoriaPadre ?? "apps",
+            ModuloCategoriaPadre = post.Modulo?.Area?.Codigo ?? "apps",
             TipoId = post.TipoId,
             TipoNombre = post.Tipo?.Nombre ?? "Noticia",
             EstadoId = post.EstadoId,

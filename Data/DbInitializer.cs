@@ -19,14 +19,75 @@ public static class DbInitializer
                 await context.SaveChangesAsync();
             }
 
-            // Asegurar columna estado_id en adjunto_post para borrado lógico
+            // Asegurar columna estado_id en adjunto_post para borrado lógico de forma limpia
             try
             {
-                await context.Database.ExecuteSqlRawAsync("ALTER TABLE `adjunto_post` ADD COLUMN `estado_id` INT NOT NULL DEFAULT 1;");
+                var conn = context.Database.GetDbConnection();
+                if (conn.State != System.Data.ConnectionState.Open)
+                    await conn.OpenAsync();
+
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'adjunto_post' AND COLUMN_NAME = 'estado_id'";
+                var colCount = Convert.ToInt64(await cmd.ExecuteScalarAsync());
+                if (colCount == 0)
+                {
+                    await context.Database.ExecuteSqlRawAsync("ALTER TABLE `adjunto_post` ADD COLUMN `estado_id` INT NOT NULL DEFAULT 1;");
+                }
             }
-            catch
+            catch (Exception ex)
             {
-                // Ignorar si la columna ya existe en la base de datos
+                Console.WriteLine($"[DbInitializer] Verificación de columna estado_id: {ex.Message}");
+            }
+
+            // Asegurar creación de tabla area en MySQL si no existe
+            try
+            {
+                var createAreaSql = @"
+                CREATE TABLE IF NOT EXISTS `area` (
+                  `id` smallint unsigned NOT NULL AUTO_INCREMENT,
+                  `codigo` varchar(50) NOT NULL,
+                  `nombre` varchar(100) NOT NULL,
+                  `descripcion` varchar(255) DEFAULT NULL,
+                  `estado_id` tinyint unsigned NOT NULL DEFAULT '1',
+                  `creado_en` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+                  PRIMARY KEY (`id`),
+                  UNIQUE KEY `codigo` (`codigo`),
+                  KEY `idx_area_estado` (`estado_id`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
+
+                await context.Database.ExecuteSqlRawAsync(createAreaSql);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[DbInitializer] Verificación de tabla area: {ex.Message}");
+            }
+
+            // Seed Area (Apps e Infraestructura)
+            if (!await context.Areas.AnyAsync())
+            {
+                context.Areas.Add(new Area { Id = 1, Codigo = "apps", Nombre = "Apps (Aplicaciones)", Descripcion = "Aplicaciones corporativas e institucionales", EstadoId = 1 });
+                context.Areas.Add(new Area { Id = 2, Codigo = "infraestructura", Nombre = "Infraestructura", Descripcion = "Infraestructura de servidores, redes y seguridad", EstadoId = 1 });
+                await context.SaveChangesAsync();
+            }
+
+            // Asegurar columna area_id en tabla modulo
+            try
+            {
+                var conn = context.Database.GetDbConnection();
+                if (conn.State != System.Data.ConnectionState.Open)
+                    await conn.OpenAsync();
+
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'modulo' AND COLUMN_NAME = 'area_id'";
+                var modAreaCount = Convert.ToInt64(await cmd.ExecuteScalarAsync());
+                if (modAreaCount == 0)
+                {
+                    await context.Database.ExecuteSqlRawAsync("ALTER TABLE `modulo` ADD COLUMN `area_id` SMALLINT UNSIGNED NOT NULL DEFAULT 1;");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[DbInitializer] Verificación de columna area_id en modulo: {ex.Message}");
             }
 
             // Seed PostTipo con IDs explícitos (byte)
@@ -39,20 +100,20 @@ public static class DbInitializer
                 await context.SaveChangesAsync();
             }
 
-            // Seed Modulo con CategoriaPadre (Apps e Infraestructura)
+            // Seed Modulo con AreaId (1 = Apps, 2 = Infraestructura)
             if (!await context.Modulos.AnyAsync())
             {
-                // Submódulos de Apps
-                context.Modulos.Add(new Modulo { Id = 1, Nombre = "Portales Web", Slug = "portales-web", CategoriaPadre = "apps", Descripcion = "Aplicaciones web institucionales y portales de servicios", Estado = true });
-                context.Modulos.Add(new Modulo { Id = 2, Nombre = "Desarrollo & APIs", Slug = "desarrollo-apis", CategoriaPadre = "apps", Descripcion = "Desarrollo de software, C#, .NET, microservicios y APIs", Estado = true });
-                context.Modulos.Add(new Modulo { Id = 3, Nombre = "ERP / CRM", Slug = "erp-crm", CategoriaPadre = "apps", Descripcion = "Sistemas corporativos de gestión empresarial y clientes", Estado = true });
-                context.Modulos.Add(new Modulo { Id = 4, Nombre = "Sistemas Internos", Slug = "sistemas-internos", CategoriaPadre = "apps", Descripcion = "Herramientas de automatización y aplicaciones internas", Estado = true });
+                // Submódulos de Apps (AreaId = 1)
+                context.Modulos.Add(new Modulo { Id = 1, Nombre = "Portales Web", Slug = "portales-web", AreaId = 1, Descripcion = "Aplicaciones web institucionales y portales de servicios", Estado = true });
+                context.Modulos.Add(new Modulo { Id = 2, Nombre = "Desarrollo & APIs", Slug = "desarrollo-apis", AreaId = 1, Descripcion = "Desarrollo de software, C#, .NET, microservicios y APIs", Estado = true });
+                context.Modulos.Add(new Modulo { Id = 3, Nombre = "ERP / CRM", Slug = "erp-crm", AreaId = 1, Descripcion = "Sistemas corporativos de gestión empresarial y clientes", Estado = true });
+                context.Modulos.Add(new Modulo { Id = 4, Nombre = "Sistemas Internos", Slug = "sistemas-internos", AreaId = 1, Descripcion = "Herramientas de automatización y aplicaciones internas", Estado = true });
 
-                // Submódulos de Infraestructura
-                context.Modulos.Add(new Modulo { Id = 5, Nombre = "Servidores & Cloud", Slug = "servidores-cloud", CategoriaPadre = "infraestructura", Descripcion = "Servidores virtuales, Azure, Docker y cloud computing", Estado = true });
-                context.Modulos.Add(new Modulo { Id = 6, Nombre = "Redes & Comunicaciones", Slug = "redes-comunicaciones", CategoriaPadre = "infraestructura", Descripcion = "Conectividad, switches, firewalls, VPN y enlaces", Estado = true });
-                context.Modulos.Add(new Modulo { Id = 7, Nombre = "Seguridad AD / LDAP", Slug = "seguridad-ad-ldap", CategoriaPadre = "infraestructura", Descripcion = "Directorio Activo, políticas de grupo, accesos e identidades", Estado = true });
-                context.Modulos.Add(new Modulo { Id = 8, Nombre = "Bases de Datos", Slug = "bases-de-datos", CategoriaPadre = "infraestructura", Descripcion = "Administración, respaldos y optimización de SQL Server / MySQL", Estado = true });
+                // Submódulos de Infraestructura (AreaId = 2)
+                context.Modulos.Add(new Modulo { Id = 5, Nombre = "Servidores & Cloud", Slug = "servidores-cloud", AreaId = 2, Descripcion = "Servidores virtuales, Azure, Docker y cloud computing", Estado = true });
+                context.Modulos.Add(new Modulo { Id = 6, Nombre = "Redes & Comunicaciones", Slug = "redes-comunicaciones", AreaId = 2, Descripcion = "Conectividad, switches, firewalls, VPN y enlaces", Estado = true });
+                context.Modulos.Add(new Modulo { Id = 7, Nombre = "Seguridad AD / LDAP", Slug = "seguridad-ad-ldap", AreaId = 2, Descripcion = "Directorio Activo, políticas de grupo, accesos e identidades", Estado = true });
+                context.Modulos.Add(new Modulo { Id = 8, Nombre = "Bases de Datos", Slug = "bases-de-datos", AreaId = 2, Descripcion = "Administración, respaldos y optimización de SQL Server / MySQL", Estado = true });
                 await context.SaveChangesAsync();
             }
 

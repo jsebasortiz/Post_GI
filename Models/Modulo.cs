@@ -25,10 +25,14 @@ public class Modulo
     [Column("descripcion")]
     public string? Descripcion { get; set; }
 
-    [Required]
-    [MaxLength(50)]
-    [Column("categoria_padre")]
-    public string CategoriaPadre { get; set; } = "apps";
+    [Column("area_id")]
+    public ushort AreaId { get; set; } = 1;
+
+    [ForeignKey("AreaId")]
+    public Area? Area { get; set; }
+
+    [NotMapped]
+    public string CategoriaPadre => Area?.Codigo ?? "apps";
 
     [Column("estado")]
     public bool Estado { get; set; } = true;

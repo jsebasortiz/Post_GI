@@ -75,11 +75,17 @@
             <i class="fa-solid fa-user-shield" style="color:var(--accent-purple);"></i> <span class="btn-text">Roles &
               Permisos</span>
           </button>
+          <button class="btn btn-secondary" id="btnOpenCreateArea" onclick="openAreaModal()" title="Nueva Área">
+            <i class="fa-solid fa-sitemap" style="color:var(--accent-cyan);"></i> <span class="btn-text">Área</span>
+          </button>
           <button class="btn btn-secondary" id="btnOpenCreateModule" onclick="openModuleModal()" title="Nuevo Módulo">
             <i class="fa-solid fa-folder-plus"></i> <span class="btn-text">Módulo</span>
           </button>
           <button class="btn btn-primary" id="btnOpenCreatePost" onclick="openCreateModal()" title="Crear Publicación">
             <i class="fa-solid fa-pen-to-square"></i> <span class="btn-text">Crear Post</span>
+          </button>
+          <button class="btn btn-secondary" id="btnToggleTheme" onclick="toggleTheme()" title="Cambiar Tema (Claro / Oscuro)">
+            <i id="themeIcon" class="fa-solid fa-moon"></i> <span class="btn-text" id="themeText">Oscuro</span>
           </button>
 
           <!-- Auth User Area -->
@@ -244,6 +250,59 @@
     </div>
   </div>
 
+  <!-- Create Area Modal -->
+  <div class="modal-overlay" id="areaModal">
+    <div class="modal-card" style="max-width: 480px;">
+      <div class="modal-header">
+        <h2><i class="fa-solid fa-sitemap" style="color:var(--accent-cyan);"></i> Nueva Área Principal</h2>
+        <button class="close-btn" onclick="closeModal('areaModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="createAreaForm" onsubmit="handleCreateArea(event)">
+          <div class="form-group">
+            <label class="form-label" for="areaNombre">Nombre del Área Corporativa (Categoría Padre)</label>
+            <input type="text" id="areaNombre" class="form-control" placeholder="Ej: Telecomunicaciones, Finanzas, Recursos Humanos..." required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="areaDesc">Descripción (Opcional)</label>
+            <textarea id="areaDesc" rows="3" class="form-control" placeholder="Breve descripción del área corporativa..."></textarea>
+          </div>
+          <div style="display:flex; justify-content:flex-end; gap:1rem;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('areaModal')">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Guardar Área</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Area Modal -->
+  <div class="modal-overlay" id="editAreaModal">
+    <div class="modal-card" style="max-width: 480px;">
+      <div class="modal-header">
+        <h2><i class="fa-solid fa-pen-to-square" style="color:var(--accent-cyan);"></i> Editar Área Corporativa</h2>
+        <button class="close-btn" onclick="closeModal('editAreaModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="editAreaForm" onsubmit="handleUpdateArea(event)">
+          <input type="hidden" id="editAreaId">
+          <div class="form-group">
+            <label class="form-label" for="editAreaNombre">Nombre del Área Corporativa</label>
+            <input type="text" id="editAreaNombre" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="editAreaDesc">Descripción (Opcional)</label>
+            <textarea id="editAreaDesc" rows="3" class="form-control"></textarea>
+          </div>
+          <div style="display:flex; justify-content:flex-end; gap:1rem;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('editAreaModal')">Cancelar</button>
+            <button type="submit" class="btn btn-primary" id="btnSubmitEditArea">Guardar Cambios</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <!-- Edit Post Modal -->
   <div class="modal-overlay" id="editModal">
     <div class="modal-card">
@@ -296,14 +355,17 @@
           <!-- Attachments Section for Edit -->
           <div class="form-group">
             <label class="form-label">Adjuntos de la Publicación</label>
-            <div id="editExistingAdjuntos" class="file-previews" style="margin-bottom:0.75rem;"></div>
-            <div class="file-upload-zone" onclick="document.getElementById('editFileInput').click()">
+            <div class="file-upload-zone" onclick="document.getElementById('editFileInput').click()" style="margin-bottom: 1rem;">
               <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
               <p>Haz clic para agregar más fotos o archivos a esta publicación</p>
               <input type="file" id="editFileInput" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.txt" style="display:none"
                 onchange="handleEditFileSelect(event)">
             </div>
-            <div class="file-previews" id="editFilePreviews"></div>
+
+            <div class="file-previews" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap:1rem;">
+              <div id="editExistingAdjuntos" style="display:contents;"></div>
+              <div id="editFilePreviews" style="display:contents;"></div>
+            </div>
           </div>
 
           <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem;">

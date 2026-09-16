@@ -18,6 +18,7 @@ public class BlogDbContext : DbContext
     public DbSet<Rol> Roles => Set<Rol>();
     public DbSet<Permiso> Permisos => Set<Permiso>();
     public DbSet<RolPermiso> RolPermisos => Set<RolPermiso>();
+    public DbSet<Area> Areas => Set<Area>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -81,15 +82,34 @@ public class BlogDbContext : DbContext
             entity.HasIndex(pe => pe.Nombre).IsUnique();
         });
 
+        // Tabla area
+        modelBuilder.Entity<Area>(entity =>
+        {
+            entity.HasIndex(a => a.Codigo).IsUnique();
+            entity.HasIndex(a => a.EstadoId).HasDatabaseName("idx_area_estado");
+            entity.Property(a => a.EstadoId).HasDefaultValue((byte)1);
+            entity.Property(a => a.CreadoEn).HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.HasOne(a => a.Estado)
+                .WithMany()
+                .HasForeignKey(a => a.EstadoId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
         // Tabla modulo
         modelBuilder.Entity<Modulo>(entity =>
         {
             entity.HasIndex(m => m.Nombre).IsUnique();
             entity.HasIndex(m => m.Slug).IsUnique();
-            entity.HasIndex(m => m.CategoriaPadre).HasDatabaseName("idx_modulo_categoria");
-            entity.Property(m => m.CategoriaPadre).HasDefaultValue("apps").HasMaxLength(50);
+            entity.HasIndex(m => m.AreaId).HasDatabaseName("idx_modulo_area");
+            entity.Property(m => m.AreaId).HasDefaultValue((ushort)1);
             entity.Property(m => m.Estado).HasDefaultValue(true);
             entity.Property(m => m.CreadoEn).HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.HasOne(m => m.Area)
+                .WithMany()
+                .HasForeignKey(m => m.AreaId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // Tabla post

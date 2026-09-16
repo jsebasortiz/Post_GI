@@ -26,11 +26,11 @@ public class ModuloService : IModuloService
 
     public async Task<List<Modulo>> GetModulosAsync(string? categoriaPadre = null)
     {
-        var query = _context.Modulos.AsQueryable();
+        var query = _context.Modulos.Include(m => m.Area).AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(categoriaPadre))
         {
-            query = query.Where(m => m.CategoriaPadre.ToLower() == categoriaPadre.Trim().ToLower());
+            query = query.Where(m => m.Area != null && m.Area.Codigo.ToLower() == categoriaPadre.Trim().ToLower());
         }
 
         return await query.OrderBy(m => m.Nombre).ToListAsync();
@@ -38,7 +38,7 @@ public class ModuloService : IModuloService
 
     public async Task<Modulo?> GetModuloByIdAsync(ushort id)
     {
-        return await _context.Modulos.FindAsync(id);
+        return await _context.Modulos.Include(m => m.Area).FirstOrDefaultAsync(m => m.Id == id);
     }
 
     public async Task<Modulo> CreateModuloAsync(CreateModuloDto dto)
@@ -46,11 +46,14 @@ public class ModuloService : IModuloService
         string slug = Slugify(dto.Nombre);
         string cat = string.IsNullOrWhiteSpace(dto.CategoriaPadre) ? "apps" : dto.CategoriaPadre.Trim().ToLower();
 
+        var areaObj = await _context.Areas.FirstOrDefaultAsync(a => a.Codigo.ToLower() == cat);
+        ushort areaId = areaObj?.Id ?? 1;
+
         var modulo = new Modulo
         {
             Nombre = dto.Nombre,
             Slug = slug,
-            CategoriaPadre = cat,
+            AreaId = areaId,
             Descripcion = dto.Descripcion,
             Estado = true,
             CreadoEn = DateTime.UtcNow
@@ -58,6 +61,7 @@ public class ModuloService : IModuloService
 
         _context.Modulos.Add(modulo);
         await _context.SaveChangesAsync();
+        modulo.Area = areaObj;
         return modulo;
     }
 
