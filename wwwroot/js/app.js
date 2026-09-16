@@ -172,6 +172,93 @@ function populateAreaSelects() {
   });
 }
 
+// --- SPA HASH ROUTER ---
+function navigateTo(hash) {
+  if (window.location.hash !== hash) {
+    window.location.hash = hash;
+  } else {
+    handleRoute();
+  }
+}
+
+let isHandlingRoute = false;
+let isAppInitialized = false;
+
+async function handleRoute() {
+  if (isHandlingRoute) return;
+  isHandlingRoute = true;
+
+  try {
+    const rawHash = window.location.hash || '#/dashboard';
+    const cleanHash = rawHash.split('?')[0];
+
+    // 1. Ruta de Login
+    if (cleanHash === '#/login') {
+      if (currentUser) {
+        window.location.hash = '#/dashboard';
+        return;
+      }
+      showAuthGate();
+      return;
+    }
+
+    // 2. Control de Acceso: si no hay sesión activa, redirigir a #/login
+    if (!currentUser) {
+      window.location.hash = '#/login';
+      return;
+    }
+
+    // 3. Mostrar Vista Principal del Dashboard
+    await showMainApp();
+
+    // 4. Subrutas del Dashboard
+    if (cleanHash === '#/rbac') {
+      if (hasPermission('roles.manage')) {
+        openRbacModal();
+      } else {
+        window.location.hash = '#/dashboard';
+      }
+    } else if (cleanHash.startsWith('#/area/')) {
+      const modalRbac = document.getElementById('rbacModal');
+      if (modalRbac) modalRbac.classList.remove('active');
+
+      const areaCode = decodeURIComponent(cleanHash.replace('#/area/', ''));
+      if (areaCode) {
+        currentCategoriaPadre = areaCode;
+        currentModuloId = null;
+        renderAreaTabs();
+        await loadModulos();
+        await loadPosts(1);
+      }
+    } else if (cleanHash.startsWith('#/modulo/')) {
+      const modalRbac = document.getElementById('rbacModal');
+      if (modalRbac) modalRbac.classList.remove('active');
+
+      const modId = parseInt(cleanHash.replace('#/modulo/', ''));
+      if (!isNaN(modId)) {
+        currentModuloId = modId;
+        await loadPosts(1);
+      }
+    } else {
+      // #/dashboard o ruta por defecto
+      const modalRbac = document.getElementById('rbacModal');
+      if (modalRbac) modalRbac.classList.remove('active');
+
+      if (currentCategoriaPadre !== null || currentModuloId !== null) {
+        currentCategoriaPadre = null;
+        currentModuloId = null;
+        renderAreaTabs();
+        await loadModulos();
+        await loadPosts(1);
+      }
+    }
+  } finally {
+    isHandlingRoute = false;
+  }
+}
+
+window.addEventListener('hashchange', handleRoute);
+
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   initUserSession();
@@ -189,27 +276,28 @@ function initUserSession() {
     }
   }
 
-  if (currentUser) {
-    showMainApp();
-  } else {
-    showAuthGate();
-  }
+  handleRoute();
 }
 
-function showMainApp() {
+async function showMainApp() {
   const authGate = document.getElementById('authGateScreen');
   const mainApp = document.getElementById('appMainArea');
   if (authGate) authGate.classList.add('view-hidden');
   if (mainApp) mainApp.classList.remove('view-hidden');
 
   renderUserNavArea();
-  loadAreas();
-  loadModulos();
-  loadPostTipos();
-  loadPosts();
+
+  if (!isAppInitialized) {
+    isAppInitialized = true;
+    await loadAreas();
+    await loadModulos();
+    await loadPostTipos();
+    await loadPosts();
+  }
 }
 
 function showAuthGate() {
+  isAppInitialized = false;
   const authGate = document.getElementById('authGateScreen');
   const mainApp = document.getElementById('appMainArea');
   if (mainApp) mainApp.classList.add('view-hidden');
@@ -328,7 +416,7 @@ async function handleLogin(event) {
     const form = document.getElementById('gateLoginForm');
     if (form) form.reset();
 
-    showMainApp();
+    navigateTo('#/dashboard');
   } catch (err) {
     if (err.name === 'TypeError') {
       // Error de red/conexión sin respuesta de servidor
@@ -420,17 +508,16 @@ function clearInputError(inputEl) {
 function handleLogout() {
   currentUser = null;
   localStorage.removeItem('currentUser');
-  showAuthGate();
+  isAppInitialized = false;
+  navigateTo('#/login');
 }
 
 function switchMainCategory(categoriaPadre, tabBtnElement) {
-  currentCategoriaPadre = categoriaPadre;
-  currentModuloId = null;
-  document.querySelectorAll('.category-tab').forEach(el => el.classList.remove('active'));
-  if (tabBtnElement) tabBtnElement.classList.add('active');
-
-  loadModulos();
-  loadPosts(1);
+  if (categoriaPadre) {
+    navigateTo(`#/area/${encodeURIComponent(categoriaPadre)}`);
+  } else {
+    navigateTo('#/dashboard');
+  }
 }
 
 // Carga los módulos para los filtros y selectores
@@ -692,10 +779,13 @@ function renderPostCard(post) {
 }
 
 function filterByModule(moduloId, btnElement) {
-  currentModuloId = moduloId;
-  document.querySelectorAll('.module-pill').forEach(el => el.classList.remove('active'));
-  if (btnElement) btnElement.classList.add('active');
-  loadPosts(1);
+  if (moduloId) {
+    navigateTo(`#/modulo/${moduloId}`);
+  } else if (currentCategoriaPadre) {
+    navigateTo(`#/area/${encodeURIComponent(currentCategoriaPadre)}`);
+  } else {
+    navigateTo('#/dashboard');
+  }
 }
 
 function debounceSearch() {
@@ -1328,7 +1418,11 @@ function openModal(id) {
 }
 
 function closeModal(id) {
-  document.getElementById(id).classList.remove('active');
+  const modalEl = document.getElementById(id);
+  if (modalEl) modalEl.classList.remove('active');
+  if (id === 'rbacModal' && window.location.hash === '#/rbac') {
+    navigateTo('#/dashboard');
+  }
 }
 
 function escapeHtml(text) {

@@ -63,14 +63,14 @@
     <!-- Navbar Header -->
     <header class="navbar">
       <div class="container nav-container">
-        <a href="#" class="brand" onclick="loadPosts(); return false;">
+        <a href="#/dashboard" class="brand" onclick="navigateTo('#/dashboard'); return false;">
           <img src="images/logo.png" alt="Prixma Logo" class="brand-logo-img">
           <span>Prixma <small style="font-size:0.65rem; color:var(--accent-cyan); font-weight:normal;">AD
               CentroAguas</small></span>
         </a>
 
         <div class="nav-controls">
-          <button class="btn btn-secondary" id="btnOpenRbacModal" onclick="openRbacModal()" style="display:none;"
+          <button class="btn btn-secondary" id="btnOpenRbacModal" onclick="navigateTo('#/rbac')" style="display:none;"
             title="Roles y Permisos">
             <i class="fa-solid fa-user-shield" style="color:var(--accent-purple);"></i> <span class="btn-text">Roles &
               Permisos</span>
