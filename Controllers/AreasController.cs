@@ -1,9 +1,11 @@
 using BlogApp.DTOs;
 using BlogApp.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BlogApp.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class AreasController : ControllerBase

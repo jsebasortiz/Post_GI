@@ -137,7 +137,6 @@ public class BlogDbContext : DbContext
 
             entity.Property(p => p.EstadoId).HasDefaultValue((byte)1);
             entity.Property(p => p.Estado).HasDefaultValue("publicado");
-            entity.Property(p => p.Visitas).HasDefaultValue(0u);
             entity.Property(p => p.CreadoEn).HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(p => p.ActualizadoEn).HasDefaultValueSql("CURRENT_TIMESTAMP");
 

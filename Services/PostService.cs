@@ -96,10 +96,6 @@ public class PostService : IPostService
 
         if (post == null) return null;
 
-        // Incrementar visitas
-        post.Visitas++;
-        await _context.SaveChangesAsync();
-
         return MapToResponseDto(post);
     }
 
@@ -113,10 +109,6 @@ public class PostService : IPostService
             .FirstOrDefaultAsync(p => p.Id == id && p.EstadoId == 1);
 
         if (post == null) return null;
-
-        // Incrementar contador de visitas en BD al consultar la publicación
-        post.Visitas++;
-        await _context.SaveChangesAsync();
 
         return MapToResponseDto(post);
     }
@@ -136,7 +128,6 @@ public class PostService : IPostService
             Resumen = dto.Resumen,
             Contenido = dto.Contenido,
             Estado = "publicado",
-            Visitas = 0,
             CreadoEn = DateTime.UtcNow,
             ActualizadoEn = DateTime.UtcNow
         };
@@ -319,7 +310,6 @@ public class PostService : IPostService
             Resumen = post.Resumen,
             Contenido = post.Contenido,
             Estado = post.Estado,
-            Visitas = post.Visitas,
             CreadoEn = post.CreadoEn,
             ActualizadoEn = post.ActualizadoEn,
             PortadaUrl = portada?.ArchivoUrl,

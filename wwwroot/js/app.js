@@ -11,9 +11,29 @@ let totalPages = 1;
 let totalItems = 0;
 let allModulosCache = [];
 
-// Helper global para peticiones REST API
+let jwtToken = localStorage.getItem('jwtToken') || null;
+
+// Helper global para peticiones REST API con JWT Bearer Token
 async function apiFetch(url, options = {}) {
-  return fetch(url, options);
+  options.headers = options.headers || {};
+
+  const token = jwtToken || localStorage.getItem('jwtToken');
+  if (token) {
+    if (options.headers instanceof Headers) {
+      options.headers.set('Authorization', `Bearer ${token}`);
+    } else {
+      options.headers['Authorization'] = `Bearer ${token}`;
+    }
+  }
+
+  const response = await fetch(url, options);
+
+  if ((response.status === 401 || response.status === 403) && !url.includes('/api/usuarios/login')) {
+    console.warn('Sesión no autorizada o token expirado. Redirigiendo a Login.');
+    handleLogout();
+  }
+
+  return response;
 }
 
 let currentTheme = localStorage.getItem('prixmaTheme') || 'light';
@@ -194,7 +214,7 @@ async function handleRoute() {
 
     // 1. Ruta de Login
     if (cleanHash === '#/login') {
-      if (currentUser) {
+      if (currentUser && (jwtToken || localStorage.getItem('jwtToken'))) {
         window.location.hash = '#/dashboard';
         return;
       }
@@ -202,8 +222,9 @@ async function handleRoute() {
       return;
     }
 
-    // 2. Control de Acceso: si no hay sesión activa, redirigir a #/login
-    if (!currentUser) {
+    // 2. Control de Acceso: si no hay sesión activa ni token, redirigir a #/login
+    const activeToken = jwtToken || localStorage.getItem('jwtToken');
+    if (!currentUser || !activeToken) {
       window.location.hash = '#/login';
       return;
     }
@@ -267,13 +288,23 @@ document.addEventListener('DOMContentLoaded', () => {
 // Inicializar la sesión del usuario guardada en localStorage
 function initUserSession() {
   const savedUser = localStorage.getItem('currentUser');
-  if (savedUser) {
+  const savedToken = localStorage.getItem('jwtToken');
+
+  if (savedUser && savedToken) {
     try {
       currentUser = JSON.parse(savedUser);
+      jwtToken = savedToken;
     } catch (e) {
       currentUser = null;
+      jwtToken = null;
       localStorage.removeItem('currentUser');
+      localStorage.removeItem('jwtToken');
     }
+  } else {
+    currentUser = null;
+    jwtToken = null;
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('jwtToken');
   }
 
   handleRoute();
@@ -393,7 +424,7 @@ async function handleLogin(event) {
 
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
-      
+
       // UX Writing: Mensajes específicos y seguros según respuesta de la API/estado HTTP
       if (res.status === 423 || (errData.message && errData.message.toLowerCase().includes('bloquead'))) {
         markInputInvalid(userInput);
@@ -409,7 +440,14 @@ async function handleLogin(event) {
       }
     }
 
-    const user = await res.json();
+    const loginData = await res.json();
+    const token = loginData.token || loginData.Token;
+    const user = loginData.usuario || loginData.Usuario || loginData;
+
+    if (token) {
+      jwtToken = token;
+      localStorage.setItem('jwtToken', token);
+    }
     currentUser = user;
     localStorage.setItem('currentUser', JSON.stringify(user));
 
@@ -507,7 +545,9 @@ function clearInputError(inputEl) {
 
 function handleLogout() {
   currentUser = null;
+  jwtToken = null;
   localStorage.removeItem('currentUser');
+  localStorage.removeItem('jwtToken');
   isAppInitialized = false;
   navigateTo('#/login');
 }
@@ -570,7 +610,7 @@ function updatePostSubmoduloSelect(cat) {
     return mCat === targetCat || mAreaCode === targetCat;
   });
 
-  let selectHtml = '<option value="">-- Selecciona un Módulo --</option>';
+  let selectHtml = '<option value="">Selecciona un Módulo</option>';
   filtered.forEach(m => {
     selectHtml += `<option value="${m.id}">${escapeHtml(m.nombre)}</option>`;
   });
@@ -580,12 +620,12 @@ function updatePostSubmoduloSelect(cat) {
 // Carga los tipos de posts para el selector
 async function loadPostTipos() {
   try {
-    const res = await fetch('/api/modulos/tipos');
+    const res = await apiFetch('/api/modulos/tipos');
     if (!res.ok) return;
     const tipos = await res.json();
 
     const selectTipo = document.getElementById('selectTipo');
-    let selectHtml = '<option value="">-- Tipo de Publicación --</option>';
+    let selectHtml = '<option value="">Tipo de Publicación</option>';
     tipos.forEach(t => {
       selectHtml += `<option value="${t.id}">${escapeHtml(t.nombre)}</option>`;
     });
@@ -614,7 +654,7 @@ async function loadPosts(page = 1) {
     if (currentModuloId) url += `&moduloId=${currentModuloId}`;
     if (currentSearch) url += `&search=${encodeURIComponent(currentSearch)}`;
 
-    const res = await fetch(url);
+    const res = await apiFetch(url);
     if (!res.ok) throw new Error('No se pudieron obtener las publicaciones.');
 
     const pagedResult = await res.json();
@@ -768,7 +808,6 @@ function renderPostCard(post) {
             <span>${escapeHtml(post.usuarioNombre)}</span>
           </div>
           <div style="display:flex; gap:0.75rem; align-items:center;">
-            <span><i class="fa-regular fa-eye"></i> ${post.visitas}</span>
             ${attachCount > 0 ? `<span class="post-attachments-count"><i class="fa-solid fa-paperclip"></i> ${attachCount}</span>` : ''}
             <span>${dateStr}</span>
           </div>
@@ -906,7 +945,7 @@ async function handleCreatePost(event) {
       formData.append('Archivos', file);
     });
 
-    const res = await fetch('/api/posts', {
+    const res = await apiFetch('/api/posts', {
       method: 'POST',
       body: formData
     });
@@ -1097,7 +1136,7 @@ async function handleInactivarModulo(id) {
 
 async function openDetailModal(postId) {
   try {
-    const res = await fetch(`/api/posts/${postId}`);
+    const res = await apiFetch(`/api/posts/${postId}`);
     if (!res.ok) return;
     const post = await res.json();
 
@@ -1129,7 +1168,6 @@ async function openDetailModal(postId) {
     document.getElementById('detailMeta').innerHTML = `
       <span><i class="fa-regular fa-user"></i> ${escapeHtml(post.usuarioNombre)}</span>
       <span><i class="fa-regular fa-calendar"></i> ${dateStr}</span>
-      <span><i class="fa-regular fa-eye"></i> ${post.visitas} visitas</span>
     `;
 
     const coverUrl = post.portadaUrl || (post.adjuntos && post.adjuntos.length > 0 ? post.adjuntos[0].archivoUrl : null);
@@ -1144,7 +1182,7 @@ async function openDetailModal(postId) {
 
     const attachContainer = document.getElementById('detailAttachments');
     if (post.adjuntos && post.adjuntos.length > 0) {
-      let galleryHtml = `<h4 style="color:white; font-size:1.1rem; margin-bottom:0.75rem;"><i class="fa-solid fa-paperclip"></i> Archivos y Documentos Adjuntos (${post.adjuntos.length})</h4><div class="attachments-grid">`;
+      let galleryHtml = `<h4 style="color:var(--text-main); font-size:1.1rem; margin-bottom:0.75rem;"><i class="fa-solid fa-paperclip"></i> Archivos y Documentos Adjuntos (${post.adjuntos.length})</h4><div class="attachments-grid">`;
       post.adjuntos.forEach(att => {
         const meta = getFileMeta(att.archivoNombreOriginal, att.mimeType);
         const sizeStr = formatBytes(att.tamanioBytes);
@@ -1442,25 +1480,38 @@ function openRbacModal() {
   }
   openModal('rbacModal');
   loadRbacUsers();
+  loadRbacRolesList();
   loadRbacMatrix();
 }
 
 function switchRbacSubTab(tab) {
   const tabUsers = document.getElementById('rbacTabUsers');
+  const tabRoles = document.getElementById('rbacTabRoles');
   const tabMatrix = document.getElementById('rbacTabMatrix');
+
   const btnUsers = document.getElementById('tabBtnUsersRole');
+  const btnRoles = document.getElementById('tabBtnRolesManage');
   const btnMatrix = document.getElementById('tabBtnRolesMatrix');
 
+  if (tabUsers) tabUsers.classList.add('view-hidden');
+  if (tabRoles) tabRoles.classList.add('view-hidden');
+  if (tabMatrix) tabMatrix.classList.add('view-hidden');
+
+  if (btnUsers) btnUsers.classList.remove('active-rbac-tab');
+  if (btnRoles) btnRoles.classList.remove('active-rbac-tab');
+  if (btnMatrix) btnMatrix.classList.remove('active-rbac-tab');
+
   if (tab === 'users') {
-    tabUsers.classList.remove('view-hidden');
-    tabMatrix.classList.add('view-hidden');
-    btnUsers.classList.add('active-rbac-tab');
-    btnMatrix.classList.remove('active-rbac-tab');
-  } else {
-    tabUsers.classList.add('view-hidden');
-    tabMatrix.classList.remove('view-hidden');
-    btnUsers.classList.remove('active-rbac-tab');
-    btnMatrix.classList.add('active-rbac-tab');
+    if (tabUsers) tabUsers.classList.remove('view-hidden');
+    if (btnUsers) btnUsers.classList.add('active-rbac-tab');
+  } else if (tab === 'roles') {
+    if (tabRoles) tabRoles.classList.remove('view-hidden');
+    if (btnRoles) btnRoles.classList.add('active-rbac-tab');
+    loadRbacRolesList();
+  } else if (tab === 'matrix') {
+    if (tabMatrix) tabMatrix.classList.remove('view-hidden');
+    if (btnMatrix) btnMatrix.classList.add('active-rbac-tab');
+    loadRbacMatrix();
   }
 }
 
@@ -1478,8 +1529,8 @@ async function loadRbacUsers() {
 
   try {
     const [resUsers, resRoles] = await Promise.all([
-      fetch('/api/roles/usuarios'),
-      fetch('/api/roles')
+      apiFetch('/api/roles/usuarios'),
+      apiFetch('/api/roles')
     ]);
 
     if (!resUsers.ok || !resRoles.ok) throw new Error('Error al cargar datos de usuarios o roles.');
@@ -1513,7 +1564,7 @@ function renderRbacUsersTable() {
   // Filtrado por búsqueda (Nombre, Correo o Rol)
   let filtered = rbacAllUsersCache;
   if (rbacUserSearchTerm) {
-    filtered = filtered.filter(u => 
+    filtered = filtered.filter(u =>
       (u.nombre && u.nombre.toLowerCase().includes(rbacUserSearchTerm)) ||
       (u.correo && u.correo.toLowerCase().includes(rbacUserSearchTerm)) ||
       (u.rolNombre && u.rolNombre.toLowerCase().includes(rbacUserSearchTerm))
@@ -1541,7 +1592,7 @@ function renderRbacUsersTable() {
 
     return `
       <tr>
-        <td style="font-weight:600; color:white;">${escapeHtml(u.nombre)}</td>
+        <td style="font-weight:600; color:var(--text-main);">${escapeHtml(u.nombre)}</td>
         <td style="color:var(--text-muted); font-size:0.85rem;">${escapeHtml(u.correo)}</td>
         <td><span class="badge badge-type" style="position:static;">${escapeHtml(u.rolNombre)}</span></td>
         <td style="text-align:right;">
@@ -1584,7 +1635,7 @@ function changeRbacUsersPage(newPage) {
 
 async function handleAssignUserRole(usuarioId, rolId) {
   try {
-    const res = await fetch('/api/roles/asignar-usuario', {
+    const res = await apiFetch('/api/roles/asignar-usuario', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ usuarioId: parseInt(usuarioId), rolId: parseInt(rolId) })
@@ -1618,8 +1669,8 @@ async function loadRbacMatrix() {
 
   try {
     const [resRoles, resPermisos] = await Promise.all([
-      fetch('/api/roles'),
-      fetch('/api/roles/permisos')
+      apiFetch('/api/roles'),
+      apiFetch('/api/roles/permisos')
     ]);
 
     if (!resRoles.ok || !resPermisos.ok) throw new Error('Error al cargar permisos.');
@@ -1629,6 +1680,7 @@ async function loadRbacMatrix() {
 
     container.innerHTML = roles.map(r => {
       const activePermIds = new Set((r.permisos || []).map(p => p.id));
+      const isSystemRole = (r.id === 1 || r.nombre === 'Administrador');
 
       const checkboxesHtml = permisos.map(p => {
         const isChecked = activePermIds.has(p.id);
@@ -1640,16 +1692,25 @@ async function loadRbacMatrix() {
         `;
       }).join('');
 
+      const deleteBtnHtml = isSystemRole ? '' : `
+        <button class="btn btn-secondary" onclick="handleDeleteRole(${r.id}, '${escapeHtml(r.nombre)}')" style="padding:0.4rem 0.8rem; font-size:0.8rem; color:var(--accent-rose); border-color:rgba(244,63,94,0.3);" title="Eliminar Rol">
+          <i class="fa-solid fa-trash"></i> Eliminar
+        </button>
+      `;
+
       return `
         <div class="role-card">
-          <div class="role-header">
+          <div class="role-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
             <div>
-              <strong style="font-size:1.1rem; color:white;">${escapeHtml(r.nombre)}</strong>
+              <strong style="font-size:1.1rem; color:var(--text-main);">${escapeHtml(r.nombre)}</strong>
               <p style="font-size:0.8rem; color:var(--text-muted); margin-top:2px;">${escapeHtml(r.descripcion || '')}</p>
             </div>
-            <button class="btn btn-secondary" onclick="handleSaveRolePermisos(${r.id})" style="padding:0.4rem 0.8rem; font-size:0.8rem;">
-              <i class="fa-solid fa-floppy-disk"></i> Guardar Permisos
-            </button>
+            <div style="display:flex; gap:0.5rem;">
+              <button class="btn btn-secondary" onclick="handleSaveRolePermisos(${r.id})" style="padding:0.4rem 0.8rem; font-size:0.8rem;">
+                <i class="fa-solid fa-floppy-disk"></i> Guardar Permisos
+              </button>
+              ${deleteBtnHtml}
+            </div>
           </div>
           <div class="perm-checkbox-group">
             ${checkboxesHtml}
@@ -1667,7 +1728,7 @@ async function handleSaveRolePermisos(rolId) {
   const permisosIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
 
   try {
-    const res = await fetch(`/api/roles/${rolId}/permisos`, {
+    const res = await apiFetch(`/api/roles/${rolId}/permisos`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ permisosIds })
@@ -1712,7 +1773,7 @@ async function handleCreateRole() {
   }
 
   try {
-    const res = await fetch('/api/roles', {
+    const res = await apiFetch('/api/roles', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nombre, descripcion, permisosIds: [] })
@@ -1722,6 +1783,7 @@ async function handleCreateRole() {
     toggleNewRoleForm();
     document.getElementById('newRoleNombre').value = '';
     document.getElementById('newRoleDesc').value = '';
+    loadRbacRolesList();
     loadRbacMatrix();
     loadRbacUsers();
 
@@ -1737,6 +1799,166 @@ async function handleCreateRole() {
       icon: 'error',
       title: 'Error al Crear Rol',
       text: err.message
+    });
+  }
+}
+
+async function loadRbacRolesList() {
+  const container = document.getElementById('rolesManagementList');
+  if (!container) return;
+
+  container.innerHTML = '<div style="text-align:center; padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando lista de roles...</div>';
+
+  try {
+    const res = await apiFetch('/api/roles');
+    if (!res.ok) throw new Error('Error al obtener la lista de roles.');
+
+    const roles = await res.json();
+    rbacAllRolesCache = roles;
+
+    if (!roles || roles.length === 0) {
+      container.innerHTML = '<div style="text-align:center; padding:2rem; color:var(--text-muted);">No hay roles registrados.</div>';
+      return;
+    }
+
+    container.innerHTML = `
+      <div style="display:flex; flex-direction:column; gap:1rem;">
+        ${roles.map(r => {
+      const isSystemRole = (r.id === 1 || r.nombre === 'Administrador');
+      const deleteBtnHtml = isSystemRole ? '' : `
+            <button class="btn btn-secondary" onclick="handleDeleteRole(${r.id}, '${escapeHtml(r.nombre)}')" style="padding:0.4rem 0.8rem; font-size:0.8rem; color:var(--accent-rose); border-color:rgba(244,63,94,0.3);" title="Eliminar Rol">
+              <i class="fa-solid fa-trash"></i> Eliminar
+            </button>
+          `;
+
+      return `
+            <div class="role-card" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; padding:1rem; background:var(--bg-input); border:1px solid var(--bg-card-border); border-radius:var(--radius-md);">
+              <div style="flex:1; min-width:200px;">
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                  <strong style="font-size:1.1rem; color:var(--text-main);">${escapeHtml(r.nombre)}</strong>
+                  ${isSystemRole ? '<span class="badge" style="background:rgba(99,102,241,0.2); color:#818cf8; font-size:0.7rem; padding:2px 8px; border-radius:12px;">Sistema</span>' : ''}
+                </div>
+                <p style="font-size:0.85rem; color:var(--text-muted); margin-top:4px; margin-bottom:0;">${escapeHtml(r.descripcion || 'Sin descripción')}</p>
+                <small style="font-size:0.75rem; color:var(--text-muted);">${r.permisos ? r.permisos.length : 0} permiso(s) configurado(s)</small>
+              </div>
+              <div style="display:flex; gap:0.5rem; align-items:center;">
+                <button class="btn btn-secondary" onclick="handleEditRoleDetails(${r.id}, '${escapeHtml(r.nombre)}', '${escapeHtml(r.descripcion || '')}')" style="padding:0.4rem 0.8rem; font-size:0.8rem;" title="Editar Nombre y Descripción">
+                  <i class="fa-solid fa-pen"></i> Editar
+                </button>
+                ${deleteBtnHtml}
+              </div>
+            </div>
+          `;
+    }).join('')}
+      </div>
+    `;
+  } catch (err) {
+    container.innerHTML = `<div style="color:var(--accent-rose); text-align:center;">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function handleEditRoleDetails(rolId, currentNombre, currentDesc) {
+  const { value: formValues } = await getPrixmaSwal().fire({
+    title: 'Editar Rol',
+    html: `
+      <div style="text-align:left; display:flex; flex-direction:column; gap:0.75rem;">
+        <div>
+          <label style="font-size:0.85rem; color:var(--text-muted); display:block; margin-bottom:4px;">Nombre del Rol</label>
+          <input id="swal-input-rol-nombre" class="swal2-input" style="width:100%; margin:0;" value="${escapeHtml(currentNombre)}">
+        </div>
+        <div>
+          <label style="font-size:0.85rem; color:var(--text-muted); display:block; margin-bottom:4px;">Descripción</label>
+          <input id="swal-input-rol-desc" class="swal2-input" style="width:100%; margin:0;" value="${escapeHtml(currentDesc)}">
+        </div>
+      </div>
+    `,
+    focusConfirm: false,
+    showCancelButton: true,
+    confirmButtonText: 'Guardar Cambios',
+    cancelButtonText: 'Cancelar',
+    preConfirm: () => {
+      const nombre = document.getElementById('swal-input-rol-nombre').value.trim();
+      const descripcion = document.getElementById('swal-input-rol-desc').value.trim();
+      if (!nombre) {
+        getPrixmaSwal().showValidationMessage('El nombre del rol es requerido');
+        return false;
+      }
+      return { nombre, descripcion };
+    }
+  });
+
+  if (!formValues) return;
+
+  try {
+    const res = await apiFetch(`/api/roles/${rolId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formValues)
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Error al actualizar el rol.');
+    }
+
+    getPrixmaSwal().fire({
+      icon: 'success',
+      title: 'Rol Actualizado',
+      text: 'Los datos del rol han sido modificados correctamente.',
+      timer: 2000,
+      showConfirmButton: false
+    });
+
+    await loadRbacRolesList();
+    await loadRbacMatrix();
+    await loadRbacUsers();
+  } catch (err) {
+    getPrixmaSwal().fire({
+      icon: 'error',
+      title: 'Error',
+      text: err.message
+    });
+  }
+}
+
+async function handleDeleteRole(rolId, rolNombre) {
+  const result = await getPrixmaSwal().fire({
+    title: '¿Eliminar Rol?',
+    text: `¿Estás seguro de que deseas eliminar el rol "${rolNombre}"? Esta acción no se puede deshacer.`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: 'var(--accent-rose, #f43f5e)',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Sí, eliminar',
+    cancelButtonText: 'Cancelar'
+  });
+
+  if (!result.isConfirmed) return;
+
+  try {
+    const res = await apiFetch(`/api/roles/${rolId}`, { method: 'DELETE' });
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      throw new Error(data.message || 'No se pudo eliminar el rol.');
+    }
+
+    getPrixmaSwal().fire({
+      icon: 'success',
+      title: 'Rol Eliminado',
+      text: data.message || 'El rol fue eliminado exitosamente.',
+      timer: 2000,
+      showConfirmButton: false
+    });
+
+    await loadRbacRolesList();
+    await loadRbacMatrix();
+    await loadRbacUsers();
+  } catch (err) {
+    getPrixmaSwal().fire({
+      icon: 'error',
+      title: 'Error al Eliminar Rol',
+      text: err.message || 'Error al eliminar el rol.'
     });
   }
 }
@@ -1757,7 +1979,7 @@ async function openEditModal(postId) {
   }
 
   try {
-    const res = await fetch(`/api/posts/${postId}`);
+    const res = await apiFetch(`/api/posts/${postId}`);
     if (!res.ok) throw new Error('No se pudo obtener la publicación.');
     const post = await res.json();
     currentEditingPost = post;
@@ -1848,7 +2070,7 @@ function updateEditPostSubmoduloSelect(cat, selectedModuloId = null) {
     return mCat === targetCat || mAreaCode === targetCat;
   });
 
-  let selectHtml = '<option value="">-- Selecciona un Módulo --</option>';
+  let selectHtml = '<option value="">Selecciona un Módulo</option>';
   filtered.forEach(m => {
     const isSel = selectedModuloId && m.id === selectedModuloId ? 'selected' : '';
     selectHtml += `<option value="${m.id}" ${isSel}>${escapeHtml(m.nombre)}</option>`;
@@ -1858,14 +2080,14 @@ function updateEditPostSubmoduloSelect(cat, selectedModuloId = null) {
 
 async function loadEditPostTipos(selectedTipoId = null) {
   try {
-    const res = await fetch('/api/modulos/tipos');
+    const res = await apiFetch('/api/modulos/tipos');
     if (!res.ok) return;
     const tipos = await res.json();
 
     const selectTipo = document.getElementById('editSelectTipo');
     if (!selectTipo) return;
 
-    let selectHtml = '<option value="">-- Tipo de Publicación --</option>';
+    let selectHtml = '<option value="">Tipo de Publicación</option>';
     tipos.forEach(t => {
       const isSel = selectedTipoId && t.id === selectedTipoId ? 'selected' : '';
       selectHtml += `<option value="${t.id}" ${isSel}>${escapeHtml(t.nombre)}</option>`;
@@ -1954,7 +2176,7 @@ async function handleSaveEditPost(event) {
   btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
 
   try {
-    const res = await fetch(`/api/posts/${postId}`, {
+    const res = await apiFetch(`/api/posts/${postId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updateDto)
@@ -1967,7 +2189,7 @@ async function handleSaveEditPost(event) {
       for (const file of selectedEditFiles) {
         const formData = new FormData();
         formData.append('file', file);
-        await fetch(`/api/posts/${postId}/adjuntos`, {
+        await apiFetch(`/api/posts/${postId}/adjuntos`, {
           method: 'POST',
           body: formData
         });
@@ -2020,7 +2242,7 @@ async function handleDeletePost(postId) {
   if (!result.isConfirmed) return;
 
   try {
-    const res = await fetch(`/api/posts/${postId}`, { method: 'DELETE' });
+    const res = await apiFetch(`/api/posts/${postId}`, { method: 'DELETE' });
     if (!res.ok) throw new Error('No se pudo inactivar la publicación.');
 
     getPrixmaSwal().fire({

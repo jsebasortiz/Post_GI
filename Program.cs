@@ -1,8 +1,12 @@
 using BlogApp.Data;
 using BlogApp.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using MySqlConnector;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,6 +40,7 @@ else
 }
 
 // Registro de servicios de la aplicación
+builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IActiveDirectoryService, ActiveDirectoryService>();
 builder.Services.AddScoped<IFileStorageService, AzureBlobStorageService>();
 builder.Services.AddScoped<IPostService, PostService>();
@@ -44,9 +49,52 @@ builder.Services.AddScoped<IAreaService, AreaService>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
 
+// Configuración de Autenticación JWT Bearer
+var jwtSecretKey = builder.Configuration["Jwt:SecretKey"] ?? "BlogApp_Prixma_Super_Secret_JWT_Signing_Key_2026_SecureKey!";
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "BlogAppAPI";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "BlogAppClient";
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtIssuer,
+        ValidAudience = jwtAudience,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey))
+    };
+});
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "BlogApp API", Version = "v1" });
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Description = "Ingresa el token JWT en el formato: Bearer {token}",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT"
+    });
+    c.AddSecurityRequirement(doc => new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecuritySchemeReference("Bearer"),
+            new List<string>()
+        }
+    });
+});
 
 var app = builder.Build();
 
@@ -66,12 +114,14 @@ if (app.Environment.IsDevelopment())
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
 Console.WriteLine("=================================================");
 Console.WriteLine("  Prixma .NET 10 corriendo en http://localhost:5000");
-Console.WriteLine("  Autenticación por Directorio Activo (LDAP) Lista");
+Console.WriteLine("  Autenticación JWT + Directorio Activo (LDAP)");
 Console.WriteLine("=================================================");
 
 app.Run();
+

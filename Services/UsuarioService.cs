@@ -11,7 +11,7 @@ public interface IUsuarioService
 {
     Task<List<UsuarioResponseDto>> GetUsuariosAsync();
     Task<UsuarioResponseDto?> RegisterAsync(CreateUsuarioDto dto);
-    Task<UsuarioResponseDto?> LoginAsync(LoginDto dto);
+    Task<LoginResponseDto?> LoginAsync(LoginDto dto);
     Task<Usuario?> GetUsuarioByIdAsync(ulong id);
 }
 
@@ -19,12 +19,14 @@ public class UsuarioService : IUsuarioService
 {
     private readonly BlogDbContext _context;
     private readonly IActiveDirectoryService _adService;
+    private readonly IJwtService _jwtService;
     private readonly ILogger<UsuarioService> _logger;
 
-    public UsuarioService(BlogDbContext context, IActiveDirectoryService adService, ILogger<UsuarioService> logger)
+    public UsuarioService(BlogDbContext context, IActiveDirectoryService adService, IJwtService jwtService, ILogger<UsuarioService> logger)
     {
         _context = context;
         _adService = adService;
+        _jwtService = jwtService;
         _logger = logger;
     }
 
@@ -69,7 +71,7 @@ public class UsuarioService : IUsuarioService
         return loaded == null ? null : MapToUsuarioDto(loaded);
     }
 
-    public async Task<UsuarioResponseDto?> LoginAsync(LoginDto dto)
+    public async Task<LoginResponseDto?> LoginAsync(LoginDto dto)
     {
         if (string.IsNullOrWhiteSpace(dto.Correo) || string.IsNullOrWhiteSpace(dto.Password))
         {
@@ -123,7 +125,14 @@ public class UsuarioService : IUsuarioService
             await _context.SaveChangesAsync();
         }
 
-        return MapToUsuarioDto(usuario!);
+        var usuarioDto = MapToUsuarioDto(usuario!);
+        var token = _jwtService.GenerateToken(usuarioDto);
+
+        return new LoginResponseDto
+        {
+            Token = token,
+            Usuario = usuarioDto
+        };
     }
 
     private static UsuarioResponseDto MapToUsuarioDto(Usuario u)

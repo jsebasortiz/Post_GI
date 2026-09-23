@@ -1,9 +1,11 @@
 using BlogApp.DTOs;
 using BlogApp.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BlogApp.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class UsuariosController : ControllerBase
@@ -22,6 +24,7 @@ public class UsuariosController : ControllerBase
         return Ok(usuarios);
     }
 
+    [AllowAnonymous]
     [HttpPost("registro")]
     public async Task<IActionResult> Register([FromBody] CreateUsuarioDto dto)
     {
@@ -41,15 +44,17 @@ public class UsuariosController : ControllerBase
         }
     }
 
+    [AllowAnonymous]
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
-        var user = await _usuarioService.LoginAsync(dto);
-        if (user == null)
+        var response = await _usuarioService.LoginAsync(dto);
+        if (response == null)
         {
             return Unauthorized(new { message = "Credenciales incorrectas o usuario no encontrado." });
         }
 
-        return Ok(user);
+        return Ok(response);
     }
 }
+

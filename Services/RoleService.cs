@@ -10,9 +10,11 @@ public interface IRoleService
     Task<List<RolResponseDto>> GetRolesAsync();
     Task<List<PermisoDto>> GetPermisosAsync();
     Task<RolResponseDto> CreateRolAsync(CreateRolDto dto);
+    Task<RolResponseDto?> UpdateRolAsync(byte rolId, UpdateRolDto dto);
     Task<RolResponseDto?> UpdateRolPermisosAsync(byte rolId, List<ushort> permisosIds);
     Task<bool> AssignRolToUsuarioAsync(ulong usuarioId, byte rolId);
     Task<List<UsuarioResponseDto>> GetUsuariosConRolesAsync();
+    Task<bool> DeleteRolAsync(byte rolId);
 }
 
 public class RoleService : IRoleService
@@ -78,6 +80,18 @@ public class RoleService : IRoleService
         return (await GetRolByIdAsync(rol.Id))!;
     }
 
+    public async Task<RolResponseDto?> UpdateRolAsync(byte rolId, UpdateRolDto dto)
+    {
+        var rol = await _context.Roles.FirstOrDefaultAsync(r => r.Id == rolId);
+        if (rol == null) return null;
+
+        rol.Nombre = dto.Nombre;
+        rol.Descripcion = dto.Descripcion;
+
+        await _context.SaveChangesAsync();
+        return await GetRolByIdAsync(rolId);
+    }
+
     public async Task<RolResponseDto?> UpdateRolPermisosAsync(byte rolId, List<ushort> permisosIds)
     {
         var rol = await _context.Roles.Include(r => r.RolPermisos).FirstOrDefaultAsync(r => r.Id == rolId);
@@ -137,6 +151,28 @@ public class RoleService : IRoleService
             Permisos = u.Rol?.RolPermisos?.Select(rp => rp.Permiso.Codigo).ToList() ?? new List<string>(),
             CreadoEn = u.CreadoEn
         }).ToList();
+    }
+
+    public async Task<bool> DeleteRolAsync(byte rolId)
+    {
+        if (rolId == 1)
+        {
+            throw new InvalidOperationException("No se puede eliminar el rol de Administrador principal del sistema.");
+        }
+
+        var tieneUsuariosAssigned = await _context.Usuarios.AnyAsync(u => u.RolId == rolId);
+        if (tieneUsuariosAssigned)
+        {
+            throw new InvalidOperationException("No se puede eliminar este rol porque se encuentra asignado a uno o más usuarios.");
+        }
+
+        var rol = await _context.Roles.Include(r => r.RolPermisos).FirstOrDefaultAsync(r => r.Id == rolId);
+        if (rol == null) return false;
+
+        _context.RolPermisos.RemoveRange(rol.RolPermisos);
+        _context.Roles.Remove(rol);
+        await _context.SaveChangesAsync();
+        return true;
     }
 
     private async Task<RolResponseDto?> GetRolByIdAsync(byte id)

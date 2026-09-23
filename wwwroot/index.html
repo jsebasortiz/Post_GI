@@ -65,7 +65,7 @@
       <div class="container nav-container">
         <a href="#/dashboard" class="brand" onclick="navigateTo('#/dashboard'); return false;">
           <img src="images/logo.png" alt="Prixma Logo" class="brand-logo-img">
-          <span>Prixma <small style="font-size:0.65rem; color:var(--accent-cyan); font-weight:normal;">AD
+          <span>Prixma <small style="font-size:0.65rem; color:var(--accent-cyan); font-weight:normal;">
               CentroAguas</small></span>
         </a>
 
@@ -84,7 +84,8 @@
           <button class="btn btn-primary" id="btnOpenCreatePost" onclick="openCreateModal()" title="Crear Publicación">
             <i class="fa-solid fa-pen-to-square"></i> <span class="btn-text">Crear Post</span>
           </button>
-          <button class="btn btn-secondary" id="btnToggleTheme" onclick="toggleTheme()" title="Cambiar Tema (Claro / Oscuro)">
+          <button class="btn btn-secondary" id="btnToggleTheme" onclick="toggleTheme()"
+            title="Cambiar Tema (Claro / Oscuro)">
             <i id="themeIcon" class="fa-solid fa-moon"></i> <span class="btn-text" id="themeText">Oscuro</span>
           </button>
 
@@ -197,8 +198,10 @@
             <div class="file-upload-zone" onclick="document.getElementById('fileInput').click()">
               <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
               <p>Arrastra archivos o haz clic para explorar en tu equipo</p>
-              <span style="font-size:0.8rem; color:var(--text-muted);">Formatos admitidos: Fotos (JPG, PNG, WEBP, GIF), PDF, Word, Excel, PowerPoint, ZIP</span>
-              <input type="file" id="fileInput" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.txt" style="display:none"
+              <span style="font-size:0.8rem; color:var(--text-muted);">Formatos admitidos: Fotos (JPG, PNG, WEBP, GIF),
+                PDF, Word, Excel, PowerPoint, ZIP</span>
+              <input type="file" id="fileInput" multiple
+                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.txt" style="display:none"
                 onchange="handleFileSelect(event)">
             </div>
             <div class="file-previews" id="filePreviews"></div>
@@ -261,7 +264,8 @@
         <form id="editModuleForm" onsubmit="handleUpdateModule(event)">
           <input type="hidden" id="editModuloId">
           <div class="form-group">
-            <label class="form-label" for="editModuloCategoriaPadre"><i class="fa-solid fa-sitemap"></i> Área / Categoría Principal</label>
+            <label class="form-label" for="editModuloCategoriaPadre"><i class="fa-solid fa-sitemap"></i> Área /
+              Categoría Principal</label>
             <select id="editModuloCategoriaPadre" class="form-control" required>
               <option value="apps">Apps (Aplicaciones)</option>
               <option value="infraestructura">Infraestructura</option>
@@ -273,7 +277,8 @@
           </div>
           <div class="form-group">
             <label class="form-label" for="editModuloDesc">Descripción</label>
-            <textarea id="editModuloDesc" rows="3" class="form-control" placeholder="Descripción temática del módulo..."></textarea>
+            <textarea id="editModuloDesc" rows="3" class="form-control"
+              placeholder="Descripción temática del módulo..."></textarea>
           </div>
           <div style="display:flex; justify-content:flex-end; gap:1rem;">
             <button type="button" class="btn btn-secondary" onclick="closeModal('editModuleModal')">Cancelar</button>
@@ -295,11 +300,13 @@
         <form id="createAreaForm" onsubmit="handleCreateArea(event)">
           <div class="form-group">
             <label class="form-label" for="areaNombre">Nombre del Área Corporativa (Categoría Padre)</label>
-            <input type="text" id="areaNombre" class="form-control" placeholder="Ej: Telecomunicaciones, Finanzas, Recursos Humanos..." required>
+            <input type="text" id="areaNombre" class="form-control"
+              placeholder="Ej: Telecomunicaciones, Finanzas, Recursos Humanos..." required>
           </div>
           <div class="form-group">
             <label class="form-label" for="areaDesc">Descripción (Opcional)</label>
-            <textarea id="areaDesc" rows="3" class="form-control" placeholder="Breve descripción del área corporativa..."></textarea>
+            <textarea id="areaDesc" rows="3" class="form-control"
+              placeholder="Breve descripción del área corporativa..."></textarea>
           </div>
           <div style="display:flex; justify-content:flex-end; gap:1rem;">
             <button type="button" class="btn btn-secondary" onclick="closeModal('areaModal')">Cancelar</button>
@@ -389,14 +396,17 @@
           <!-- Attachments Section for Edit -->
           <div class="form-group">
             <label class="form-label">Adjuntos de la Publicación</label>
-            <div class="file-upload-zone" onclick="document.getElementById('editFileInput').click()" style="margin-bottom: 1rem;">
+            <div class="file-upload-zone" onclick="document.getElementById('editFileInput').click()"
+              style="margin-bottom: 1rem;">
               <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
               <p>Haz clic para agregar más fotos o archivos a esta publicación</p>
-              <input type="file" id="editFileInput" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.txt" style="display:none"
+              <input type="file" id="editFileInput" multiple
+                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.txt" style="display:none"
                 onchange="handleEditFileSelect(event)">
             </div>
 
-            <div class="file-previews" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap:1rem;">
+            <div class="file-previews"
+              style="display:grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap:1rem;">
               <div id="editExistingAdjuntos" style="display:contents;"></div>
               <div id="editFilePreviews" style="display:contents;"></div>
             </div>
@@ -429,7 +439,8 @@
         </div>
       </div>
       <div class="modal-body">
-        <h1 id="detailTitle" style="font-family:var(--font-heading); font-size:2rem; margin-bottom:1rem; color:white;">
+        <h1 id="detailTitle"
+          style="font-family:var(--font-heading); font-size:2rem; margin-bottom:1rem; color:var(--text-main);">
         </h1>
         <div id="detailMeta"
           style="color:var(--text-muted); font-size:0.88rem; margin-bottom:1.5rem; display:flex; gap:1.5rem;"></div>
@@ -437,7 +448,8 @@
         <div id="detailCoverContainer"></div>
 
         <div id="detailContent"
-          style="white-space: pre-wrap; font-size:1.05rem; line-height:1.8; color:#e2e8f0; margin-bottom:2rem;"></div>
+          style="white-space: pre-wrap; font-size:1.05rem; line-height:1.8; color:var(--text-main); margin-bottom:2rem;">
+        </div>
 
         <div class="attachments-gallery" id="detailAttachments"></div>
       </div>
@@ -459,6 +471,9 @@
           <button class="btn btn-secondary active-rbac-tab" id="tabBtnUsersRole" onclick="switchRbacSubTab('users')">
             <i class="fa-solid fa-users"></i> Asignación de Usuarios
           </button>
+          <button class="btn btn-secondary" id="tabBtnRolesManage" onclick="switchRbacSubTab('roles')">
+            <i class="fa-solid fa-user-gear"></i> Gestión de Roles
+          </button>
           <button class="btn btn-secondary" id="tabBtnRolesMatrix" onclick="switchRbacSubTab('matrix')">
             <i class="fa-solid fa-key"></i> Matriz de Permisos
           </button>
@@ -469,7 +484,8 @@
           <div
             style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem;">
             <div>
-              <h3 style="font-size:1.1rem; color:white; margin-bottom:0.25rem;">Asignar Roles a Usuarios de Directorio
+              <h3 style="font-size:1.1rem; color:var(--text-main); margin-bottom:0.25rem;">Asignar Roles a Usuarios de
+                Directorio
                 Activo</h3>
               <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">Cambia los permisos de los usuarios
                 autenticados seleccionando el rol correspondiente.</p>
@@ -505,18 +521,23 @@
           </div>
         </div>
 
-        <!-- Tab 2: Roles & Permission Matrix -->
-        <div id="rbacTabMatrix" class="view-hidden">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-            <h3 style="font-size:1.1rem; color:white;">Configurar Permisos por Rol</h3>
+        <!-- Tab 2: Role Management (Crear, Renombrar, Eliminar) -->
+        <div id="rbacTabRoles" class="view-hidden">
+          <div
+            style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem;">
+            <div>
+              <h3 style="font-size:1.1rem; color:var(--text-main); margin-bottom:0.25rem;">Gestión de Roles</h3>
+              <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">Modifica el nombre, la descripción o
+                elimina roles de forma directa.</p>
+            </div>
             <button class="btn btn-secondary" onclick="toggleNewRoleForm()"><i class="fa-solid fa-plus"></i> Nuevo
               Rol</button>
           </div>
 
           <!-- New Role Form -->
           <div id="newRoleForm"
-            style="display:none; background:var(--bg-dark); padding:1rem; border-radius:var(--radius-md); margin-bottom:1.5rem; border:1px solid var(--bg-card-border);">
-            <h4 style="color:white; margin-bottom:0.75rem;">Crear Nuevo Rol</h4>
+            style="display:none; background:var(--bg-input); padding:1rem; border-radius:var(--radius-md); margin-bottom:1.5rem; border:1px solid var(--bg-card-border);">
+            <h4 style="color:var(--text-main); margin-bottom:0.75rem;">Crear Nuevo Rol</h4>
             <div class="form-row">
               <div class="form-group">
                 <input type="text" id="newRoleNombre" class="form-control"
@@ -527,6 +548,16 @@
               </div>
             </div>
             <button type="button" class="btn btn-primary" onclick="handleCreateRole()">Guardar Rol</button>
+          </div>
+
+          <!-- Roles Management List -->
+          <div id="rolesManagementList"></div>
+        </div>
+
+        <!-- Tab 3: Permission Matrix -->
+        <div id="rbacTabMatrix" class="view-hidden">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+            <h3 style="font-size:1.1rem; color:var(--text-main);">Configurar Permisos por Rol</h3>
           </div>
 
           <div id="rolesMatrixContainer"></div>

@@ -214,7 +214,6 @@ public static class DbInitializer
                         Resumen = "Primer artículo demostrativo creado automáticamente con soporte para archivos adjuntos e imágenes de portada.",
                         Contenido = "Este es un blog completo desarrollado con ASP.NET Core en .NET 10. Permite crear publicaciones por módulo, categorizarlas por tipo de post, subir múltiples fotos o adjuntos y gestionar imágenes de portada.",
                         Estado = "publicado",
-                        Visitas = 12,
                         CreadoEn = DateTime.UtcNow,
                         ActualizadoEn = DateTime.UtcNow
                     };

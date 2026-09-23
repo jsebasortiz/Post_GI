@@ -57,3 +57,10 @@ public class UsuarioResponseDto
     public List<string> Permisos { get; set; } = new();
     public DateTime CreadoEn { get; set; }
 }
+
+public class LoginResponseDto
+{
+    public string Token { get; set; } = string.Empty;
+    public UsuarioResponseDto Usuario { get; set; } = new();
+}
+
