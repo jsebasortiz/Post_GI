@@ -29,6 +29,7 @@ public class RoleService : IRoleService
     public async Task<List<RolResponseDto>> GetRolesAsync()
     {
         var roles = await _context.Roles
+            .Where(r => r.EstadoId == 1)
             .Include(r => r.RolPermisos)
             .ThenInclude(rp => rp.Permiso)
             .OrderBy(r => r.Id)
@@ -58,6 +59,7 @@ public class RoleService : IRoleService
         {
             Nombre = dto.Nombre,
             Descripcion = dto.Descripcion,
+            EstadoId = 1,
             CreadoEn = DateTime.UtcNow
         };
 
@@ -166,11 +168,10 @@ public class RoleService : IRoleService
             throw new InvalidOperationException("No se puede eliminar este rol porque se encuentra asignado a uno o más usuarios.");
         }
 
-        var rol = await _context.Roles.Include(r => r.RolPermisos).FirstOrDefaultAsync(r => r.Id == rolId);
+        var rol = await _context.Roles.FirstOrDefaultAsync(r => r.Id == rolId);
         if (rol == null) return false;
 
-        _context.RolPermisos.RemoveRange(rol.RolPermisos);
-        _context.Roles.Remove(rol);
+        rol.EstadoId = 2; // Borrado lógico / Inactivado
         await _context.SaveChangesAsync();
         return true;
     }

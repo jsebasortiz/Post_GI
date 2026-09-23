@@ -29,7 +29,7 @@ public class Area
     public byte EstadoId { get; set; } = 1;
 
     [ForeignKey("EstadoId")]
-    public PostEstado? Estado { get; set; }
+    public Estado? Estado { get; set; }
 
     [Column("creado_en")]
     public DateTime CreadoEn { get; set; } = DateTime.UtcNow;

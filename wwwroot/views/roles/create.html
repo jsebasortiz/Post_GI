@@ -1,0 +1,31 @@
+<!-- VISTA CREAR ROL -->
+<div id="viewRoleCreate" class="app-view view-hidden">
+  <div style="margin-bottom: 1.5rem;">
+    <a href="#/rbac" class="btn btn-secondary" onclick="navigateTo('#/rbac'); return false;">
+      <i class="fa-solid fa-arrow-left"></i> Volver a Roles y Permisos
+    </a>
+  </div>
+  <div class="modal-card" style="max-width: 700px; margin: 0 auto; box-shadow: var(--shadow-md);">
+    <div class="modal-header">
+      <h2><i class="fa-solid fa-user-plus" style="color:var(--accent-purple);"></i> Crear Nuevo Rol</h2>
+    </div>
+    <div class="modal-body">
+      <form id="createRoleForm" onsubmit="handleSaveCreateRole(event)">
+        <div class="form-group">
+          <label class="form-label" for="newRoleNombre"><i class="fa-solid fa-user-gear"></i> Nombre del Rol</label>
+          <input type="text" id="newRoleNombre" class="form-control" placeholder="Ej: Supervisor, Editor Senior" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="newRoleDesc"><i class="fa-solid fa-align-left"></i> Descripción del Rol</label>
+          <textarea id="newRoleDesc" rows="3" class="form-control" placeholder="Descripción de las responsabilidades y alcance del rol..."></textarea>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:1.5rem;">
+          <a href="#/rbac" class="btn btn-secondary" onclick="navigateTo('#/rbac'); return false;">Cancelar</a>
+          <button type="submit" class="btn btn-primary" id="btnSaveRole">
+            <i class="fa-solid fa-floppy-disk"></i> Guardar Rol
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

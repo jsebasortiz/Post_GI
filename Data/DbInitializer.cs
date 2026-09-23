@@ -11,12 +11,62 @@ public static class DbInitializer
         {
             await context.Database.EnsureCreatedAsync();
 
-            // Seed PostEstado (1 = Activo, 2 = Inactivo)
-            if (!await context.PostEstados.AnyAsync())
+            // Seed Estado (1 = Activo, 2 = Inactivo)
+            try
             {
-                context.PostEstados.Add(new PostEstado { Id = 1, Nombre = "Activo", Descripcion = "Publicación activa visible en el portal" });
-                context.PostEstados.Add(new PostEstado { Id = 2, Nombre = "Inactivo", Descripcion = "Publicación eliminada lógicamente" });
-                await context.SaveChangesAsync();
+                var createEstadoSql = @"
+                CREATE TABLE IF NOT EXISTS `estado` (
+                  `id` tinyint unsigned NOT NULL AUTO_INCREMENT,
+                  `nombre` varchar(50) NOT NULL,
+                  `descripcion` varchar(255) DEFAULT NULL,
+                  PRIMARY KEY (`id`),
+                  UNIQUE KEY `idx_estado_nombre` (`nombre`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
+
+                await context.Database.ExecuteSqlRawAsync(createEstadoSql);
+
+                if (!await context.Estados.AnyAsync())
+                {
+                    context.Estados.Add(new Estado { Id = 1, Nombre = "Activo", Descripcion = "Entidad activa en el sistema" });
+                    context.Estados.Add(new Estado { Id = 2, Nombre = "Inactivo", Descripcion = "Entidad inactivada o eliminada lógicamente" });
+                    await context.SaveChangesAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[DbInitializer] Verificación de tabla estado: {ex.Message}");
+            }
+
+            // Asegurar columna estado_id en post_tipo y rol
+            try
+            {
+                var conn = context.Database.GetDbConnection();
+                if (conn.State != System.Data.ConnectionState.Open)
+                    await conn.OpenAsync();
+
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'post_tipo' AND COLUMN_NAME = 'estado_id'";
+                    var colCount = Convert.ToInt64(await cmd.ExecuteScalarAsync());
+                    if (colCount == 0)
+                    {
+                        await context.Database.ExecuteSqlRawAsync("ALTER TABLE `post_tipo` ADD COLUMN `estado_id` TINYINT UNSIGNED NOT NULL DEFAULT 1;");
+                    }
+                }
+
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'rol' AND COLUMN_NAME = 'estado_id'";
+                    var colCount = Convert.ToInt64(await cmd.ExecuteScalarAsync());
+                    if (colCount == 0)
+                    {
+                        await context.Database.ExecuteSqlRawAsync("ALTER TABLE `rol` ADD COLUMN `estado_id` TINYINT UNSIGNED NOT NULL DEFAULT 1;");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[DbInitializer] Verificación de columnas estado_id en post_tipo y rol: {ex.Message}");
             }
 
             // Asegurar columna estado_id en adjunto_post para borrado lógico de forma limpia

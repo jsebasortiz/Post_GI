@@ -13,6 +13,7 @@ public class BlogDbContext : DbContext
     public DbSet<PostTipo> PostTipos => Set<PostTipo>();
     public DbSet<PostEstado> PostEstados => Set<PostEstado>();
     public DbSet<ModuloEstado> ModuloEstados => Set<ModuloEstado>();
+    public DbSet<Estado> Estados => Set<Estado>();
     public DbSet<Modulo> Modulos => Set<Modulo>();
     public DbSet<Post> Posts => Set<Post>();
     public DbSet<AdjuntoPost> AdjuntosPost => Set<AdjuntoPost>();
@@ -24,6 +25,12 @@ public class BlogDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        // Tabla estado
+        modelBuilder.Entity<Estado>(entity =>
+        {
+            entity.HasIndex(e => e.Nombre).IsUnique();
+        });
 
         // Tabla rol
         modelBuilder.Entity<Rol>(entity =>
@@ -120,7 +127,7 @@ public class BlogDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(m => m.Estado)
-                .WithMany(me => me.Modulos)
+                .WithMany()
                 .HasForeignKey(m => m.EstadoId)
                 .OnDelete(DeleteBehavior.Restrict);
         });

@@ -19,6 +19,4 @@ public class ModuloEstado
     [MaxLength(255)]
     [Column("descripcion")]
     public string? Descripcion { get; set; }
-
-    public ICollection<Modulo> Modulos { get; set; } = new List<Modulo>();
 }

@@ -154,17 +154,9 @@ function renderAreaTabs() {
     if (area.code === 'apps') catClass = 'cat-apps';
     else if (area.code === 'infraestructura') catClass = 'cat-infra';
 
-    const actionBtn = (canManage && area.id > 0) ? `
-      <span class="area-tab-actions" onclick="event.stopPropagation();" style="margin-left:0.5rem; display:inline-flex; gap:0.25rem;">
-        <i class="fa-solid fa-pen" style="font-size:0.75rem; opacity:0.75; cursor:pointer;" onclick="event.stopPropagation(); openEditAreaModal(${area.id});" title="Editar Área"></i>
-        <i class="fa-solid fa-trash-can" style="font-size:0.75rem; opacity:0.75; color:var(--accent-rose); cursor:pointer;" onclick="event.stopPropagation(); handleInactivarArea(${area.id});" title="Inactivar Área (Borrado Lógico)"></i>
-      </span>
-    ` : '';
-
     html += `
       <button class="category-tab ${catClass} ${isActive ? 'active' : ''}" onclick="switchMainCategory('${escapeHtml(area.code)}', this)">
         <i class="${area.icon || 'fa-solid fa-sitemap'}"></i> ${escapeHtml(area.name)}
-        ${actionBtn}
       </button>
     `;
   });
@@ -201,6 +193,27 @@ function navigateTo(hash) {
   }
 }
 
+function switchAppView(viewId) {
+  const views = [
+    'viewDashboard', 'viewCreatePost', 'viewEditPost', 'viewPostDetail',
+    'viewAreaIndex', 'viewAreaCreate', 'viewAreaEdit',
+    'viewModuleIndex', 'viewModuleCreate', 'viewModuleEdit',
+    'viewPostTiposIndex', 'viewPostTiposCreate', 'viewPostTiposEdit',
+    'viewRbacIndex', 'viewRoleCreate', 'viewRoleEdit'
+  ];
+  views.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      if (id === viewId) {
+        el.classList.remove('view-hidden');
+      } else {
+        el.classList.add('view-hidden');
+      }
+    }
+  });
+  window.scrollTo(0, 0);
+}
+
 let isHandlingRoute = false;
 let isAppInitialized = false;
 
@@ -229,20 +242,125 @@ async function handleRoute() {
       return;
     }
 
-    // 3. Mostrar Vista Principal del Dashboard
+    // 3. Mostrar Vista Principal de la App
     await showMainApp();
 
-    // 4. Subrutas del Dashboard
-    if (cleanHash === '#/rbac') {
-      if (hasPermission('roles.manage')) {
-        openRbacModal();
+    // 4. Subrutas de Navegación SPA por Recurso
+    if (cleanHash === '#/rbac' || cleanHash === '#/roles') {
+      if (!hasPermission('roles.manage')) {
+        navigateTo('#/dashboard');
+        return;
+      }
+      switchAppView('viewRbacIndex');
+      loadRbacUsers();
+      loadRbacRolesList();
+      loadRbacMatrix();
+    } else if (cleanHash === '#/roles/create') {
+      if (!hasPermission('roles.manage')) {
+        navigateTo('#/dashboard');
+        return;
+      }
+      switchAppView('viewRoleCreate');
+      const f = document.getElementById('createRoleForm');
+      if (f) f.reset();
+    } else if (cleanHash.startsWith('#/roles/edit/')) {
+      if (!hasPermission('roles.manage')) {
+        navigateTo('#/dashboard');
+        return;
+      }
+      const roleId = cleanHash.replace('#/roles/edit/', '');
+      switchAppView('viewRoleEdit');
+      await loadRoleForEdit(roleId);
+    } else if (cleanHash === '#/areas') {
+      if (!hasPermission('modulos.create')) {
+        navigateTo('#/dashboard');
+        return;
+      }
+      switchAppView('viewAreaIndex');
+      loadAreasList();
+    } else if (cleanHash === '#/areas/create') {
+      if (!hasPermission('modulos.create')) {
+        navigateTo('#/dashboard');
+        return;
+      }
+      switchAppView('viewAreaCreate');
+      const f = document.getElementById('createAreaForm');
+      if (f) f.reset();
+    } else if (cleanHash.startsWith('#/areas/edit/')) {
+      if (!hasPermission('modulos.create')) {
+        navigateTo('#/dashboard');
+        return;
+      }
+      const areaId = cleanHash.replace('#/areas/edit/', '');
+      switchAppView('viewAreaEdit');
+      loadAreaForEdit(areaId);
+    } else if (cleanHash === '#/modulos') {
+      if (!hasPermission('modulos.create')) {
+        navigateTo('#/dashboard');
+        return;
+      }
+      switchAppView('viewModuleIndex');
+      populateModuloAreaSelect();
+      loadModulesList();
+    } else if (cleanHash === '#/modulos/create') {
+      if (!hasPermission('modulos.create')) {
+        navigateTo('#/dashboard');
+        return;
+      }
+      switchAppView('viewModuleCreate');
+      populateModuloAreaSelect();
+      const f = document.getElementById('createModuleForm');
+      if (f) f.reset();
+    } else if (cleanHash.startsWith('#/modulos/edit/')) {
+      if (!hasPermission('modulos.create')) {
+        navigateTo('#/dashboard');
+        return;
+      }
+      const modId = cleanHash.replace('#/modulos/edit/', '');
+      switchAppView('viewModuleEdit');
+      populateModuloAreaSelect();
+      await loadModuleForEdit(modId);
+    } else if (cleanHash === '#/tipos') {
+      switchAppView('viewPostTiposIndex');
+      loadPostTiposList();
+    } else if (cleanHash === '#/tipos/create') {
+      switchAppView('viewPostTiposCreate');
+      const f = document.getElementById('createPostTipoForm');
+      if (f) f.reset();
+    } else if (cleanHash.startsWith('#/tipos/edit/')) {
+      const tipoId = cleanHash.replace('#/tipos/edit/', '');
+      switchAppView('viewPostTiposEdit');
+      await loadPostTipoForEdit(tipoId);
+    } else if (cleanHash === '#/posts/create') {
+      if (!hasPermission('posts.create')) {
+        navigateTo('#/dashboard');
+        return;
+      }
+      switchAppView('viewCreatePost');
+      populateAreaSelects();
+      if (!allModulosCache || allModulosCache.length === 0) {
+        await loadModulos();
+      }
+      const catSelect = document.getElementById('selectCategoriaPadre');
+      updatePostSubmoduloSelect(catSelect ? catSelect.value : '');
+    } else if (cleanHash.startsWith('#/posts/edit/')) {
+      const postId = cleanHash.replace('#/posts/edit/', '');
+      if (postId) {
+        switchAppView('viewEditPost');
+        await openEditView(postId);
       } else {
-        window.location.hash = '#/dashboard';
+        navigateTo('#/dashboard');
+      }
+    } else if (cleanHash.startsWith('#/post/')) {
+      const postId = cleanHash.replace('#/post/', '');
+      if (postId) {
+        switchAppView('viewPostDetail');
+        await openDetailView(postId);
+      } else {
+        navigateTo('#/dashboard');
       }
     } else if (cleanHash.startsWith('#/area/')) {
-      const modalRbac = document.getElementById('rbacModal');
-      if (modalRbac) modalRbac.classList.remove('active');
-
+      switchAppView('viewDashboard');
       const areaCode = decodeURIComponent(cleanHash.replace('#/area/', ''));
       if (areaCode) {
         currentCategoriaPadre = areaCode;
@@ -252,9 +370,7 @@ async function handleRoute() {
         await loadPosts(1);
       }
     } else if (cleanHash.startsWith('#/modulo/')) {
-      const modalRbac = document.getElementById('rbacModal');
-      if (modalRbac) modalRbac.classList.remove('active');
-
+      switchAppView('viewDashboard');
       const modId = parseInt(cleanHash.replace('#/modulo/', ''));
       if (!isNaN(modId)) {
         currentModuloId = modId;
@@ -262,9 +378,7 @@ async function handleRoute() {
       }
     } else {
       // #/dashboard o ruta por defecto
-      const modalRbac = document.getElementById('rbacModal');
-      if (modalRbac) modalRbac.classList.remove('active');
-
+      switchAppView('viewDashboard');
       if (currentCategoriaPadre !== null || currentModuloId !== null) {
         currentCategoriaPadre = null;
         currentModuloId = null;
@@ -576,13 +690,7 @@ async function loadModulos() {
     const filterContainer = document.getElementById('modulesFilter');
     let filterHtml = `<button class="module-pill ${currentModuloId === null ? 'active' : ''}" onclick="filterByModule(null, this)">Todos los Módulos</button>`;
     modulosToRender.forEach(m => {
-      const actionBtn = canManage ? `
-        <span class="module-pill-actions" onclick="event.stopPropagation();" style="margin-left:0.4rem; display:inline-flex; gap:0.25rem;">
-          <i class="fa-solid fa-pen" style="font-size:0.75rem; opacity:0.85; cursor:pointer; padding:2px;" onclick="event.stopPropagation(); openEditModuleModal(${m.id});" title="Editar Módulo"></i>
-          <i class="fa-solid fa-trash-can" style="font-size:0.75rem; opacity:0.85; color:var(--accent-rose); cursor:pointer; padding:2px;" onclick="event.stopPropagation(); handleInactivarModulo(${m.id});" title="Inactivar Módulo"></i>
-        </span>
-      ` : '';
-      filterHtml += `<button class="module-pill ${currentModuloId === m.id ? 'active' : ''}" onclick="filterByModule(${m.id}, this)">${escapeHtml(m.nombre)}${actionBtn}</button>`;
+      filterHtml += `<button class="module-pill ${currentModuloId === m.id ? 'active' : ''}" onclick="filterByModule(${m.id}, this)">${escapeHtml(m.nombre)}</button>`;
     });
     filterContainer.innerHTML = filterHtml;
 
@@ -1134,10 +1242,13 @@ async function handleInactivarModulo(id) {
   }
 }
 
-async function openDetailModal(postId) {
+async function openDetailView(postId) {
   try {
     const res = await apiFetch(`/api/posts/${postId}`);
-    if (!res.ok) return;
+    if (!res.ok) {
+      navigateTo('#/dashboard');
+      return;
+    }
     const post = await res.json();
 
     const catBadge = post.moduloCategoriaPadre === 'infraestructura'
@@ -1151,15 +1262,14 @@ async function openDetailModal(postId) {
     `;
     document.getElementById('detailTitle').innerText = post.titulo;
 
-    // Render detail header actions (Editar / Eliminar)
     const headerActions = document.getElementById('detailHeaderActions');
     if (headerActions) {
       let actHtml = '';
       if (hasPermission('posts.edit')) {
-        actHtml += `<button class="btn btn-secondary" style="padding:0.35rem 0.75rem; font-size:0.85rem;" onclick="closeModal('detailModal'); openEditModal(${post.id});"><i class="fa-solid fa-pen-to-square"></i> Editar</button>`;
+        actHtml += `<button class="btn btn-secondary" style="padding:0.35rem 0.75rem; font-size:0.85rem;" onclick="navigateTo('#/posts/edit/${post.id}')"><i class="fa-solid fa-pen-to-square"></i> Editar</button>`;
       }
       if (hasPermission('posts.delete')) {
-        actHtml += `<button class="btn btn-danger" style="padding:0.35rem 0.75rem; font-size:0.85rem;" onclick="closeModal('detailModal'); handleDeletePost(${post.id});"><i class="fa-solid fa-trash-can"></i> Eliminar</button>`;
+        actHtml += `<button class="btn btn-danger" style="padding:0.35rem 0.75rem; font-size:0.85rem;" onclick="handleDeletePost(${post.id})"><i class="fa-solid fa-trash-can"></i> Eliminar</button>`;
       }
       headerActions.innerHTML = actHtml;
     }
@@ -1211,11 +1321,14 @@ async function openDetailModal(postId) {
     } else {
       attachContainer.innerHTML = '';
     }
-
-    openModal('detailModal');
   } catch (err) {
     console.error('Error al abrir detalle:', err);
+    navigateTo('#/dashboard');
   }
+}
+
+async function openDetailModal(postId) {
+  navigateTo('#/post/' + postId);
 }
 
 async function handleDeleteAttachment(adjuntoId, postId, isFromEdit = false) {
@@ -1252,9 +1365,9 @@ async function handleDeleteAttachment(adjuntoId, postId, isFromEdit = false) {
 
     if (postId) {
       if (isFromEdit) {
-        openEditModal(postId);
+        openEditView(postId);
       } else {
-        openDetailModal(postId);
+        openDetailView(postId);
       }
     }
     loadPosts(currentPage);
@@ -1267,28 +1380,342 @@ async function handleDeleteAttachment(adjuntoId, postId, isFromEdit = false) {
   }
 }
 
-async function openCreateModal() {
-  if (!currentUser) {
-    showAuthGate();
+function openCreateModal() { navigateTo('#/posts/create'); }
+function openModuleModal() { navigateTo('#/modulos'); }
+function openAreaModal() { navigateTo('#/areas'); }
+function openPostTiposModal() { navigateTo('#/tipos'); }
+function openRbacModal() { navigateTo('#/rbac'); }
+function openModal(id) { navigateTo('#/dashboard'); }
+function closeModal(id) { navigateTo('#/dashboard'); }
+
+function populateModuloAreaSelect() {
+  const select = document.getElementById('moduloCategoriaPadre');
+  if (!select) return;
+  const areas = getAllAreas();
+  select.innerHTML = areas.map(a => `<option value="${escapeHtml(a.code)}">${escapeHtml(a.name)}</option>`).join('');
+}
+
+function toggleNewAreaForm() {
+  const form = document.getElementById('newAreaForm');
+  if (form) form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+function toggleNewModuleForm() {
+  const form = document.getElementById('newModuleForm');
+  if (form) form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+let areasCurrentPage = 1;
+const areasPageSize = 5;
+
+async function loadAreasList() {
+  const container = document.getElementById('areasListContainer');
+  if (!container) return;
+
+  const areas = getAllAreas() || [];
+  const totalItems = areas.length;
+  const totalPages = Math.ceil(totalItems / areasPageSize) || 1;
+
+  if (areasCurrentPage > totalPages) areasCurrentPage = totalPages;
+  if (areasCurrentPage < 1) areasCurrentPage = 1;
+
+  if (totalItems === 0) {
+    container.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-muted);">No hay áreas registradas.</div>';
     return;
   }
-  populateAreaSelects();
-  if (!allModulosCache || allModulosCache.length === 0) {
-    await loadModulos();
+
+  const startIndex = (areasCurrentPage - 1) * areasPageSize;
+  const pageAreas = areas.slice(startIndex, startIndex + areasPageSize);
+
+  let html = `
+    <div class="table-responsive">
+      <table class="rbac-table" style="width:100%; border-collapse:collapse;">
+        <thead>
+          <tr style="text-align:left; border-bottom:1px solid var(--bg-card-border); color:var(--text-muted); font-size:0.85rem;">
+            <th style="padding:0.75rem;">Área Corporativa</th>
+            <th style="padding:0.75rem;">Código</th>
+            <th style="padding:0.75rem;">Descripción</th>
+            <th style="padding:0.75rem; text-align:right;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${pageAreas.map(a => `
+            <tr>
+              <td style="padding:0.75rem; font-weight:600; color:var(--text-main);">${escapeHtml(a.name)}</td>
+              <td style="padding:0.75rem;"><span class="badge" style="background:var(--bg-card-border); color:var(--text-muted); font-size:0.75rem; padding:2px 8px; border-radius:10px;">${escapeHtml(a.code)}</span></td>
+              <td style="padding:0.75rem; color:var(--text-muted); font-size:0.85rem;">${escapeHtml(a.desc || 'Sin descripción')}</td>
+              <td style="padding:0.75rem; text-align:right;">
+                <div style="display:flex; gap:0.5rem; justify-content:flex-end; align-items:center;">
+                  <button class="btn btn-secondary" onclick="navigateTo('#/areas/edit/' + ${a.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem;" title="Editar Área">
+                    <i class="fa-solid fa-pen"></i> Editar
+                  </button>
+                  <button class="btn btn-secondary" onclick="handleInactivarArea(${a.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem; color:var(--accent-rose); border-color:rgba(244,63,94,0.3);" title="Inactivar Área">
+                    <i class="fa-solid fa-trash-can"></i> Inactivar
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  if (totalItems > areasPageSize) {
+    const prevDisabled = areasCurrentPage === 1 ? 'disabled' : '';
+    const nextDisabled = areasCurrentPage === totalPages ? 'disabled' : '';
+    html += `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; padding-top:0.75rem; border-top:1px solid var(--bg-card-border); font-size:0.85rem; color:var(--text-muted);">
+        <span>Página ${areasCurrentPage} de ${totalPages} (${totalItems} áreas en total)</span>
+        <div style="display:flex; gap:0.5rem;">
+          <button class="btn btn-secondary" style="padding:0.3rem 0.75rem; font-size:0.8rem;" ${prevDisabled} onclick="changeAreasPage(-1)">
+            <i class="fa-solid fa-chevron-left"></i> Anterior
+          </button>
+          <button class="btn btn-secondary" style="padding:0.3rem 0.75rem; font-size:0.8rem;" ${nextDisabled} onclick="changeAreasPage(1)">
+            Siguiente <i class="fa-solid fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    `;
+  } else {
+    html += `<div style="margin-top:1rem; padding-top:0.75rem; border-top:1px solid var(--bg-card-border); font-size:0.85rem; color:var(--text-muted);">Mostrando ${totalItems} área(s)</div>`;
   }
-  const modalCatSelect = document.getElementById('selectCategoriaPadre');
-  const selectedCategory = modalCatSelect ? modalCatSelect.value : '';
-  updatePostSubmoduloSelect(selectedCategory);
-  openModal('createModal');
+
+  container.innerHTML = html;
 }
 
-function openModuleModal() {
-  populateAreaSelects();
-  openModal('moduleModal');
+function changeAreasPage(delta) {
+  areasCurrentPage += delta;
+  loadAreasList();
 }
 
-function openAreaModal() {
-  openModal('areaModal');
+let modulesCurrentPage = 1;
+const modulesPageSize = 5;
+
+async function loadModulesList() {
+  const container = document.getElementById('modulesListContainer');
+  if (!container) return;
+
+  container.innerHTML = '<div style="text-align:center; padding:1.5rem;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando módulos...</div>';
+
+  try {
+    const res = await apiFetch('/api/modulos?soloActivos=true');
+    if (!res.ok) throw new Error('Error al obtener los módulos.');
+
+    const modulos = await res.json();
+    if (!modulos || modulos.length === 0) {
+      container.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-muted);">No hay módulos registrados.</div>';
+      return;
+    }
+
+    const totalItems = modulos.length;
+    const totalPages = Math.ceil(totalItems / modulesPageSize) || 1;
+
+    if (modulesCurrentPage > totalPages) modulesCurrentPage = totalPages;
+    if (modulesCurrentPage < 1) modulesCurrentPage = 1;
+
+    const startIndex = (modulesCurrentPage - 1) * modulesPageSize;
+    const pageModules = modulos.slice(startIndex, startIndex + modulesPageSize);
+
+    let html = `
+      <div class="table-responsive">
+        <table class="rbac-table" style="width:100%; border-collapse:collapse;">
+          <thead>
+            <tr style="text-align:left; border-bottom:1px solid var(--bg-card-border); color:var(--text-muted); font-size:0.85rem;">
+              <th style="padding:0.75rem;">Nombre del Módulo</th>
+              <th style="padding:0.75rem;">Área Principal</th>
+              <th style="padding:0.75rem;">Descripción</th>
+              <th style="padding:0.75rem; text-align:right;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${pageModules.map(m => `
+              <tr>
+                <td style="padding:0.75rem; font-weight:600; color:var(--text-main);">${escapeHtml(m.nombre)}</td>
+                <td style="padding:0.75rem;"><span class="badge" style="background:var(--bg-card-border); color:var(--accent-cyan); font-size:0.75rem; padding:2px 8px; border-radius:10px;">${escapeHtml(m.area ? m.area.nombre : 'General')}</span></td>
+                <td style="padding:0.75rem; color:var(--text-muted); font-size:0.85rem;">${escapeHtml(m.descripcion || 'Sin descripción')}</td>
+                <td style="padding:0.75rem; text-align:right;">
+                  <div style="display:flex; gap:0.5rem; justify-content:flex-end; align-items:center;">
+                    <button class="btn btn-secondary" onclick="navigateTo('#/modulos/edit/' + ${m.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem;" title="Editar Módulo">
+                      <i class="fa-solid fa-pen"></i> Editar
+                    </button>
+                    <button class="btn btn-secondary" onclick="handleInactivarModulo(${m.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem; color:var(--accent-rose); border-color:rgba(244,63,94,0.3);" title="Inactivar Módulo">
+                      <i class="fa-solid fa-trash-can"></i> Inactivar
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    if (totalItems > modulesPageSize) {
+      const prevDisabled = modulesCurrentPage === 1 ? 'disabled' : '';
+      const nextDisabled = modulesCurrentPage === totalPages ? 'disabled' : '';
+      html += `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; padding-top:0.75rem; border-top:1px solid var(--bg-card-border); font-size:0.85rem; color:var(--text-muted);">
+          <span>Página ${modulesCurrentPage} de ${totalPages} (${totalItems} módulos en total)</span>
+          <div style="display:flex; gap:0.5rem;">
+            <button class="btn btn-secondary" style="padding:0.3rem 0.75rem; font-size:0.8rem;" ${prevDisabled} onclick="changeModulesPage(-1)">
+              <i class="fa-solid fa-chevron-left"></i> Anterior
+            </button>
+            <button class="btn btn-secondary" style="padding:0.3rem 0.75rem; font-size:0.8rem;" ${nextDisabled} onclick="changeModulesPage(1)">
+              Siguiente <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+      `;
+    } else {
+      html += `<div style="margin-top:1rem; padding-top:0.75rem; border-top:1px solid var(--bg-card-border); font-size:0.85rem; color:var(--text-muted);">Mostrando ${totalItems} módulo(s)</div>`;
+    }
+
+    container.innerHTML = html;
+  } catch (err) {
+    container.innerHTML = `<div style="color:var(--accent-rose); text-align:center;">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function changeModulesPage(delta) {
+  modulesCurrentPage += delta;
+  loadModulesList();
+}
+
+async function handleEditAreaInline(id, currentName, currentDesc) {
+  const { value: formValues } = await getPrixmaSwal().fire({
+    title: 'Editar Área Corporativa',
+    html: `
+      <div style="text-align:left; display:flex; flex-direction:column; gap:0.75rem;">
+        <div>
+          <label style="font-size:0.85rem; color:var(--text-muted); display:block; margin-bottom:4px;">Nombre del Área</label>
+          <input id="swal-input-area-nombre" class="swal2-input" style="width:100%; margin:0;" value="${escapeHtml(currentName)}">
+        </div>
+        <div>
+          <label style="font-size:0.85rem; color:var(--text-muted); display:block; margin-bottom:4px;">Descripción</label>
+          <input id="swal-input-area-desc" class="swal2-input" style="width:100%; margin:0;" value="${escapeHtml(currentDesc)}">
+        </div>
+      </div>
+    `,
+    focusConfirm: false,
+    showCancelButton: true,
+    confirmButtonText: 'Guardar Cambios',
+    cancelButtonText: 'Cancelar',
+    preConfirm: () => {
+      const nombre = document.getElementById('swal-input-area-nombre').value.trim();
+      const descripcion = document.getElementById('swal-input-area-desc').value.trim();
+      if (!nombre) {
+        getPrixmaSwal().showValidationMessage('El nombre es requerido');
+        return false;
+      }
+      return { nombre, descripcion };
+    }
+  });
+
+  if (!formValues) return;
+
+  try {
+    const res = await apiFetch(`/api/areas/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formValues)
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'Error al actualizar el área.');
+    }
+
+    await loadAreas();
+    loadAreasList();
+
+    getPrixmaSwal().fire({
+      icon: 'success',
+      title: 'Área Actualizada',
+      text: 'Los cambios fueron guardados correctamente.',
+      timer: 1800,
+      showConfirmButton: false
+    });
+  } catch (err) {
+    getPrixmaSwal().fire({
+      icon: 'error',
+      title: 'Error',
+      text: err.message
+    });
+  }
+}
+
+async function handleEditModuloInline(id, currentName, currentCat, currentDesc) {
+  const areas = getAllAreas();
+  const areaOptionsHtml = areas.map(a => `<option value="${escapeHtml(a.code)}" ${a.code === currentCat ? 'selected' : ''}>${escapeHtml(a.name)}</option>`).join('');
+
+  const { value: formValues } = await getPrixmaSwal().fire({
+    title: 'Editar Módulo Temático',
+    html: `
+      <div style="text-align:left; display:flex; flex-direction:column; gap:0.75rem;">
+        <div>
+          <label style="font-size:0.85rem; color:var(--text-muted); display:block; margin-bottom:4px;">Área Principal</label>
+          <select id="swal-select-modulo-cat" class="swal2-input" style="width:100%; margin:0; height:42px; padding:0 0.75rem;">
+            ${areaOptionsHtml}
+          </select>
+        </div>
+        <div>
+          <label style="font-size:0.85rem; color:var(--text-muted); display:block; margin-bottom:4px;">Nombre del Módulo</label>
+          <input id="swal-input-modulo-nombre" class="swal2-input" style="width:100%; margin:0;" value="${escapeHtml(currentName)}">
+        </div>
+        <div>
+          <label style="font-size:0.85rem; color:var(--text-muted); display:block; margin-bottom:4px;">Descripción</label>
+          <input id="swal-input-modulo-desc" class="swal2-input" style="width:100%; margin:0;" value="${escapeHtml(currentDesc)}">
+        </div>
+      </div>
+    `,
+    focusConfirm: false,
+    showCancelButton: true,
+    confirmButtonText: 'Guardar Cambios',
+    cancelButtonText: 'Cancelar',
+    preConfirm: () => {
+      const categoriaPadre = document.getElementById('swal-select-modulo-cat').value;
+      const nombre = document.getElementById('swal-input-modulo-nombre').value.trim();
+      const descripcion = document.getElementById('swal-input-modulo-desc').value.trim();
+      if (!nombre) {
+        getPrixmaSwal().showValidationMessage('El nombre es requerido');
+        return false;
+      }
+      return { categoriaPadre, nombre, descripcion };
+    }
+  });
+
+  if (!formValues) return;
+
+  try {
+    const res = await apiFetch(`/api/modulos/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formValues)
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Error al actualizar el módulo.');
+    }
+
+    await loadModulos();
+    loadModulesList();
+
+    getPrixmaSwal().fire({
+      icon: 'success',
+      title: 'Módulo Actualizado',
+      text: 'El módulo fue actualizado correctamente.',
+      timer: 1800,
+      showConfirmButton: false
+    });
+  } catch (err) {
+    getPrixmaSwal().fire({
+      icon: 'error',
+      title: 'Error',
+      text: err.message
+    });
+  }
 }
 
 async function handleCreateArea(event) {
@@ -1315,10 +1742,10 @@ async function handleCreateArea(event) {
 
     const newArea = await res.json();
 
-    closeModal('areaModal');
     document.getElementById('createAreaForm').reset();
 
     await loadAreas();
+    loadAreasList();
 
     getPrixmaSwal().fire({
       icon: 'success',
@@ -1327,11 +1754,6 @@ async function handleCreateArea(event) {
       timer: 2000,
       showConfirmButton: false
     });
-
-    // Activar pestaña del área recién creada
-    const tabBtn = Array.from(document.querySelectorAll('#mainCategoriesTabs .category-tab'))
-      .find(btn => btn.getAttribute('onclick')?.includes(`'${newArea.codigo}'`));
-    switchMainCategory(newArea.codigo, tabBtn);
   } catch (err) {
     getPrixmaSwal().fire({
       icon: 'error',
@@ -1515,12 +1937,14 @@ function switchRbacSubTab(tab) {
   }
 }
 
-// Estado global para la paginación y búsqueda del módulo de RBAC Usuarios
+// Estado global para la paginación y búsqueda del módulo de RBAC Usuarios y Roles
 let rbacAllUsersCache = [];
 let rbacAllRolesCache = [];
 let rbacUserSearchTerm = '';
 let rbacUsersCurrentPage = 1;
 const rbacUsersPageSize = 6;
+let rbacRolesCurrentPage = 1;
+const rbacRolesPageSize = 5;
 
 async function loadRbacUsers() {
   const tbody = document.getElementById('usersRolesTableBody');
@@ -1804,10 +2228,10 @@ async function handleCreateRole() {
 }
 
 async function loadRbacRolesList() {
-  const container = document.getElementById('rolesManagementList');
-  if (!container) return;
+  const tbody = document.getElementById('rolesManagementTableBody');
+  if (!tbody) return;
 
-  container.innerHTML = '<div style="text-align:center; padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando lista de roles...</div>';
+  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:1.5rem;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando lista de roles...</td></tr>';
 
   try {
     const res = await apiFetch('/api/roles');
@@ -1815,46 +2239,90 @@ async function loadRbacRolesList() {
 
     const roles = await res.json();
     rbacAllRolesCache = roles;
+    rbacRolesCurrentPage = 1;
 
-    if (!roles || roles.length === 0) {
-      container.innerHTML = '<div style="text-align:center; padding:2rem; color:var(--text-muted);">No hay roles registrados.</div>';
-      return;
-    }
-
-    container.innerHTML = `
-      <div style="display:flex; flex-direction:column; gap:1rem;">
-        ${roles.map(r => {
-      const isSystemRole = (r.id === 1 || r.nombre === 'Administrador');
-      const deleteBtnHtml = isSystemRole ? '' : `
-            <button class="btn btn-secondary" onclick="handleDeleteRole(${r.id}, '${escapeHtml(r.nombre)}')" style="padding:0.4rem 0.8rem; font-size:0.8rem; color:var(--accent-rose); border-color:rgba(244,63,94,0.3);" title="Eliminar Rol">
-              <i class="fa-solid fa-trash"></i> Eliminar
-            </button>
-          `;
-
-      return `
-            <div class="role-card" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; padding:1rem; background:var(--bg-input); border:1px solid var(--bg-card-border); border-radius:var(--radius-md);">
-              <div style="flex:1; min-width:200px;">
-                <div style="display:flex; align-items:center; gap:0.5rem;">
-                  <strong style="font-size:1.1rem; color:var(--text-main);">${escapeHtml(r.nombre)}</strong>
-                  ${isSystemRole ? '<span class="badge" style="background:rgba(99,102,241,0.2); color:#818cf8; font-size:0.7rem; padding:2px 8px; border-radius:12px;">Sistema</span>' : ''}
-                </div>
-                <p style="font-size:0.85rem; color:var(--text-muted); margin-top:4px; margin-bottom:0;">${escapeHtml(r.descripcion || 'Sin descripción')}</p>
-                <small style="font-size:0.75rem; color:var(--text-muted);">${r.permisos ? r.permisos.length : 0} permiso(s) configurado(s)</small>
-              </div>
-              <div style="display:flex; gap:0.5rem; align-items:center;">
-                <button class="btn btn-secondary" onclick="handleEditRoleDetails(${r.id}, '${escapeHtml(r.nombre)}', '${escapeHtml(r.descripcion || '')}')" style="padding:0.4rem 0.8rem; font-size:0.8rem;" title="Editar Nombre y Descripción">
-                  <i class="fa-solid fa-pen"></i> Editar
-                </button>
-                ${deleteBtnHtml}
-              </div>
-            </div>
-          `;
-    }).join('')}
-      </div>
-    `;
+    renderRbacRolesTable();
   } catch (err) {
-    container.innerHTML = `<div style="color:var(--accent-rose); text-align:center;">${escapeHtml(err.message)}</div>`;
+    tbody.innerHTML = `<tr><td colspan="4" style="color:var(--accent-rose); text-align:center; padding:1.5rem;">${escapeHtml(err.message)}</td></tr>`;
   }
+}
+
+function renderRbacRolesTable() {
+  const tbody = document.getElementById('rolesManagementTableBody');
+  const paginationContainer = document.getElementById('rbacRolesPagination');
+  if (!tbody) return;
+
+  const roles = rbacAllRolesCache || [];
+  const totalItems = roles.length;
+  const totalPages = Math.ceil(totalItems / rbacRolesPageSize) || 1;
+
+  if (rbacRolesCurrentPage > totalPages) rbacRolesCurrentPage = totalPages;
+  if (rbacRolesCurrentPage < 1) rbacRolesCurrentPage = 1;
+
+  if (totalItems === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:1.5rem; color:var(--text-muted);">No hay roles registrados.</td></tr>';
+    if (paginationContainer) paginationContainer.innerHTML = '';
+    return;
+  }
+
+  const startIndex = (rbacRolesCurrentPage - 1) * rbacRolesPageSize;
+  const pageRoles = roles.slice(startIndex, startIndex + rbacRolesPageSize);
+
+  tbody.innerHTML = pageRoles.map(r => {
+    const isSystemRole = (r.id === 1 || r.nombre === 'Administrador');
+    const deleteBtnHtml = isSystemRole ? '' : `
+      <button class="btn btn-secondary" onclick="handleDeleteRole(${r.id}, '${escapeHtml(r.nombre)}')" style="padding:0.35rem 0.65rem; font-size:0.8rem; color:var(--accent-rose); border-color:rgba(244,63,94,0.3);" title="Eliminar Rol">
+        <i class="fa-solid fa-trash"></i> Eliminar
+      </button>
+    `;
+
+    return `
+      <tr>
+        <td style="padding:0.75rem; font-weight:600; color:var(--text-main);">
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            ${escapeHtml(r.nombre)}
+            ${isSystemRole ? '<span class="badge" style="background:rgba(99,102,241,0.2); color:#818cf8; font-size:0.7rem; padding:2px 8px; border-radius:12px;">Sistema</span>' : ''}
+          </div>
+        </td>
+        <td style="padding:0.75rem; color:var(--text-muted); font-size:0.85rem;">${escapeHtml(r.descripcion || 'Sin descripción')}</td>
+        <td style="padding:0.75rem;"><span class="badge badge-type" style="position:static;">${r.permisos ? r.permisos.length : 0} permiso(s)</span></td>
+        <td style="padding:0.75rem; text-align:right;">
+          <div style="display:flex; gap:0.5rem; justify-content:flex-end; align-items:center;">
+            <button class="btn btn-secondary" onclick="navigateTo('#/roles/edit/' + ${r.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem;" title="Editar Rol">
+              <i class="fa-solid fa-pen"></i> Editar
+            </button>
+            ${deleteBtnHtml}
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  if (paginationContainer) {
+    if (totalItems <= rbacRolesPageSize) {
+      paginationContainer.innerHTML = `<span style="font-size:0.8rem; color:var(--text-muted);">Mostrando ${totalItems} rol(es)</span>`;
+    } else {
+      const prevDisabled = rbacRolesCurrentPage === 1 ? 'disabled' : '';
+      const nextDisabled = rbacRolesCurrentPage === totalPages ? 'disabled' : '';
+
+      paginationContainer.innerHTML = `
+        <span style="font-size:0.8rem; color:var(--text-muted);">Página ${rbacRolesCurrentPage} de ${totalPages} (${totalItems} roles en total)</span>
+        <div style="display:flex; gap:0.5rem;">
+          <button class="btn btn-secondary" style="padding:0.3rem 0.75rem; font-size:0.8rem;" ${prevDisabled} onclick="changeRbacRolesPage(-1)">
+            <i class="fa-solid fa-chevron-left"></i> Anterior
+          </button>
+          <button class="btn btn-secondary" style="padding:0.3rem 0.75rem; font-size:0.8rem;" ${nextDisabled} onclick="changeRbacRolesPage(1)">
+            Siguiente <i class="fa-solid fa-chevron-right"></i>
+          </button>
+        </div>
+      `;
+    }
+  }
+}
+
+function changeRbacRolesPage(delta) {
+  rbacRolesCurrentPage += delta;
+  renderRbacRolesTable();
 }
 
 async function handleEditRoleDetails(rolId, currentNombre, currentDesc) {
@@ -1968,13 +2436,14 @@ async function handleDeleteRole(rolId, rolNombre) {
 let selectedEditFiles = [];
 let currentEditingPost = null;
 
-async function openEditModal(postId) {
+async function openEditView(postId) {
   if (!hasPermission('posts.edit')) {
     getPrixmaSwal().fire({
       icon: 'error',
       title: 'Acceso Denegado',
       text: 'No tienes permisos para editar esta publicación.'
     });
+    navigateTo('#/dashboard');
     return;
   }
 
@@ -2000,10 +2469,8 @@ async function openEditModal(postId) {
       updateEditPostSubmoduloSelect(catSelect.value, post.moduloId);
     }
 
-    // Cargar tipos de post
     await loadEditPostTipos(post.tipoId);
 
-    // Cargar adjuntos existentes con opción de inactivación/eliminación
     const existingContainer = document.getElementById('editExistingAdjuntos');
     if (existingContainer) {
       if (post.adjuntos && post.adjuntos.length > 0) {
@@ -2036,22 +2503,24 @@ async function openEditModal(postId) {
       }
     }
 
-    // Limpiar archivos nuevos en cola
     selectedEditFiles = [];
     renderEditFilePreviews();
 
-    // Mostrar u ocultar botón eliminar según permisos
     const btnDelete = document.getElementById('btnDeletePostInEdit');
     if (btnDelete) btnDelete.style.display = hasPermission('posts.delete') ? 'inline-flex' : 'none';
 
-    openModal('editModal');
   } catch (err) {
     getPrixmaSwal().fire({
       icon: 'error',
       title: 'Error de Lectura',
       text: err.message
     });
+    navigateTo('#/dashboard');
   }
+}
+
+async function openEditModal(postId) {
+  navigateTo('#/posts/edit/' + postId);
 }
 
 function onEditPostCategoriaChange(cat) {
@@ -2076,6 +2545,255 @@ function updateEditPostSubmoduloSelect(cat, selectedModuloId = null) {
     selectHtml += `<option value="${m.id}" ${isSel}>${escapeHtml(m.nombre)}</option>`;
   });
   selectModulo.innerHTML = selectHtml;
+}
+
+let postTiposCurrentPage = 1;
+const postTiposPageSize = 5;
+
+async function loadPostTiposList() {
+  const container = document.getElementById('postTiposListContainer');
+  if (!container) return;
+
+  container.innerHTML = '<div style="text-align:center; padding:1.5rem;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando tipos de publicación...</div>';
+
+  try {
+    const res = await apiFetch('/api/modulos/tipos');
+    if (!res.ok) throw new Error('Error al obtener los tipos de publicación.');
+
+    const tipos = await res.json();
+    if (!tipos || tipos.length === 0) {
+      container.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-muted);">No hay tipos de publicación registrados.</div>';
+      return;
+    }
+
+    const totalItems = tipos.length;
+    const totalPages = Math.ceil(totalItems / postTiposPageSize) || 1;
+
+    if (postTiposCurrentPage > totalPages) postTiposCurrentPage = totalPages;
+    if (postTiposCurrentPage < 1) postTiposCurrentPage = 1;
+
+    const startIndex = (postTiposCurrentPage - 1) * postTiposPageSize;
+    const pageTipos = tipos.slice(startIndex, startIndex + postTiposPageSize);
+
+    let html = `
+      <div class="table-responsive">
+        <table class="rbac-table" style="width:100%; border-collapse:collapse;">
+          <thead>
+            <tr style="text-align:left; border-bottom:1px solid var(--bg-card-border); color:var(--text-muted); font-size:0.85rem;">
+              <th style="padding:0.75rem;">Nombre del Tipo</th>
+              <th style="padding:0.75rem;">Descripción</th>
+              <th style="padding:0.75rem; text-align:right;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${pageTipos.map(t => `
+              <tr>
+                <td style="padding:0.75rem; font-weight:600; color:var(--text-main);">${escapeHtml(t.nombre)}</td>
+                <td style="padding:0.75rem; color:var(--text-muted); font-size:0.85rem;">${escapeHtml(t.descripcion || 'Sin descripción')}</td>
+                <td style="padding:0.75rem; text-align:right;">
+                  <div style="display:flex; gap:0.5rem; justify-content:flex-end; align-items:center;">
+                    <button class="btn btn-secondary" onclick="navigateTo('#/tipos/edit/' + ${t.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem;" title="Editar Tipo">
+                      <i class="fa-solid fa-pen"></i> Editar
+                    </button>
+                    <button class="btn btn-secondary" onclick="handleDeletePostTipo(${t.id}, '${escapeHtml(t.nombre)}')" style="padding:0.35rem 0.65rem; font-size:0.8rem; color:var(--accent-rose); border-color:rgba(244,63,94,0.3);" title="Eliminar Tipo">
+                      <i class="fa-solid fa-trash"></i> Eliminar
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    if (totalItems > postTiposPageSize) {
+      const prevDisabled = postTiposCurrentPage === 1 ? 'disabled' : '';
+      const nextDisabled = postTiposCurrentPage === totalPages ? 'disabled' : '';
+      html += `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; padding-top:0.75rem; border-top:1px solid var(--bg-card-border); font-size:0.85rem; color:var(--text-muted);">
+          <span>Página ${postTiposCurrentPage} de ${totalPages} (${totalItems} tipos en total)</span>
+          <div style="display:flex; gap:0.5rem;">
+            <button class="btn btn-secondary" style="padding:0.3rem 0.75rem; font-size:0.8rem;" ${prevDisabled} onclick="changePostTiposPage(-1)">
+              <i class="fa-solid fa-chevron-left"></i> Anterior
+            </button>
+            <button class="btn btn-secondary" style="padding:0.3rem 0.75rem; font-size:0.8rem;" ${nextDisabled} onclick="changePostTiposPage(1)">
+              Siguiente <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+      `;
+    } else {
+      html += `<div style="margin-top:1rem; padding-top:0.75rem; border-top:1px solid var(--bg-card-border); font-size:0.85rem; color:var(--text-muted);">Mostrando ${totalItems} tipo(s)</div>`;
+    }
+
+    container.innerHTML = html;
+  } catch (err) {
+    container.innerHTML = `<div style="color:var(--accent-rose); text-align:center;">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function changePostTiposPage(delta) {
+  postTiposCurrentPage += delta;
+  loadPostTiposList();
+}
+
+async function handleCreatePostTipo() {
+  const nombreInput = document.getElementById('newPostTipoNombre');
+  const descInput = document.getElementById('newPostTipoDesc');
+
+  const nombre = nombreInput ? nombreInput.value.trim() : '';
+  const descripcion = descInput ? descInput.value.trim() : '';
+
+  if (!nombre) {
+    getPrixmaSwal().fire({
+      icon: 'warning',
+      title: 'Campo Requerido',
+      text: 'Por favor ingresa un nombre para el nuevo tipo de publicación.'
+    });
+    return;
+  }
+
+  try {
+    const res = await apiFetch('/api/modulos/tipos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, descripcion })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Error al crear el tipo de publicación.');
+    }
+
+    if (nombreInput) nombreInput.value = '';
+    if (descInput) descInput.value = '';
+    toggleNewPostTipoForm();
+
+    await loadPostTiposList();
+    await loadPostTipos();
+    await loadEditPostTipos();
+
+    getPrixmaSwal().fire({
+      icon: 'success',
+      title: 'Tipo Creado',
+      text: `El tipo de publicación "${nombre}" ha sido guardado.`,
+      timer: 2000,
+      showConfirmButton: false
+    });
+  } catch (err) {
+    getPrixmaSwal().fire({
+      icon: 'error',
+      title: 'Error',
+      text: err.message
+    });
+  }
+}
+
+async function handleEditPostTipo(id, currentNombre, currentDesc) {
+  const { value: formValues } = await getPrixmaSwal().fire({
+    title: 'Editar Tipo de Publicación',
+    html: `
+      <div style="text-align:left; display:flex; flex-direction:column; gap:0.75rem;">
+        <div>
+          <label style="font-size:0.85rem; color:var(--text-muted); display:block; margin-bottom:4px;">Nombre</label>
+          <input id="swal-input-tipo-nombre" class="swal2-input" style="width:100%; margin:0;" value="${escapeHtml(currentNombre)}">
+        </div>
+        <div>
+          <label style="font-size:0.85rem; color:var(--text-muted); display:block; margin-bottom:4px;">Descripción</label>
+          <input id="swal-input-tipo-desc" class="swal2-input" style="width:100%; margin:0;" value="${escapeHtml(currentDesc)}">
+        </div>
+      </div>
+    `,
+    focusConfirm: false,
+    showCancelButton: true,
+    confirmButtonText: 'Guardar Cambios',
+    cancelButtonText: 'Cancelar',
+    preConfirm: () => {
+      const nombre = document.getElementById('swal-input-tipo-nombre').value.trim();
+      const descripcion = document.getElementById('swal-input-tipo-desc').value.trim();
+      if (!nombre) {
+        getPrixmaSwal().showValidationMessage('El nombre es requerido');
+        return false;
+      }
+      return { nombre, descripcion };
+    }
+  });
+
+  if (!formValues) return;
+
+  try {
+    const res = await apiFetch(`/api/modulos/tipos/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formValues)
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Error al actualizar el tipo de publicación.');
+    }
+
+    getPrixmaSwal().fire({
+      icon: 'success',
+      title: 'Tipo Actualizado',
+      text: 'Los datos del tipo de publicación se guardaron correctamente.',
+      timer: 2000,
+      showConfirmButton: false
+    });
+
+    await loadPostTiposList();
+    await loadPostTipos();
+    await loadEditPostTipos();
+  } catch (err) {
+    getPrixmaSwal().fire({
+      icon: 'error',
+      title: 'Error',
+      text: err.message
+    });
+  }
+}
+
+async function handleDeletePostTipo(id, nombre) {
+  const result = await getPrixmaSwal().fire({
+    title: '¿Eliminar Tipo?',
+    text: `¿Estás seguro de eliminar el tipo de publicación "${nombre}"?`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: 'var(--accent-rose, #f43f5e)',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Sí, eliminar',
+    cancelButtonText: 'Cancelar'
+  });
+
+  if (!result.isConfirmed) return;
+
+  try {
+    const res = await apiFetch(`/api/modulos/tipos/${id}`, { method: 'DELETE' });
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      throw new Error(data.message || 'No se pudo eliminar el tipo de publicación.');
+    }
+
+    getPrixmaSwal().fire({
+      icon: 'success',
+      title: 'Tipo Eliminado',
+      text: `El tipo "${nombre}" ha sido eliminado.`,
+      timer: 2000,
+      showConfirmButton: false
+    });
+
+    await loadPostTiposList();
+    await loadPostTipos();
+    await loadEditPostTipos();
+  } catch (err) {
+    getPrixmaSwal().fire({
+      icon: 'error',
+      title: 'Error al Eliminar',
+      text: err.message
+    });
+  }
 }
 
 async function loadEditPostTipos(selectedTipoId = null) {
@@ -2268,6 +2986,254 @@ function handleDeletePostFromModal() {
   if (postId) {
     closeModal('editModal');
     handleDeletePost(postId);
+  }
+}
+
+// --- MANIPULADORES DEDICADOS PARA VISTAS DE RECURSOS (Áreas, Módulos, Tipos, Roles) ---
+
+// 1. ÁREAS
+function loadAreaForEdit(id) {
+  const areas = getAllAreas();
+  const area = areas.find(a => a.id === parseInt(id));
+  if (area) {
+    document.getElementById('editAreaId').value = area.id;
+    document.getElementById('editAreaNombre').value = area.name || '';
+    document.getElementById('editAreaDesc').value = area.desc || '';
+  }
+}
+
+async function handleSaveEditArea(event) {
+  event.preventDefault();
+  const id = document.getElementById('editAreaId').value;
+  const nombre = document.getElementById('editAreaNombre').value.trim();
+  const descripcion = document.getElementById('editAreaDesc').value.trim();
+  if (!id || !nombre) return;
+
+  try {
+    const res = await apiFetch(`/api/areas/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, descripcion })
+    });
+    if (!res.ok) throw new Error('Error al actualizar el área.');
+    await loadAreas();
+    getPrixmaSwal().fire({ icon: 'success', title: 'Área Actualizada', text: 'Los cambios fueron guardados correctamente.', timer: 1800, showConfirmButton: false });
+    navigateTo('#/areas');
+  } catch (err) {
+    getPrixmaSwal().fire({ icon: 'error', title: 'Error', text: err.message });
+  }
+}
+
+async function handleDeleteAreaFromForm() {
+  const id = document.getElementById('editAreaId').value;
+  if (id) {
+    await handleInactivarArea(id);
+    navigateTo('#/areas');
+  }
+}
+
+// 2. MÓDULOS
+async function loadModuleForEdit(id) {
+  try {
+    const res = await apiFetch(`/api/modulos/${id}`);
+    if (res.ok) {
+      const mod = await res.json();
+      document.getElementById('editModuleId').value = mod.id;
+      document.getElementById('editModuloNombre').value = mod.nombre || '';
+      document.getElementById('editModuloDesc').value = mod.descripcion || '';
+      const catSelect = document.getElementById('editModuloCategoriaPadre');
+      if (catSelect) catSelect.value = mod.categoriaPadre || (mod.area ? mod.area.codigo : '');
+    }
+  } catch (e) {
+    console.error('Error cargando módulo para edición:', e);
+  }
+}
+
+async function handleCreateModule(event) {
+  event.preventDefault();
+  const categoriaPadre = document.getElementById('moduloCategoriaPadre').value;
+  const nombre = document.getElementById('moduloNombre').value.trim();
+  const descripcion = document.getElementById('moduloDesc').value.trim();
+  if (!nombre) return;
+
+  try {
+    const res = await apiFetch('/api/modulos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ categoriaPadre, nombre, descripcion })
+    });
+    if (!res.ok) throw new Error('Error al crear el módulo.');
+    await loadModulos();
+    getPrixmaSwal().fire({ icon: 'success', title: 'Módulo Creado', text: 'El módulo fue registrado correctamente.', timer: 1800, showConfirmButton: false });
+    navigateTo('#/modulos');
+  } catch (err) {
+    getPrixmaSwal().fire({ icon: 'error', title: 'Error', text: err.message });
+  }
+}
+
+async function handleSaveEditModule(event) {
+  event.preventDefault();
+  const id = document.getElementById('editModuleId').value;
+  const categoriaPadre = document.getElementById('editModuloCategoriaPadre').value;
+  const nombre = document.getElementById('editModuloNombre').value.trim();
+  const descripcion = document.getElementById('editModuloDesc').value.trim();
+
+  try {
+    const res = await apiFetch(`/api/modulos/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ categoriaPadre, nombre, descripcion })
+    });
+    if (!res.ok) throw new Error('Error al actualizar el módulo.');
+    await loadModulos();
+    getPrixmaSwal().fire({ icon: 'success', title: 'Módulo Actualizado', text: 'Los cambios fueron guardados correctamente.', timer: 1800, showConfirmButton: false });
+    navigateTo('#/modulos');
+  } catch (err) {
+    getPrixmaSwal().fire({ icon: 'error', title: 'Error', text: err.message });
+  }
+}
+
+async function handleDeleteModuleFromForm() {
+  const id = document.getElementById('editModuleId').value;
+  if (id) {
+    await handleInactivarModulo(id);
+    navigateTo('#/modulos');
+  }
+}
+
+// 3. TIPOS DE PUBLICACIÓN
+async function loadPostTipoForEdit(id) {
+  try {
+    const res = await apiFetch('/api/modulos/tipos');
+    if (res.ok) {
+      const tipos = await res.json();
+      const t = tipos.find(x => x.id === parseInt(id));
+      if (t) {
+        document.getElementById('editPostTipoId').value = t.id;
+        document.getElementById('editPostTipoNombre').value = t.nombre || '';
+        document.getElementById('editPostTipoDesc').value = t.descripcion || '';
+      }
+    }
+  } catch (e) {
+    console.error('Error cargando tipo para edición:', e);
+  }
+}
+
+async function handleSaveCreatePostTipo(event) {
+  event.preventDefault();
+  const nombre = document.getElementById('newPostTipoNombre').value.trim();
+  const descripcion = document.getElementById('newPostTipoDesc').value.trim();
+  if (!nombre) return;
+
+  try {
+    const res = await apiFetch('/api/modulos/tipos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, descripcion })
+    });
+    if (!res.ok) throw new Error('Error al crear el tipo de publicación.');
+    await loadPostTiposList();
+    getPrixmaSwal().fire({ icon: 'success', title: 'Tipo Creado', text: 'El tipo fue creado correctamente.', timer: 1800, showConfirmButton: false });
+    navigateTo('#/tipos');
+  } catch (err) {
+    getPrixmaSwal().fire({ icon: 'error', title: 'Error', text: err.message });
+  }
+}
+
+async function handleSaveEditPostTipo(event) {
+  event.preventDefault();
+  const id = document.getElementById('editPostTipoId').value;
+  const nombre = document.getElementById('editPostTipoNombre').value.trim();
+  const descripcion = document.getElementById('editPostTipoDesc').value.trim();
+
+  try {
+    const res = await apiFetch(`/api/modulos/tipos/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, descripcion })
+    });
+    if (!res.ok) throw new Error('Error al actualizar el tipo.');
+    await loadPostTiposList();
+    getPrixmaSwal().fire({ icon: 'success', title: 'Tipo Actualizado', text: 'Los cambios fueron guardados correctamente.', timer: 1800, showConfirmButton: false });
+    navigateTo('#/tipos');
+  } catch (err) {
+    getPrixmaSwal().fire({ icon: 'error', title: 'Error', text: err.message });
+  }
+}
+
+async function handleDeleteTipoFromForm() {
+  const id = document.getElementById('editPostTipoId').value;
+  const nombre = document.getElementById('editPostTipoNombre') ? document.getElementById('editPostTipoNombre').value : '';
+  if (id) {
+    await handleDeletePostTipo(id, nombre);
+    navigateTo('#/tipos');
+  }
+}
+
+// 4. ROLES Y PERMISOS
+async function loadRoleForEdit(id) {
+  try {
+    const res = await apiFetch('/api/roles');
+    if (res.ok) {
+      const roles = await res.json();
+      const r = roles.find(x => x.id === parseInt(id));
+      if (r) {
+        document.getElementById('editRoleId').value = r.id;
+        document.getElementById('editRoleNombre').value = r.nombre || '';
+        document.getElementById('editRoleDesc').value = r.descripcion || '';
+      }
+    }
+  } catch (e) {
+    console.error('Error cargando rol para edición:', e);
+  }
+}
+
+async function handleSaveCreateRole(event) {
+  event.preventDefault();
+  const nombre = document.getElementById('newRoleNombre').value.trim();
+  const descripcion = document.getElementById('newRoleDesc').value.trim();
+  if (!nombre) return;
+
+  try {
+    const res = await apiFetch('/api/roles', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, descripcion, permisosIds: [] })
+    });
+    if (!res.ok) throw new Error('Error al crear el rol.');
+    getPrixmaSwal().fire({ icon: 'success', title: 'Rol Creado', text: 'El rol ha sido registrado correctamente.', timer: 1800, showConfirmButton: false });
+    navigateTo('#/rbac');
+  } catch (err) {
+    getPrixmaSwal().fire({ icon: 'error', title: 'Error', text: err.message });
+  }
+}
+
+async function handleSaveEditRole(event) {
+  event.preventDefault();
+  const id = document.getElementById('editRoleId').value;
+  const nombre = document.getElementById('editRoleNombre').value.trim();
+  const descripcion = document.getElementById('editRoleDesc').value.trim();
+
+  try {
+    const res = await apiFetch(`/api/roles/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, descripcion })
+    });
+    if (!res.ok) throw new Error('Error al actualizar el rol.');
+    getPrixmaSwal().fire({ icon: 'success', title: 'Rol Actualizado', text: 'Los cambios fueron guardados correctamente.', timer: 1800, showConfirmButton: false });
+    navigateTo('#/rbac');
+  } catch (err) {
+    getPrixmaSwal().fire({ icon: 'error', title: 'Error', text: err.message });
+  }
+}
+
+async function handleDeleteRoleFromForm() {
+  const id = document.getElementById('editRoleId').value;
+  const nombre = document.getElementById('editRoleNombre') ? document.getElementById('editRoleNombre').value : '';
+  if (id) {
+    await handleDeleteRole(id, nombre);
+    navigateTo('#/rbac');
   }
 }
 

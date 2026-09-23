@@ -85,4 +85,30 @@ public class ModulosController : ControllerBase
         var tipo = await _moduloService.CreatePostTipoAsync(dto);
         return Ok(tipo);
     }
+
+    [HttpPut("tipos/{id:int}")]
+    public async Task<IActionResult> UpdatePostTipo(byte id, [FromBody] CreatePostTipoDto dto)
+    {
+        try
+        {
+            var tipo = await _moduloService.UpdatePostTipoAsync(id, dto);
+            return Ok(tipo);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpDelete("tipos/{id:int}")]
+    public async Task<IActionResult> InactivarPostTipo(byte id)
+    {
+        var success = await _moduloService.InactivarPostTipoAsync(id);
+        if (!success) return NotFound(new { message = "Tipo de publicación no encontrado." });
+        return Ok(new { message = "El tipo de publicación fue inactivado (borrado lógico)." });
+    }
 }

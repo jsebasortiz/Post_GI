@@ -13,8 +13,10 @@ public interface IModuloService
     Task<Modulo> CreateModuloAsync(CreateModuloDto dto);
     Task<Modulo> UpdateModuloAsync(ushort id, UpdateModuloDto dto);
     Task<bool> InactivarModuloAsync(ushort id);
-    Task<List<PostTipo>> GetPostTiposAsync();
+    Task<List<PostTipo>> GetPostTiposAsync(bool soloActivos = true);
     Task<PostTipo> CreatePostTipoAsync(CreatePostTipoDto dto);
+    Task<PostTipo> UpdatePostTipoAsync(byte id, CreatePostTipoDto dto);
+    Task<bool> InactivarPostTipoAsync(byte id);
 }
 
 public class ModuloService : IModuloService
@@ -105,9 +107,14 @@ public class ModuloService : IModuloService
         return true;
     }
 
-    public async Task<List<PostTipo>> GetPostTiposAsync()
+    public async Task<List<PostTipo>> GetPostTiposAsync(bool soloActivos = true)
     {
-        return await _context.PostTipos.OrderBy(pt => pt.Nombre).ToListAsync();
+        var query = _context.PostTipos.AsQueryable();
+        if (soloActivos)
+        {
+            query = query.Where(pt => pt.EstadoId == 1);
+        }
+        return await query.OrderBy(pt => pt.Nombre).ToListAsync();
     }
 
     public async Task<PostTipo> CreatePostTipoAsync(CreatePostTipoDto dto)
@@ -116,12 +123,39 @@ public class ModuloService : IModuloService
         {
             Nombre = dto.Nombre,
             Descripcion = dto.Descripcion,
+            EstadoId = 1,
             CreadoEn = DateTime.UtcNow
         };
 
         _context.PostTipos.Add(tipo);
         await _context.SaveChangesAsync();
         return tipo;
+    }
+
+    public async Task<PostTipo> UpdatePostTipoAsync(byte id, CreatePostTipoDto dto)
+    {
+        var tipo = await _context.PostTipos.FirstOrDefaultAsync(pt => pt.Id == id);
+        if (tipo == null)
+            throw new KeyNotFoundException("El tipo de publicación especificado no existe.");
+
+        if (string.IsNullOrWhiteSpace(dto.Nombre))
+            throw new ArgumentException("El nombre del tipo es requerido.");
+
+        tipo.Nombre = dto.Nombre.Trim();
+        tipo.Descripcion = string.IsNullOrWhiteSpace(dto.Descripcion) ? null : dto.Descripcion.Trim();
+
+        await _context.SaveChangesAsync();
+        return tipo;
+    }
+
+    public async Task<bool> InactivarPostTipoAsync(byte id)
+    {
+        var tipo = await _context.PostTipos.FirstOrDefaultAsync(pt => pt.Id == id);
+        if (tipo == null) return false;
+
+        tipo.EstadoId = 2; // Inactivado (borrado lógico)
+        await _context.SaveChangesAsync();
+        return true;
     }
 
     private static string Slugify(string phrase)

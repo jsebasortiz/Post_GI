@@ -1,0 +1,23 @@
+<!-- VISTA INDEX DE MÓDULOS -->
+<div id="viewModuleIndex" class="app-view view-hidden">
+  <div style="margin-bottom: 1.5rem;">
+    <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('#/dashboard'); return false;">
+      <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
+    </a>
+  </div>
+  <div class="modal-card" style="max-width: 900px; margin: 0 auto; box-shadow: var(--shadow-md);">
+    <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+      <div>
+        <h2><i class="fa-solid fa-folder-plus" style="color:var(--accent-cyan);"></i> Gestión de Módulos Temáticos</h2>
+        <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0.25rem;">Módulos organizados por áreas principales.</p>
+      </div>
+      <a href="#/modulos/create" class="btn btn-primary" onclick="navigateTo('#/modulos/create'); return false;">
+        <i class="fa-solid fa-plus"></i> Nuevo Módulo
+      </a>
+    </div>
+    <div class="modal-body">
+      <!-- Tabla de Módulos -->
+      <div id="modulesListContainer"></div>
+    </div>
+  </div>
+</div>

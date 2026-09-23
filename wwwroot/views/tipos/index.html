@@ -1,0 +1,23 @@
+<!-- VISTA INDEX DE TIPOS -->
+<div id="viewPostTiposIndex" class="app-view view-hidden">
+  <div style="margin-bottom: 1.5rem;">
+    <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('#/dashboard'); return false;">
+      <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
+    </a>
+  </div>
+  <div class="modal-card" style="max-width: 900px; margin: 0 auto; box-shadow: var(--shadow-md);">
+    <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+      <div>
+        <h2><i class="fa-solid fa-tags" style="color:var(--accent-emerald);"></i> Tipos de Publicación</h2>
+        <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0.25rem;">Tipos de contenido para artículos (Guía, Incidencia, Manual, etc.).</p>
+      </div>
+      <a href="#/tipos/create" class="btn btn-primary" onclick="navigateTo('#/tipos/create'); return false;">
+        <i class="fa-solid fa-plus"></i> Nuevo Tipo
+      </a>
+    </div>
+    <div class="modal-body">
+      <!-- Lista de Tipos -->
+      <div id="postTiposListContainer"></div>
+    </div>
+  </div>
+</div>

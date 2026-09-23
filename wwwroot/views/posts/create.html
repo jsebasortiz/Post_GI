@@ -1,0 +1,65 @@
+<!-- VISTA CREAR PUBLICACIÓN -->
+<div id="viewCreatePost" class="app-view view-hidden">
+  <div style="margin-bottom: 1.5rem;">
+    <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('#/dashboard'); return false;">
+      <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
+    </a>
+  </div>
+  <div class="modal-card" style="max-width: 800px; margin: 0 auto; box-shadow: var(--shadow-md);">
+    <div class="modal-header">
+      <h2><i class="fa-solid fa-pen-to-square" style="color:var(--primary);"></i> Nueva Publicación</h2>
+    </div>
+    <div class="modal-body">
+      <form id="createPostForm" onsubmit="handleCreatePost(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="selectCategoriaPadre"><i class="fa-solid fa-sitemap"></i> Área / Categoría Principal</label>
+            <select id="selectCategoriaPadre" onchange="onPostCategoriaChange(this.value)" required></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="selectModulo"><i class="fa-solid fa-folder"></i> Módulo Temático</label>
+            <select id="selectModulo" required></select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="selectTipo"><i class="fa-solid fa-tag"></i> Tipo de Publicación</label>
+          <select id="selectTipo" required></select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="postTitulo">Título de la Publicación</label>
+          <input type="text" id="postTitulo" class="form-control" placeholder="Ej: Guía de procedimientos y soporte corporativo" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="postResumen">Resumen o Introducción (Opcional)</label>
+          <textarea id="postResumen" rows="2" class="form-control" placeholder="Breve descripción del contenido..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="postContenido">Contenido Completo del Blog</label>
+          <textarea id="postContenido" rows="6" class="form-control" placeholder="Escribe el cuerpo principal del artículo..." required></textarea>
+        </div>
+
+        <!-- Attachments Upload -->
+        <div class="form-group">
+          <label class="form-label">Subir Adjuntos / Fotos / Documentos</label>
+          <div class="file-upload-zone" onclick="document.getElementById('fileInput').click()">
+            <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+            <p>Arrastra archivos o haz clic para explorar en tu equipo</p>
+            <span style="font-size:0.8rem; color:var(--text-muted);">Formatos admitidos: Fotos (JPG, PNG, WEBP, GIF), PDF, Word, Excel, PowerPoint, ZIP</span>
+            <input type="file" id="fileInput" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.txt" style="display:none" onchange="handleFileSelect(event)">
+          </div>
+          <div class="file-previews" id="filePreviews"></div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:1.5rem;">
+          <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('#/dashboard'); return false;">Cancelar</a>
+          <button type="submit" class="btn btn-primary" id="btnSubmitPost">
+            <i class="fa-solid fa-paper-plane"></i> Publicar Ahora
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
