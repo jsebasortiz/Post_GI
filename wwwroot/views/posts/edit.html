@@ -1,7 +1,7 @@
 <!-- VISTA EDITAR PUBLICACIÓN -->
 <div id="viewEditPost" class="app-view view-hidden">
   <div style="margin-bottom: 1.5rem;">
-    <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('#/dashboard'); return false;">
+    <a href="/dashboard" class="btn btn-secondary" onclick="navigateTo('/dashboard'); return false;">
       <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
     </a>
   </div>
@@ -60,10 +60,10 @@
 
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem;">
           <button type="button" class="btn btn-danger" id="btnDeletePostInEdit" onclick="handleDeletePostFromModal()">
-            <i class="fa-solid fa-trash-can"></i> Inactivar
+            <i class="fa-solid fa-trash-can"></i> Eliminar
           </button>
           <div style="display:flex; gap:1rem;">
-            <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('#/dashboard'); return false;">Cancelar</a>
+            <a href="/dashboard" class="btn btn-secondary" onclick="navigateTo('/dashboard'); return false;">Cancelar</a>
             <button type="submit" class="btn btn-primary" id="btnSubmitEditPost">
               <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
             </button>

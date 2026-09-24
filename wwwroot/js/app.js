@@ -69,7 +69,7 @@ function getPrixmaSwal() {
     return Swal.mixin({
       background: isDark ? '#1e293b' : '#ffffff',
       color: isDark ? '#f8fafc' : '#0f172a',
-      confirmButtonColor: '#4f46e5',
+      confirmButtonColor: '#2563eb',
       cancelButtonColor: '#e11d48',
       customClass: {
         popup: 'prixma-swal-popup',
@@ -1201,13 +1201,13 @@ async function handleInactivarModulo(id) {
   const nombre = modulo ? modulo.nombre : 'este módulo';
 
   const result = await getPrixmaSwal().fire({
-    title: '¿Inactivar módulo?',
-    text: `El módulo "${nombre}" cambiará a estado inactivo (borrado lógico) y dejará de mostrarse en los filtros.`,
+    title: '¿Eliminar módulo?',
+    text: `El módulo "${nombre}" se eliminará y dejará de mostrarse en los filtros.`,
     icon: 'warning',
     showCancelButton: true,
     confirmButtonColor: '#ef4444',
     cancelButtonColor: '#475569',
-    confirmButtonText: '<i class="fa-solid fa-trash-can"></i> Sí, inactivar',
+    confirmButtonText: '<i class="fa-solid fa-trash-can"></i> Sí, eliminar',
     cancelButtonText: 'Cancelar'
   });
 
@@ -1220,13 +1220,13 @@ async function handleInactivarModulo(id) {
 
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.message || 'No se pudo inactivar el módulo.');
+      throw new Error(errData.message || 'No se pudo eliminar el módulo.');
     }
 
     getPrixmaSwal().fire({
       icon: 'success',
-      title: 'Módulo Inactivado',
-      text: `El módulo "${nombre}" ha sido inactivado correctamente.`,
+      title: 'Módulo Eliminado',
+      text: `El módulo "${nombre}" ha sido eliminado correctamente.`,
       timer: 2000,
       showConfirmButton: false
     });
@@ -1236,7 +1236,7 @@ async function handleInactivarModulo(id) {
   } catch (err) {
     getPrixmaSwal().fire({
       icon: 'error',
-      title: 'Error al Inactivar Módulo',
+      title: 'Error al Eliminar Módulo',
       text: err.message
     });
   }
@@ -1449,8 +1449,8 @@ async function loadAreasList() {
                   <button class="btn btn-secondary" onclick="navigateTo('#/areas/edit/' + ${a.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem;" title="Editar Área">
                     <i class="fa-solid fa-pen"></i> Editar
                   </button>
-                  <button class="btn btn-secondary" onclick="handleInactivarArea(${a.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem; color:var(--accent-rose); border-color:rgba(244,63,94,0.3);" title="Inactivar Área">
-                    <i class="fa-solid fa-trash-can"></i> Inactivar
+                  <button class="btn btn-secondary" onclick="handleInactivarArea(${a.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem; color:var(--accent-rose); border-color:rgba(244,63,94,0.3);" title="Eliminar Área">
+                    <i class="fa-solid fa-trash-can"></i> Eliminar
                   </button>
                 </div>
               </td>
@@ -1539,8 +1539,8 @@ async function loadModulesList() {
                     <button class="btn btn-secondary" onclick="navigateTo('#/modulos/edit/' + ${m.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem;" title="Editar Módulo">
                       <i class="fa-solid fa-pen"></i> Editar
                     </button>
-                    <button class="btn btn-secondary" onclick="handleInactivarModulo(${m.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem; color:var(--accent-rose); border-color:rgba(244,63,94,0.3);" title="Inactivar Módulo">
-                      <i class="fa-solid fa-trash-can"></i> Inactivar
+                    <button class="btn btn-secondary" onclick="handleInactivarModulo(${m.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem; color:var(--accent-rose); border-color:rgba(244,63,94,0.3);" title="Eliminar Módulo">
+                      <i class="fa-solid fa-trash-can"></i> Eliminar
                     </button>
                   </div>
                 </td>
@@ -1832,13 +1832,13 @@ async function handleInactivarArea(id) {
   const nombre = area ? area.name : 'esta área';
 
   const result = await getPrixmaSwal().fire({
-    title: '¿Inactivar área corporativa?',
-    text: `El área "${nombre}" cambiará a estado inactivo (borrado lógico) y dejará de mostrarse en el portal.`,
+    title: '¿Eliminar área corporativa?',
+    text: `El área "${nombre}" se eliminará y dejará de mostrarse en el portal.`,
     icon: 'warning',
     showCancelButton: true,
     confirmButtonColor: '#ef4444',
     cancelButtonColor: '#475569',
-    confirmButtonText: '<i class="fa-solid fa-trash-can"></i> Sí, inactivar',
+    confirmButtonText: '<i class="fa-solid fa-trash-can"></i> Sí, eliminar',
     cancelButtonText: 'Cancelar'
   });
 
@@ -1851,13 +1851,13 @@ async function handleInactivarArea(id) {
 
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.message || 'No se pudo inactivar el área.');
+      throw new Error(errData.message || 'No se pudo eliminar el área.');
     }
 
     getPrixmaSwal().fire({
       icon: 'success',
-      title: 'Área Inactivada',
-      text: `El área "${nombre}" ha sido inactivada correctamente.`,
+      title: 'Área Eliminada',
+      text: `El área "${nombre}" ha sido eliminada correctamente.`,
       timer: 2000,
       showConfirmButton: false
     });
@@ -1867,7 +1867,7 @@ async function handleInactivarArea(id) {
   } catch (err) {
     getPrixmaSwal().fire({
       icon: 'error',
-      title: 'Error al Inactivar Área',
+      title: 'Error al Eliminar Área',
       text: err.message
     });
   }
@@ -2285,7 +2285,7 @@ function renderRbacRolesTable() {
           </div>
         </td>
         <td style="padding:0.75rem; color:var(--text-muted); font-size:0.85rem;">${escapeHtml(r.descripcion || 'Sin descripción')}</td>
-        <td style="padding:0.75rem;"><span class="badge badge-type" style="position:static;">${r.permisos ? r.permisos.length : 0} permiso(s)</span></td>
+        <td style="padding:0.75rem;"><span class="badge" style="position:static; background:var(--primary-glow); color:var(--primary); font-weight:700; font-size:0.85rem; padding:4px 10px; border-radius:12px;">${r.permisos ? r.permisos.length : 0}</span></td>
         <td style="padding:0.75rem; text-align:right;">
           <div style="display:flex; gap:0.5rem; justify-content:flex-end; align-items:center;">
             <button class="btn btn-secondary" onclick="navigateTo('#/roles/edit/' + ${r.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem;" title="Editar Rol">
@@ -2493,7 +2493,7 @@ async function openEditView(postId) {
 
           return `
             <div class="file-preview-card" style="position:relative; width:120px; aspect-ratio:1;" title="${escapeHtml(att.archivoNombreOriginal)} (${sizeStr})">
-              <button type="button" onclick="event.stopPropagation(); handleDeleteAttachment(${att.id}, ${post.id}, true)" title="Inactivar Adjunto (Borrado Lógico)" style="position:absolute; top:4px; right:4px; z-index:10; background:rgba(239, 68, 68, 0.9); color:white; width:22px; height:22px; border-radius:50%; border:none; display:flex; align-items:center; justify-content:center; cursor:pointer; font-weight:bold;">&times;</button>
+              <button type="button" onclick="event.stopPropagation(); handleDeleteAttachment(${att.id}, ${post.id}, true)" title="Eliminar Adjunto" style="position:absolute; top:4px; right:4px; z-index:10; background:rgba(239, 68, 68, 0.9); color:white; width:22px; height:22px; border-radius:50%; border:none; display:flex; align-items:center; justify-content:center; cursor:pointer; font-weight:bold;">&times;</button>
               ${contentHtml}
             </div>
           `;
@@ -2941,19 +2941,19 @@ async function handleDeletePost(postId) {
     getPrixmaSwal().fire({
       icon: 'error',
       title: 'Acceso Denegado',
-      text: 'No tienes permisos para inactivar publicaciones.'
+      text: 'No tienes permisos para eliminar publicaciones.'
     });
     return;
   }
 
   const result = await getPrixmaSwal().fire({
-    title: '¿Inactivar publicación?',
-    text: 'Esta publicación cambiará a estado inactivo (borrado lógico) y dejará de mostrarse en el portal.',
+    title: '¿Eliminar publicación?',
+    text: 'Esta publicación se eliminará y dejará de mostrarse en el portal.',
     icon: 'warning',
     showCancelButton: true,
     confirmButtonColor: '#ef4444',
     cancelButtonColor: '#475569',
-    confirmButtonText: '<i class="fa-solid fa-trash-can"></i> Sí, inactivar',
+    confirmButtonText: '<i class="fa-solid fa-trash-can"></i> Sí, eliminar',
     cancelButtonText: 'Cancelar'
   });
 
@@ -2961,12 +2961,12 @@ async function handleDeletePost(postId) {
 
   try {
     const res = await apiFetch(`/api/posts/${postId}`, { method: 'DELETE' });
-    if (!res.ok) throw new Error('No se pudo inactivar la publicación.');
+    if (!res.ok) throw new Error('No se pudo eliminar la publicación.');
 
     getPrixmaSwal().fire({
       icon: 'success',
-      title: 'Publicación Inactivada',
-      text: 'La publicación ha sido inactivada correctamente.',
+      title: 'Publicación Eliminada',
+      text: 'La publicación ha sido eliminada correctamente.',
       timer: 2000,
       showConfirmButton: false
     });
@@ -2975,7 +2975,7 @@ async function handleDeletePost(postId) {
   } catch (err) {
     getPrixmaSwal().fire({
       icon: 'error',
-      title: 'Error al Inactivar Publicación',
+      title: 'Error al Eliminar Publicación',
       text: err.message
     });
   }

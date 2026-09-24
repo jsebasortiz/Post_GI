@@ -1,7 +1,7 @@
 <!-- VISTA CREAR ROL -->
 <div id="viewRoleCreate" class="app-view view-hidden">
   <div style="margin-bottom: 1.5rem;">
-    <a href="#/rbac" class="btn btn-secondary" onclick="navigateTo('#/rbac'); return false;">
+    <a href="/rbac" class="btn btn-secondary" onclick="navigateTo('/rbac'); return false;">
       <i class="fa-solid fa-arrow-left"></i> Volver a Roles y Permisos
     </a>
   </div>
@@ -20,7 +20,7 @@
           <textarea id="newRoleDesc" rows="3" class="form-control" placeholder="Descripción de las responsabilidades y alcance del rol..."></textarea>
         </div>
         <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:1.5rem;">
-          <a href="#/rbac" class="btn btn-secondary" onclick="navigateTo('#/rbac'); return false;">Cancelar</a>
+          <a href="/rbac" class="btn btn-secondary" onclick="navigateTo('/rbac'); return false;">Cancelar</a>
           <button type="submit" class="btn btn-primary" id="btnSaveRole">
             <i class="fa-solid fa-floppy-disk"></i> Guardar Rol
           </button>

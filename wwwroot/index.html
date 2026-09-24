@@ -70,20 +70,25 @@
         </a>
 
         <div class="nav-controls">
-          <button class="btn btn-secondary" id="btnOpenRbacModal" onclick="navigateTo('#/rbac'); return false;" style="display:none;"
-            title="Roles y Permisos">
-            <i class="fa-solid fa-user-shield" style="color:var(--accent-purple);"></i> <span class="btn-text">Roles & Permisos</span>
+          <button class="btn btn-secondary" id="btnOpenRbacModal" onclick="navigateTo('#/rbac'); return false;"
+            style="display:none;" title="Roles y Permisos">
+            <i class="fa-solid fa-user-shield" style="color:var(--accent-purple);"></i> <span class="btn-text">Roles &
+              Permisos</span>
           </button>
-          <button class="btn btn-secondary" id="btnOpenCreateArea" onclick="navigateTo('#/areas'); return false;" title="Gestión de Áreas">
+          <button class="btn btn-secondary" id="btnOpenCreateArea" onclick="navigateTo('#/areas'); return false;"
+            title="Gestión de Áreas">
             <i class="fa-solid fa-sitemap" style="color:var(--accent-cyan);"></i> <span class="btn-text">Áreas</span>
           </button>
-          <button class="btn btn-secondary" id="btnOpenCreateModule" onclick="navigateTo('#/modulos'); return false;" title="Gestión de Módulos">
+          <button class="btn btn-secondary" id="btnOpenCreateModule" onclick="navigateTo('#/modulos'); return false;"
+            title="Gestión de Módulos">
             <i class="fa-solid fa-folder-plus"></i> <span class="btn-text">Módulos</span>
           </button>
-          <button class="btn btn-secondary" id="btnOpenPostTiposModal" onclick="navigateTo('#/tipos'); return false;" title="Tipos de Publicación">
+          <button class="btn btn-secondary" id="btnOpenPostTiposModal" onclick="navigateTo('#/tipos'); return false;"
+            title="Tipos de Publicación">
             <i class="fa-solid fa-tags" style="color:var(--accent-emerald);"></i> <span class="btn-text">Tipos</span>
           </button>
-          <button class="btn btn-primary" id="btnOpenCreatePost" onclick="navigateTo('#/posts/create'); return false;" title="Crear Publicación">
+          <button class="btn btn-primary" id="btnOpenCreatePost" onclick="navigateTo('#/posts/create'); return false;"
+            title="Crear Publicación">
             <i class="fa-solid fa-pen-to-square"></i> <span class="btn-text">Crear Post</span>
           </button>
           <button class="btn btn-secondary" id="btnToggleTheme" onclick="toggleTheme()"
@@ -165,11 +170,13 @@
             <form id="createPostForm" onsubmit="handleCreatePost(event)">
               <div class="form-row">
                 <div class="form-group">
-                  <label class="form-label" for="selectCategoriaPadre"><i class="fa-solid fa-sitemap"></i> Área / Categoría Principal</label>
+                  <label class="form-label" for="selectCategoriaPadre"><i class="fa-solid fa-sitemap"></i> Área /
+                    Categoría Principal</label>
                   <select id="selectCategoriaPadre" onchange="onPostCategoriaChange(this.value)" required></select>
                 </div>
                 <div class="form-group">
-                  <label class="form-label" for="selectModulo"><i class="fa-solid fa-folder"></i> Módulo Temático</label>
+                  <label class="form-label" for="selectModulo"><i class="fa-solid fa-folder"></i> Módulo
+                    Temático</label>
                   <select id="selectModulo" required></select>
                 </div>
               </div>
@@ -202,7 +209,8 @@
                 <div class="file-upload-zone" onclick="document.getElementById('fileInput').click()">
                   <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
                   <p>Arrastra archivos o haz clic para explorar en tu equipo</p>
-                  <span style="font-size:0.8rem; color:var(--text-muted);">Formatos admitidos: Fotos (JPG, PNG, WEBP, GIF), PDF, Word, Excel, PowerPoint, ZIP</span>
+                  <span style="font-size:0.8rem; color:var(--text-muted);">Formatos admitidos: Fotos (JPG, PNG, WEBP,
+                    GIF), PDF, Word, Excel, PowerPoint, ZIP</span>
                   <input type="file" id="fileInput" multiple
                     accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.txt" style="display:none"
                     onchange="handleFileSelect(event)">
@@ -211,7 +219,8 @@
               </div>
 
               <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:1.5rem;">
-                <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('#/dashboard'); return false;">Cancelar</a>
+                <a href="#/dashboard" class="btn btn-secondary"
+                  onclick="navigateTo('#/dashboard'); return false;">Cancelar</a>
                 <button type="submit" class="btn btn-primary" id="btnSubmitPost">
                   <i class="fa-solid fa-paper-plane"></i> Publicar Ahora
                 </button>
@@ -238,55 +247,68 @@
 
               <div class="form-row">
                 <div class="form-group">
-                  <label class="form-label" for="editSelectCategoriaPadre"><i class="fa-solid fa-sitemap"></i> Área / Categoría Principal</label>
-                  <select id="editSelectCategoriaPadre" onchange="onEditPostCategoriaChange(this.value)" required></select>
+                  <label class="form-label" for="editSelectCategoriaPadre"><i class="fa-solid fa-sitemap"></i> Área /
+                    Categoría Principal</label>
+                  <select id="editSelectCategoriaPadre" onchange="onEditPostCategoriaChange(this.value)"
+                    required></select>
                 </div>
                 <div class="form-group">
-                  <label class="form-label" for="editSelectModulo"><i class="fa-solid fa-folder"></i> Módulo Temático</label>
+                  <label class="form-label" for="editSelectModulo"><i class="fa-solid fa-folder"></i> Módulo
+                    Temático</label>
                   <select id="editSelectModulo" required></select>
                 </div>
               </div>
 
               <div class="form-group">
-                <label class="form-label" for="editSelectTipo"><i class="fa-solid fa-tag"></i> Tipo de Publicación</label>
+                <label class="form-label" for="editSelectTipo"><i class="fa-solid fa-tag"></i> Tipo de
+                  Publicación</label>
                 <select id="editSelectTipo" required></select>
               </div>
 
               <div class="form-group">
                 <label class="form-label" for="editPostTitulo">Título de la Publicación</label>
-                <input type="text" id="editPostTitulo" class="form-control" placeholder="Título de la publicación..." required>
+                <input type="text" id="editPostTitulo" class="form-control" placeholder="Título de la publicación..."
+                  required>
               </div>
 
               <div class="form-group">
                 <label class="form-label" for="editPostResumen">Resumen o Introducción (Opcional)</label>
-                <textarea id="editPostResumen" rows="2" class="form-control" placeholder="Breve descripción..."></textarea>
+                <textarea id="editPostResumen" rows="2" class="form-control"
+                  placeholder="Breve descripción..."></textarea>
               </div>
 
               <div class="form-group">
                 <label class="form-label" for="editPostContenido">Contenido Completo del Blog</label>
-                <textarea id="editPostContenido" rows="6" class="form-control" placeholder="Cuerpo del artículo..." required></textarea>
+                <textarea id="editPostContenido" rows="6" class="form-control" placeholder="Cuerpo del artículo..."
+                  required></textarea>
               </div>
 
               <div class="form-group">
                 <label class="form-label">Adjuntos de la Publicación</label>
-                <div class="file-upload-zone" onclick="document.getElementById('editFileInput').click()" style="margin-bottom: 1rem;">
+                <div class="file-upload-zone" onclick="document.getElementById('editFileInput').click()"
+                  style="margin-bottom: 1rem;">
                   <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
                   <p>Haz clic para agregar más fotos o archivos a esta publicación</p>
-                  <input type="file" id="editFileInput" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.txt" style="display:none" onchange="handleEditFileSelect(event)">
+                  <input type="file" id="editFileInput" multiple
+                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.txt" style="display:none"
+                    onchange="handleEditFileSelect(event)">
                 </div>
 
-                <div class="file-previews" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap:1rem;">
+                <div class="file-previews"
+                  style="display:grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap:1rem;">
                   <div id="editExistingAdjuntos" style="display:contents;"></div>
                   <div id="editFilePreviews" style="display:contents;"></div>
                 </div>
               </div>
 
               <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem;">
-                <button type="button" class="btn btn-danger" id="btnDeletePostInEdit" onclick="handleDeletePostFromModal()">
+                <button type="button" class="btn btn-danger" id="btnDeletePostInEdit"
+                  onclick="handleDeletePostFromModal()">
                   <i class="fa-solid fa-trash-can"></i> Eliminar
                 </button>
                 <div style="display:flex; gap:1rem;">
-                  <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('#/dashboard'); return false;">Cancelar</a>
+                  <a href="#/dashboard" class="btn btn-secondary"
+                    onclick="navigateTo('#/dashboard'); return false;">Cancelar</a>
                   <button type="submit" class="btn btn-primary" id="btnSubmitEditPost">
                     <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
                   </button>
@@ -312,10 +334,14 @@
             </div>
           </div>
           <div class="modal-body">
-            <h1 id="detailTitle" style="font-family:var(--font-heading); font-size:2rem; margin-bottom:1rem; color:var(--text-main);"></h1>
-            <div id="detailMeta" style="color:var(--text-muted); font-size:0.88rem; margin-bottom:1.5rem; display:flex; gap:1.5rem;"></div>
+            <h1 id="detailTitle"
+              style="font-family:var(--font-heading); font-size:2rem; margin-bottom:1rem; color:var(--text-main);"></h1>
+            <div id="detailMeta"
+              style="color:var(--text-muted); font-size:0.88rem; margin-bottom:1.5rem; display:flex; gap:1.5rem;"></div>
             <div id="detailCoverContainer"></div>
-            <div id="detailContent" style="white-space: pre-wrap; font-size:1.05rem; line-height:1.8; color:var(--text-main); margin-bottom:2rem;"></div>
+            <div id="detailContent"
+              style="white-space: pre-wrap; font-size:1.05rem; line-height:1.8; color:var(--text-main); margin-bottom:2rem;">
+            </div>
             <div class="attachments-gallery" id="detailAttachments"></div>
           </div>
         </div>
@@ -329,10 +355,13 @@
           </a>
         </div>
         <div class="modal-card" style="max-width: 900px; margin: 0 auto; box-shadow: var(--shadow-md);">
-          <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+          <div class="modal-header"
+            style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
             <div>
-              <h2><i class="fa-solid fa-sitemap" style="color:var(--accent-cyan);"></i> Gestión de Áreas Corporativas</h2>
-              <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0.25rem;">Categorías principales del portal de publicaciones.</p>
+              <h2><i class="fa-solid fa-sitemap" style="color:var(--accent-cyan);"></i> Gestión de Áreas Corporativas
+              </h2>
+              <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0.25rem;">Categorías principales del
+                portal de publicaciones.</p>
             </div>
             <a href="#/areas/create" class="btn btn-primary" onclick="navigateTo('#/areas/create'); return false;">
               <i class="fa-solid fa-plus"></i> Nueva Área
@@ -357,12 +386,16 @@
           <div class="modal-body">
             <form id="createAreaForm" onsubmit="handleCreateArea(event)">
               <div class="form-group">
-                <label class="form-label" for="areaNombre"><i class="fa-solid fa-tag"></i> Nombre del Área (Categoría Principal)</label>
-                <input type="text" id="areaNombre" class="form-control" placeholder="Ej: Telecomunicaciones, Finanzas..." required>
+                <label class="form-label" for="areaNombre"><i class="fa-solid fa-tag"></i> Nombre del Área (Categoría
+                  Principal)</label>
+                <input type="text" id="areaNombre" class="form-control"
+                  placeholder="Ej: Telecomunicaciones, Finanzas..." required>
               </div>
               <div class="form-group">
-                <label class="form-label" for="areaDesc"><i class="fa-solid fa-align-left"></i> Descripción (Opcional)</label>
-                <textarea id="areaDesc" rows="3" class="form-control" placeholder="Breve descripción del área corporativa..."></textarea>
+                <label class="form-label" for="areaDesc"><i class="fa-solid fa-align-left"></i> Descripción
+                  (Opcional)</label>
+                <textarea id="areaDesc" rows="3" class="form-control"
+                  placeholder="Breve descripción del área corporativa..."></textarea>
               </div>
               <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:1.5rem;">
                 <a href="#/areas" class="btn btn-secondary" onclick="navigateTo('#/areas'); return false;">Cancelar</a>
@@ -398,10 +431,11 @@
               </div>
               <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem;">
                 <button type="button" class="btn btn-danger" onclick="handleDeleteAreaFromForm()">
-                  <i class="fa-solid fa-trash-can"></i> Inactivar
+                  <i class="fa-solid fa-trash-can"></i> Eliminar
                 </button>
                 <div style="display:flex; gap:1rem;">
-                  <a href="#/areas" class="btn btn-secondary" onclick="navigateTo('#/areas'); return false;">Cancelar</a>
+                  <a href="#/areas" class="btn btn-secondary"
+                    onclick="navigateTo('#/areas'); return false;">Cancelar</a>
                   <button type="submit" class="btn btn-primary" id="btnSubmitEditArea">
                     <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
                   </button>
@@ -420,10 +454,13 @@
           </a>
         </div>
         <div class="modal-card" style="max-width: 900px; margin: 0 auto; box-shadow: var(--shadow-md);">
-          <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+          <div class="modal-header"
+            style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
             <div>
-              <h2><i class="fa-solid fa-folder-plus" style="color:var(--accent-cyan);"></i> Gestión de Módulos Temáticos</h2>
-              <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0.25rem;">Módulos organizados por áreas principales.</p>
+              <h2><i class="fa-solid fa-folder-plus" style="color:var(--accent-cyan);"></i> Gestión de Módulos Temáticos
+              </h2>
+              <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0.25rem;">Módulos organizados por áreas
+                principales.</p>
             </div>
             <a href="#/modulos/create" class="btn btn-primary" onclick="navigateTo('#/modulos/create'); return false;">
               <i class="fa-solid fa-plus"></i> Nuevo Módulo
@@ -449,20 +486,26 @@
             <form id="createModuleForm" onsubmit="handleCreateModule(event)">
               <div class="form-row">
                 <div class="form-group">
-                  <label class="form-label" for="moduloCategoriaPadre"><i class="fa-solid fa-sitemap"></i> Área Principal</label>
+                  <label class="form-label" for="moduloCategoriaPadre"><i class="fa-solid fa-sitemap"></i> Área
+                    Principal</label>
                   <select id="moduloCategoriaPadre" class="form-control" required></select>
                 </div>
                 <div class="form-group">
-                  <label class="form-label" for="moduloNombre"><i class="fa-solid fa-folder"></i> Nombre del Módulo</label>
-                  <input type="text" id="moduloNombre" class="form-control" placeholder="Ej: Gestión de Operaciones" required>
+                  <label class="form-label" for="moduloNombre"><i class="fa-solid fa-folder"></i> Nombre del
+                    Módulo</label>
+                  <input type="text" id="moduloNombre" class="form-control" placeholder="Ej: Gestión de Operaciones"
+                    required>
                 </div>
               </div>
               <div class="form-group">
-                <label class="form-label" for="moduloDesc"><i class="fa-solid fa-align-left"></i> Descripción del Módulo</label>
-                <textarea id="moduloDesc" rows="3" class="form-control" placeholder="Descripción temática del módulo..."></textarea>
+                <label class="form-label" for="moduloDesc"><i class="fa-solid fa-align-left"></i> Descripción del
+                  Módulo</label>
+                <textarea id="moduloDesc" rows="3" class="form-control"
+                  placeholder="Descripción temática del módulo..."></textarea>
               </div>
               <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:1.5rem;">
-                <a href="#/modulos" class="btn btn-secondary" onclick="navigateTo('#/modulos'); return false;">Cancelar</a>
+                <a href="#/modulos" class="btn btn-secondary"
+                  onclick="navigateTo('#/modulos'); return false;">Cancelar</a>
                 <button type="submit" class="btn btn-primary" id="btnSaveModule">
                   <i class="fa-solid fa-floppy-disk"></i> Guardar Módulo
                 </button>
@@ -487,24 +530,29 @@
               <input type="hidden" id="editModuleId">
               <div class="form-row">
                 <div class="form-group">
-                  <label class="form-label" for="editModuloCategoriaPadre"><i class="fa-solid fa-sitemap"></i> Área Principal</label>
+                  <label class="form-label" for="editModuloCategoriaPadre"><i class="fa-solid fa-sitemap"></i> Área
+                    Principal</label>
                   <select id="editModuloCategoriaPadre" class="form-control" required></select>
                 </div>
                 <div class="form-group">
-                  <label class="form-label" for="editModuloNombre"><i class="fa-solid fa-folder"></i> Nombre del Módulo</label>
-                  <input type="text" id="editModuloNombre" class="form-control" placeholder="Nombre del módulo..." required>
+                  <label class="form-label" for="editModuloNombre"><i class="fa-solid fa-folder"></i> Nombre del
+                    Módulo</label>
+                  <input type="text" id="editModuloNombre" class="form-control" placeholder="Nombre del módulo..."
+                    required>
                 </div>
               </div>
               <div class="form-group">
-                <label class="form-label" for="editModuloDesc"><i class="fa-solid fa-align-left"></i> Descripción</label>
+                <label class="form-label" for="editModuloDesc"><i class="fa-solid fa-align-left"></i>
+                  Descripción</label>
                 <textarea id="editModuloDesc" rows="3" class="form-control" placeholder="Descripción..."></textarea>
               </div>
               <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem;">
                 <button type="button" class="btn btn-danger" onclick="handleDeleteModuleFromForm()">
-                  <i class="fa-solid fa-trash-can"></i> Inactivar
+                  <i class="fa-solid fa-trash-can"></i> Eliminar
                 </button>
                 <div style="display:flex; gap:1rem;">
-                  <a href="#/modulos" class="btn btn-secondary" onclick="navigateTo('#/modulos'); return false;">Cancelar</a>
+                  <a href="#/modulos" class="btn btn-secondary"
+                    onclick="navigateTo('#/modulos'); return false;">Cancelar</a>
                   <button type="submit" class="btn btn-primary" id="btnSubmitEditModule">
                     <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
                   </button>
@@ -523,10 +571,12 @@
           </a>
         </div>
         <div class="modal-card" style="max-width: 900px; margin: 0 auto; box-shadow: var(--shadow-md);">
-          <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+          <div class="modal-header"
+            style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
             <div>
               <h2><i class="fa-solid fa-tags" style="color:var(--accent-emerald);"></i> Tipos de Publicación</h2>
-              <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0.25rem;">Tipos de contenido para artículos (Guía, Incidencia, Manual, etc.).</p>
+              <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0.25rem;">Tipos de contenido para
+                artículos (Guía, Incidencia, Manual, etc.).</p>
             </div>
             <a href="#/tipos/create" class="btn btn-primary" onclick="navigateTo('#/tipos/create'); return false;">
               <i class="fa-solid fa-plus"></i> Nuevo Tipo
@@ -551,12 +601,16 @@
           <div class="modal-body">
             <form id="createPostTipoForm" onsubmit="handleSaveCreatePostTipo(event)">
               <div class="form-group">
-                <label class="form-label" for="newPostTipoNombre"><i class="fa-solid fa-heading"></i> Nombre del Tipo</label>
-                <input type="text" id="newPostTipoNombre" class="form-control" placeholder="Ej: Procedimiento, Guía Técnica, Estándar" required>
+                <label class="form-label" for="newPostTipoNombre"><i class="fa-solid fa-heading"></i> Nombre del
+                  Tipo</label>
+                <input type="text" id="newPostTipoNombre" class="form-control"
+                  placeholder="Ej: Procedimiento, Guía Técnica, Estándar" required>
               </div>
               <div class="form-group">
-                <label class="form-label" for="newPostTipoDesc"><i class="fa-solid fa-align-left"></i> Descripción (Opcional)</label>
-                <textarea id="newPostTipoDesc" rows="3" class="form-control" placeholder="Breve descripción del propósito de este tipo..."></textarea>
+                <label class="form-label" for="newPostTipoDesc"><i class="fa-solid fa-align-left"></i> Descripción
+                  (Opcional)</label>
+                <textarea id="newPostTipoDesc" rows="3" class="form-control"
+                  placeholder="Breve descripción del propósito de este tipo..."></textarea>
               </div>
               <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:1.5rem;">
                 <a href="#/tipos" class="btn btn-secondary" onclick="navigateTo('#/tipos'); return false;">Cancelar</a>
@@ -577,25 +631,29 @@
         </div>
         <div class="modal-card" style="max-width: 700px; margin: 0 auto; box-shadow: var(--shadow-md);">
           <div class="modal-header">
-            <h2><i class="fa-solid fa-pen-to-square" style="color:var(--accent-emerald);"></i> Editar Tipo de Publicación</h2>
+            <h2><i class="fa-solid fa-pen-to-square" style="color:var(--accent-emerald);"></i> Editar Tipo de
+              Publicación</h2>
           </div>
           <div class="modal-body">
             <form id="editPostTipoForm" onsubmit="handleSaveEditPostTipo(event)">
               <input type="hidden" id="editPostTipoId">
               <div class="form-group">
-                <label class="form-label" for="editPostTipoNombre"><i class="fa-solid fa-heading"></i> Nombre del Tipo</label>
+                <label class="form-label" for="editPostTipoNombre"><i class="fa-solid fa-pen"></i> Nombre del
+                  Tipo</label>
                 <input type="text" id="editPostTipoNombre" class="form-control" placeholder="Nombre..." required>
               </div>
               <div class="form-group">
-                <label class="form-label" for="editPostTipoDesc"><i class="fa-solid fa-align-left"></i> Descripción</label>
+                <label class="form-label" for="editPostTipoDesc"><i class="fa-solid fa-align-left"></i>
+                  Descripción</label>
                 <textarea id="editPostTipoDesc" rows="3" class="form-control" placeholder="Descripción..."></textarea>
               </div>
               <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem;">
                 <button type="button" class="btn btn-danger" onclick="handleDeleteTipoFromForm()">
-                  <i class="fa-solid fa-trash-can"></i> Inactivar
+                  <i class="fa-solid fa-trash-can"></i> Eliminar
                 </button>
                 <div style="display:flex; gap:1rem;">
-                  <a href="#/tipos" class="btn btn-secondary" onclick="navigateTo('#/tipos'); return false;">Cancelar</a>
+                  <a href="#/tipos" class="btn btn-secondary"
+                    onclick="navigateTo('#/tipos'); return false;">Cancelar</a>
                   <button type="submit" class="btn btn-primary" id="btnSubmitEditPostTipo">
                     <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
                   </button>
@@ -615,12 +673,15 @@
         </div>
         <div class="modal-card" style="max-width: 960px; margin: 0 auto; box-shadow: var(--shadow-md);">
           <div class="modal-header">
-            <h2><i class="fa-solid fa-user-shield" style="color:var(--accent-purple);"></i> Gestión de Roles y Permisos (RBAC)</h2>
+            <h2><i class="fa-solid fa-user-shield" style="color:var(--accent-purple);"></i> Gestión de Roles y Permisos
+              (RBAC)</h2>
           </div>
           <div class="modal-body">
             <!-- Sub-tabs -->
-            <div class="rbac-tabs" style="display:flex; gap:1rem; margin-bottom:1.5rem; border-bottom:1px solid var(--bg-card-border); padding-bottom:0.75rem;">
-              <button class="btn btn-secondary active-rbac-tab" id="tabBtnUsersRole" onclick="switchRbacSubTab('users')">
+            <div class="rbac-tabs"
+              style="display:flex; gap:1rem; margin-bottom:1.5rem; border-bottom:1px solid var(--bg-card-border); padding-bottom:0.75rem;">
+              <button class="btn btn-secondary active-rbac-tab" id="tabBtnUsersRole"
+                onclick="switchRbacSubTab('users')">
                 <i class="fa-solid fa-users"></i> Asignación de Usuarios
               </button>
               <button class="btn btn-secondary" id="tabBtnRolesManage" onclick="switchRbacSubTab('roles')">
@@ -633,22 +694,30 @@
 
             <!-- Tab 1: User Role Assignment -->
             <div id="rbacTabUsers">
-              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem;">
+              <div
+                style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem;">
                 <div>
-                  <h3 style="font-size:1.1rem; color:var(--text-main); margin-bottom:0.25rem;">Asignar Roles a Usuarios de Directorio Activo</h3>
-                  <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">Cambia los permisos de los usuarios autenticados seleccionando el rol correspondiente.</p>
+                  <h3 style="font-size:1.1rem; color:var(--text-main); margin-bottom:0.25rem;">Asignar Roles a Usuarios
+                    de Directorio Activo</h3>
+                  <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">Cambia los permisos de los usuarios
+                    autenticados seleccionando el rol correspondiente.</p>
                 </div>
                 <!-- Search bar for RBAC users -->
                 <div style="position:relative; width: 280px; flex-shrink: 0;">
-                  <i class="fa-solid fa-magnifying-glass" style="position:absolute; left:0.85rem; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:0.85rem;" aria-hidden="true"></i>
-                  <input type="text" id="rbacUserSearchInput" class="form-control" placeholder="Buscar usuario o correo..." oninput="onRbacUserSearchInput()" style="padding-left:2.3rem; font-size:0.85rem; height:38px;">
+                  <i class="fa-solid fa-magnifying-glass"
+                    style="position:absolute; left:0.85rem; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:0.85rem;"
+                    aria-hidden="true"></i>
+                  <input type="text" id="rbacUserSearchInput" class="form-control"
+                    placeholder="Buscar usuario o correo..." oninput="onRbacUserSearchInput()"
+                    style="padding-left:2.3rem; font-size:0.85rem; height:38px;">
                 </div>
               </div>
 
               <div class="table-responsive">
                 <table class="rbac-table" style="width:100%; border-collapse:collapse;">
                   <thead>
-                    <tr style="text-align:left; border-bottom:1px solid var(--bg-card-border); color:var(--text-muted); font-size:0.85rem;">
+                    <tr
+                      style="text-align:left; border-bottom:1px solid var(--bg-card-border); color:var(--text-muted); font-size:0.85rem;">
                       <th style="padding:0.75rem;">Usuario</th>
                       <th style="padding:0.75rem;">Correo / AD</th>
                       <th style="padding:0.75rem;">Rol Actual</th>
@@ -659,24 +728,30 @@
                 </table>
               </div>
 
-              <div id="rbacUsersPagination" style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; padding-top:0.75rem; border-top:1px solid var(--bg-card-border); font-size:0.85rem; color:var(--text-muted);"></div>
+              <div id="rbacUsersPagination"
+                style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; padding-top:0.75rem; border-top:1px solid var(--bg-card-border); font-size:0.85rem; color:var(--text-muted);">
+              </div>
             </div>
 
             <!-- Tab 2: Role Management -->
             <div id="rbacTabRoles" class="view-hidden">
-              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem;">
+              <div
+                style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem;">
                 <div>
                   <h3 style="font-size:1.1rem; color:var(--text-main); margin-bottom:0.25rem;">Gestión de Roles</h3>
-                  <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">Modifica el nombre, la descripción o elimina roles de forma directa.</p>
+                  <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">Modifica el nombre, la descripción o
+                    elimina roles de forma directa.</p>
                 </div>
-                <a href="#/roles/create" class="btn btn-primary" onclick="navigateTo('#/roles/create'); return false;"><i class="fa-solid fa-plus"></i> Nuevo Rol</a>
+                <a href="#/roles/create" class="btn btn-primary"
+                  onclick="navigateTo('#/roles/create'); return false;"><i class="fa-solid fa-plus"></i> Nuevo Rol</a>
               </div>
 
               <!-- Roles Management Table -->
               <div class="table-responsive">
                 <table class="rbac-table" style="width:100%; border-collapse:collapse;">
                   <thead>
-                    <tr style="text-align:left; border-bottom:1px solid var(--bg-card-border); color:var(--text-muted); font-size:0.85rem;">
+                    <tr
+                      style="text-align:left; border-bottom:1px solid var(--bg-card-border); color:var(--text-muted); font-size:0.85rem;">
                       <th style="padding:0.75rem;">Rol</th>
                       <th style="padding:0.75rem;">Descripción</th>
                       <th style="padding:0.75rem;">Permisos</th>
@@ -688,7 +763,9 @@
               </div>
 
               <!-- Roles Pagination Container -->
-              <div id="rbacRolesPagination" style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; padding-top:0.75rem; border-top:1px solid var(--bg-card-border); font-size:0.85rem; color:var(--text-muted);"></div>
+              <div id="rbacRolesPagination"
+                style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; padding-top:0.75rem; border-top:1px solid var(--bg-card-border); font-size:0.85rem; color:var(--text-muted);">
+              </div>
             </div>
 
             <!-- Tab 3: Permission Matrix -->
@@ -716,12 +793,16 @@
           <div class="modal-body">
             <form id="createRoleForm" onsubmit="handleSaveCreateRole(event)">
               <div class="form-group">
-                <label class="form-label" for="newRoleNombre"><i class="fa-solid fa-user-gear"></i> Nombre del Rol</label>
-                <input type="text" id="newRoleNombre" class="form-control" placeholder="Ej: Supervisor, Editor Senior" required>
+                <label class="form-label" for="newRoleNombre"><i class="fa-solid fa-user-gear"></i> Nombre del
+                  Rol</label>
+                <input type="text" id="newRoleNombre" class="form-control" placeholder="Ej: Supervisor, Editor Senior"
+                  required>
               </div>
               <div class="form-group">
-                <label class="form-label" for="newRoleDesc"><i class="fa-solid fa-align-left"></i> Descripción del Rol</label>
-                <textarea id="newRoleDesc" rows="3" class="form-control" placeholder="Descripción de las responsabilidades y alcance del rol..."></textarea>
+                <label class="form-label" for="newRoleDesc"><i class="fa-solid fa-align-left"></i> Descripción del
+                  Rol</label>
+                <textarea id="newRoleDesc" rows="3" class="form-control"
+                  placeholder="Descripción de las responsabilidades y alcance del rol..."></textarea>
               </div>
               <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:1.5rem;">
                 <a href="#/rbac" class="btn btn-secondary" onclick="navigateTo('#/rbac'); return false;">Cancelar</a>
@@ -748,12 +829,15 @@
             <form id="editRoleForm" onsubmit="handleSaveEditRole(event)">
               <input type="hidden" id="editRoleId">
               <div class="form-group">
-                <label class="form-label" for="editRoleNombre"><i class="fa-solid fa-user-gear"></i> Nombre del Rol</label>
+                <label class="form-label" for="editRoleNombre"><i class="fa-solid fa-user-gear"></i> Nombre del
+                  Rol</label>
                 <input type="text" id="editRoleNombre" class="form-control" placeholder="Nombre del rol..." required>
               </div>
               <div class="form-group">
-                <label class="form-label" for="editRoleDesc"><i class="fa-solid fa-align-left"></i> Descripción del Rol</label>
-                <textarea id="editRoleDesc" rows="3" class="form-control" placeholder="Descripción del rol..."></textarea>
+                <label class="form-label" for="editRoleDesc"><i class="fa-solid fa-align-left"></i> Descripción del
+                  Rol</label>
+                <textarea id="editRoleDesc" rows="3" class="form-control"
+                  placeholder="Descripción del rol..."></textarea>
               </div>
               <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem;">
                 <button type="button" class="btn btn-danger" onclick="handleDeleteRoleFromForm()">

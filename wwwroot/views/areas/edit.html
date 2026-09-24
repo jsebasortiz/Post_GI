@@ -1,7 +1,7 @@
 <!-- VISTA EDITAR ÁREA -->
 <div id="viewAreaEdit" class="app-view view-hidden">
   <div style="margin-bottom: 1.5rem;">
-    <a href="#/areas" class="btn btn-secondary" onclick="navigateTo('#/areas'); return false;">
+    <a href="/areas" class="btn btn-secondary" onclick="navigateTo('/areas'); return false;">
       <i class="fa-solid fa-arrow-left"></i> Volver a Gestión de Áreas
     </a>
   </div>
@@ -22,10 +22,10 @@
         </div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem;">
           <button type="button" class="btn btn-danger" onclick="handleDeleteAreaFromForm()">
-            <i class="fa-solid fa-trash-can"></i> Inactivar
+            <i class="fa-solid fa-trash-can"></i> Eliminar
           </button>
           <div style="display:flex; gap:1rem;">
-            <a href="#/areas" class="btn btn-secondary" onclick="navigateTo('#/areas'); return false;">Cancelar</a>
+            <a href="/areas" class="btn btn-secondary" onclick="navigateTo('/areas'); return false;">Cancelar</a>
             <button type="submit" class="btn btn-primary" id="btnSubmitEditArea">
               <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
             </button>

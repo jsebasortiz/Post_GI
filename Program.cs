@@ -117,6 +117,7 @@ app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapFallbackToFile("index.html");
 
 Console.WriteLine("=================================================");
 Console.WriteLine("  Prixma .NET 10 corriendo en http://localhost:5000");
