@@ -33,6 +33,7 @@ public class ModulosController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Administrador,Editor")]
     public async Task<IActionResult> CreateModulo([FromBody] CreateModuloDto dto)
     {
         if (string.IsNullOrWhiteSpace(dto.Nombre)) return BadRequest(new { message = "El nombre del módulo es requerido." });
@@ -41,6 +42,7 @@ public class ModulosController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [Authorize(Roles = "Administrador,Editor")]
     public async Task<IActionResult> UpdateModulo(ushort id, [FromBody] UpdateModuloDto dto)
     {
         try
@@ -63,6 +65,7 @@ public class ModulosController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Administrador,Editor")]
     public async Task<IActionResult> InactivarModulo(ushort id)
     {
         var success = await _moduloService.InactivarModuloAsync(id);

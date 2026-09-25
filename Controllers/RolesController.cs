@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace BlogApp.Controllers;
 
-[Authorize]
+[Authorize(Roles = "Administrador")]
 [ApiController]
 [Route("api/[controller]")]
 public class RolesController : ControllerBase

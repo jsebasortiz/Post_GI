@@ -49,6 +49,7 @@ public class PostsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Administrador,Editor")]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> CreatePost([FromForm] CreatePostDto dto)
     {
@@ -66,6 +67,7 @@ public class PostsController : ControllerBase
     }
 
     [HttpPut("{id:long}")]
+    [Authorize(Roles = "Administrador,Editor")]
     public async Task<IActionResult> UpdatePost(ulong id, [FromBody] UpdatePostDto dto)
     {
         var updatedPost = await _postService.UpdatePostAsync(id, dto);
@@ -74,6 +76,7 @@ public class PostsController : ControllerBase
     }
 
     [HttpDelete("{id:long}")]
+    [Authorize(Roles = "Administrador,Editor")]
     public async Task<IActionResult> DeletePost(ulong id)
     {
         var result = await _postService.DeletePostAsync(id);
@@ -82,6 +85,7 @@ public class PostsController : ControllerBase
     }
 
     [HttpPost("{id:long}/adjuntos")]
+    [Authorize(Roles = "Administrador,Editor")]
     public async Task<IActionResult> AddAdjunto(ulong id, IFormFile file, [FromQuery] bool esPortada = false)
     {
         if (file == null || file.Length == 0)
@@ -96,6 +100,7 @@ public class PostsController : ControllerBase
     }
 
     [HttpDelete("adjuntos/{adjuntoId:long}")]
+    [Authorize(Roles = "Administrador,Editor")]
     public async Task<IActionResult> DeleteAdjunto(ulong adjuntoId)
     {
         var result = await _postService.DeleteAdjuntoAsync(adjuntoId);

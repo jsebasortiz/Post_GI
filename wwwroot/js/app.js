@@ -357,6 +357,10 @@ async function handleRoute() {
       const catSelect = document.getElementById('selectCategoriaPadre');
       updatePostSubmoduloSelect(catSelect ? catSelect.value : '');
     } else if (cleanHash.startsWith('#/posts/edit/')) {
+      if (!hasPermission('posts.edit') && !hasPermission('posts.create')) {
+        navigateTo('#/dashboard');
+        return;
+      }
       const postId = cleanHash.replace('#/posts/edit/', '');
       if (postId) {
         switchAppView('viewEditPost');
@@ -475,11 +479,13 @@ function updateNavButtonsPermissions() {
   const btnPost = document.getElementById('btnOpenCreatePost');
   const btnModule = document.getElementById('btnOpenCreateModule');
   const btnArea = document.getElementById('btnOpenCreateArea');
+  const btnTipo = document.getElementById('btnOpenPostTiposModal');
   const btnRbac = document.getElementById('btnOpenRbacModal');
 
   if (btnPost) btnPost.style.display = hasPermission('posts.create') ? 'inline-flex' : 'none';
   if (btnModule) btnModule.style.display = hasPermission('modulos.create') ? 'inline-flex' : 'none';
   if (btnArea) btnArea.style.display = hasPermission('modulos.create') ? 'inline-flex' : 'none';
+  if (btnTipo) btnTipo.style.display = (hasPermission('tipos.manage') || hasPermission('modulos.create')) ? 'inline-flex' : 'none';
   if (btnRbac) btnRbac.style.display = hasPermission('roles.manage') ? 'inline-flex' : 'none';
 }
 
@@ -1241,7 +1247,7 @@ async function handleInactivarModulo(id) {
     cancelButtonText: 'Cancelar'
   });
 
-  if (!result.isConfirmed) return;
+  if (!result.isConfirmed) return false;
 
   try {
     const res = await apiFetch(`/api/modulos/${id}`, {
@@ -1263,12 +1269,14 @@ async function handleInactivarModulo(id) {
 
     if (currentModuloId === id) filterByModule(null, null);
     await loadModulos();
+    return true;
   } catch (err) {
     getPrixmaSwal().fire({
       icon: 'error',
       title: 'Error al Eliminar Módulo',
       text: err.message
     });
+    return false;
   }
 }
 
@@ -1872,7 +1880,7 @@ async function handleInactivarArea(id) {
     cancelButtonText: 'Cancelar'
   });
 
-  if (!result.isConfirmed) return;
+  if (!result.isConfirmed) return false;
 
   try {
     const res = await apiFetch(`/api/areas/${id}`, {
@@ -1894,12 +1902,14 @@ async function handleInactivarArea(id) {
 
     if (currentCategoriaPadre) switchMainCategory(null, null);
     await loadAreas();
+    return true;
   } catch (err) {
     getPrixmaSwal().fire({
       icon: 'error',
       title: 'Error al Eliminar Área',
       text: err.message
     });
+    return false;
   }
 }
 
@@ -2451,7 +2461,7 @@ async function handleDeleteRole(rolId, rolNombre) {
     cancelButtonText: 'Cancelar'
   });
 
-  if (!result.isConfirmed) return;
+  if (!result.isConfirmed) return false;
 
   try {
     const res = await apiFetch(`/api/roles/${rolId}`, { method: 'DELETE' });
@@ -2472,12 +2482,14 @@ async function handleDeleteRole(rolId, rolNombre) {
     await loadRbacRolesList();
     await loadRbacMatrix();
     await loadRbacUsers();
+    return true;
   } catch (err) {
     getPrixmaSwal().fire({
       icon: 'error',
       title: 'Error al Eliminar Rol',
       text: err.message || 'Error al eliminar el rol.'
     });
+    return false;
   }
 }
 
@@ -2822,7 +2834,7 @@ async function handleDeletePostTipo(id, nombre) {
     cancelButtonText: 'Cancelar'
   });
 
-  if (!result.isConfirmed) return;
+  if (!result.isConfirmed) return false;
 
   try {
     const res = await apiFetch(`/api/modulos/tipos/${id}`, { method: 'DELETE' });
@@ -2843,12 +2855,14 @@ async function handleDeletePostTipo(id, nombre) {
     await loadPostTiposList();
     await loadPostTipos();
     await loadEditPostTipos();
+    return true;
   } catch (err) {
     getPrixmaSwal().fire({
       icon: 'error',
       title: 'Error al Eliminar',
       text: err.message
     });
+    return false;
   }
 }
 
@@ -3000,7 +3014,7 @@ async function handleDeletePost(postId) {
       title: 'Acceso Denegado',
       text: 'No tienes permisos para eliminar publicaciones.'
     });
-    return;
+    return false;
   }
 
   const result = await getPrixmaSwal().fire({
@@ -3014,7 +3028,7 @@ async function handleDeletePost(postId) {
     cancelButtonText: 'Cancelar'
   });
 
-  if (!result.isConfirmed) return;
+  if (!result.isConfirmed) return false;
 
   try {
     const res = await apiFetch(`/api/posts/${postId}`, { method: 'DELETE' });
@@ -3029,20 +3043,24 @@ async function handleDeletePost(postId) {
     });
 
     loadPosts(currentPage);
+    return true;
   } catch (err) {
     getPrixmaSwal().fire({
       icon: 'error',
       title: 'Error al Eliminar Publicación',
       text: err.message
     });
+    return false;
   }
 }
 
-function handleDeletePostFromModal() {
+async function handleDeletePostFromModal() {
   const postId = document.getElementById('editPostId').value;
   if (postId) {
-    closeModal('editModal');
-    handleDeletePost(postId);
+    const success = await handleDeletePost(postId);
+    if (success) {
+      navigateTo('#/dashboard');
+    }
   }
 }
 
@@ -3084,8 +3102,10 @@ async function handleSaveEditArea(event) {
 async function handleDeleteAreaFromForm() {
   const id = document.getElementById('editAreaId').value;
   if (id) {
-    await handleInactivarArea(id);
-    navigateTo('#/areas');
+    const success = await handleInactivarArea(id);
+    if (success) {
+      navigateTo('#/areas');
+    }
   }
 }
 
@@ -3153,8 +3173,10 @@ async function handleSaveEditModule(event) {
 async function handleDeleteModuleFromForm() {
   const id = document.getElementById('editModuleId').value;
   if (id) {
-    await handleInactivarModulo(id);
-    navigateTo('#/modulos');
+    const success = await handleInactivarModulo(id);
+    if (success) {
+      navigateTo('#/modulos');
+    }
   }
 }
 
@@ -3255,8 +3277,10 @@ async function handleDeleteTipoFromForm() {
   const id = document.getElementById('editPostTipoId').value;
   const nombre = document.getElementById('editPostTipoNombre') ? document.getElementById('editPostTipoNombre').value : '';
   if (id) {
-    await handleDeletePostTipo(id, nombre);
-    navigateTo('#/tipos');
+    const success = await handleDeletePostTipo(id, nombre);
+    if (success) {
+      navigateTo('#/tipos');
+    }
   }
 }
 
@@ -3322,8 +3346,10 @@ async function handleDeleteRoleFromForm() {
   const id = document.getElementById('editRoleId').value;
   const nombre = document.getElementById('editRoleNombre') ? document.getElementById('editRoleNombre').value : '';
   if (id) {
-    await handleDeleteRole(id, nombre);
-    navigateTo('#/rbac');
+    const success = await handleDeleteRole(id, nombre);
+    if (success) {
+      navigateTo('#/rbac');
+    }
   }
 }
 
