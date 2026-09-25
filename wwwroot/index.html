@@ -180,9 +180,20 @@
                   <select id="selectModulo" required></select>
                 </div>
               </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="selectTipo"><i class="fa-solid fa-tag"></i> Tipo de Publicación</label>
+                  <select id="selectTipo" required></select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="selectTipoConocimiento"><i class="fa-solid fa-brain"></i> Tipo de Conocimiento</label>
+                  <select id="selectTipoConocimiento"></select>
+                </div>
+              </div>
+
               <div class="form-group">
-                <label class="form-label" for="selectTipo"><i class="fa-solid fa-tag"></i> Tipo de Publicación</label>
-                <select id="selectTipo" required></select>
+                <label class="form-label" for="postPalabrasClave"><i class="fa-solid fa-hashtag"></i> Palabras Clave / Etiquetas (separadas por comas)</label>
+                <input type="text" id="postPalabrasClave" class="form-control" placeholder="Ej: sql, azure, respaldo, procedimiento">
               </div>
 
               <div class="form-group">
@@ -259,10 +270,20 @@
                 </div>
               </div>
 
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="editSelectTipo"><i class="fa-solid fa-tag"></i> Tipo de Publicación</label>
+                  <select id="editSelectTipo" required></select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="editSelectTipoConocimiento"><i class="fa-solid fa-brain"></i> Tipo de Conocimiento</label>
+                  <select id="editSelectTipoConocimiento"></select>
+                </div>
+              </div>
+
               <div class="form-group">
-                <label class="form-label" for="editSelectTipo"><i class="fa-solid fa-tag"></i> Tipo de
-                  Publicación</label>
-                <select id="editSelectTipo" required></select>
+                <label class="form-label" for="editPostPalabrasClave"><i class="fa-solid fa-hashtag"></i> Palabras Clave / Etiquetas (separadas por comas)</label>
+                <input type="text" id="editPostPalabrasClave" class="form-control" placeholder="Ej: sql, azure, respaldo, procedimiento">
               </div>
 
               <div class="form-group">
@@ -565,20 +586,56 @@
           <div class="modal-header"
             style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
             <div>
-              <h2 style="margin:0;"><i class="fa-solid fa-tags" style="color:var(--accent-emerald);"></i> Tipos de Publicación</h2>
-              <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0.25rem; margin-bottom:0;">Tipos de contenido para artículos (Guía, Incidencia, Manual, etc.).</p>
+              <h2 style="margin:0;"><i class="fa-solid fa-tags" style="color:var(--accent-emerald);"></i> Gestión de Tipos</h2>
+              <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0.25rem; margin-bottom:0;">Administra los tipos de publicación y tipos de conocimiento de la plataforma.</p>
             </div>
-            <div style="display:flex; gap:0.5rem; align-items:center;">
-              <a href="#/tipos/create" class="btn btn-primary" onclick="navigateTo('#/tipos/create'); return false;">
-                <i class="fa-solid fa-plus"></i> Nuevo Tipo
-              </a>
+            <div>
               <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('#/dashboard'); return false;">
                 <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
               </a>
             </div>
           </div>
           <div class="modal-body">
-            <div id="postTiposListContainer"></div>
+            <!-- Sub-tabs -->
+            <div class="rbac-tabs"
+              style="display:flex; gap:1rem; margin-bottom:1.5rem; border-bottom:1px solid var(--bg-card-border); padding-bottom:0.75rem;">
+              <button class="btn btn-secondary active-rbac-tab" id="tabBtnTiposPublicacion"
+                onclick="switchTiposSubTab('publicacion')">
+                <i class="fa-solid fa-tags"></i> Tipos de Publicación
+              </button>
+              <button class="btn btn-secondary" id="tabBtnTiposConocimiento"
+                onclick="switchTiposSubTab('conocimiento')">
+                <i class="fa-solid fa-brain"></i> Tipos de Conocimiento
+              </button>
+            </div>
+
+            <!-- Tab 1: Tipos de Publicación -->
+            <div id="tiposTabPublicacion">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem;">
+                <div>
+                  <h3 style="font-size:1.1rem; color:var(--text-main); margin-bottom:0.25rem;">Tipos de Publicación</h3>
+                  <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">Tipos de contenido para artículos (Guía, Incidencia, Manual, etc.).</p>
+                </div>
+                <a href="#/tipos/create" class="btn btn-primary" onclick="navigateTo('#/tipos/create'); return false;">
+                  <i class="fa-solid fa-plus"></i> Nuevo Tipo
+                </a>
+              </div>
+              <div id="postTiposListContainer"></div>
+            </div>
+
+            <!-- Tab 2: Tipos de Conocimiento -->
+            <div id="tiposTabConocimiento" class="view-hidden">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem;">
+                <div>
+                  <h3 style="font-size:1.1rem; color:var(--text-main); margin-bottom:0.25rem;">Tipos de Conocimiento</h3>
+                  <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">Categorías de conocimiento para clasificar los artículos (Técnico, Funcional, etc.).</p>
+                </div>
+                <a href="#/tipos-conocimiento/create" class="btn btn-primary" onclick="navigateTo('#/tipos-conocimiento/create'); return false;">
+                  <i class="fa-solid fa-plus"></i> Nuevo Tipo de Conocimiento
+                </a>
+              </div>
+              <div id="tiposConocimientoListContainer"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -650,6 +707,79 @@
                   <a href="#/tipos" class="btn btn-secondary"
                     onclick="navigateTo('#/tipos'); return false;">Cancelar</a>
                   <button type="submit" class="btn btn-primary" id="btnSubmitEditPostTipo">
+                    <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- CREATE TIPO DE CONOCIMIENTO VIEW -->
+      <div id="viewTipoConocimientoCreate" class="app-view view-hidden">
+        <div style="margin-bottom: 1.5rem;">
+          <a href="#/tipos-conocimiento" class="btn btn-secondary" onclick="navigateTo('#/tipos-conocimiento'); return false;">
+            <i class="fa-solid fa-arrow-left"></i> Volver a Tipos de Conocimiento
+          </a>
+        </div>
+        <div class="modal-card" style="max-width: 700px; margin: 0 auto; box-shadow: var(--shadow-md);">
+          <div class="modal-header">
+            <h2><i class="fa-solid fa-brain" style="color:var(--accent-emerald);"></i> Crear Tipo de Conocimiento</h2>
+          </div>
+          <div class="modal-body">
+            <form id="createTipoConocimientoForm" onsubmit="handleSaveCreateTipoConocimiento(event)">
+              <div class="form-group">
+                <label class="form-label" for="newTipoConocimientoNombre"><i class="fa-solid fa-heading"></i> Nombre del Tipo de Conocimiento</label>
+                <input type="text" id="newTipoConocimientoNombre" class="form-control"
+                  placeholder="Ej: General, Técnico, Operativo, Normativo" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="newTipoConocimientoDesc"><i class="fa-solid fa-align-left"></i> Descripción (Opcional)</label>
+                <textarea id="newTipoConocimientoDesc" rows="3" class="form-control"
+                  placeholder="Breve descripción del propósito de este tipo de conocimiento..."></textarea>
+              </div>
+              <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:1.5rem;">
+                <a href="#/tipos-conocimiento" class="btn btn-secondary" onclick="navigateTo('#/tipos-conocimiento'); return false;">Cancelar</a>
+                <button type="submit" class="btn btn-primary" id="btnSaveTipoConocimiento">
+                  <i class="fa-solid fa-floppy-disk"></i> Guardar Tipo
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- EDIT TIPO DE CONOCIMIENTO VIEW -->
+      <div id="viewTipoConocimientoEdit" class="app-view view-hidden">
+        <div style="margin-bottom: 1.5rem;">
+          <a href="#/tipos-conocimiento" class="btn btn-secondary" onclick="navigateTo('#/tipos-conocimiento'); return false;">
+            <i class="fa-solid fa-arrow-left"></i> Volver a Tipos de Conocimiento
+          </a>
+        </div>
+        <div class="modal-card" style="max-width: 700px; margin: 0 auto; box-shadow: var(--shadow-md);">
+          <div class="modal-header">
+            <h2><i class="fa-solid fa-pen-to-square" style="color:var(--accent-emerald);"></i> Editar Tipo de Conocimiento</h2>
+          </div>
+          <div class="modal-body">
+            <form id="editTipoConocimientoForm" onsubmit="handleSaveEditTipoConocimiento(event)">
+              <input type="hidden" id="editTipoConocimientoId">
+              <div class="form-group">
+                <label class="form-label" for="editTipoConocimientoNombre"><i class="fa-solid fa-pen"></i> Nombre del Tipo de Conocimiento</label>
+                <input type="text" id="editTipoConocimientoNombre" class="form-control" placeholder="Nombre..." required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="editTipoConocimientoDesc"><i class="fa-solid fa-align-left"></i> Descripción</label>
+                <textarea id="editTipoConocimientoDesc" rows="3" class="form-control" placeholder="Descripción..."></textarea>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem;">
+                <button type="button" class="btn btn-danger" onclick="handleDeleteTipoConocimientoFromForm()">
+                  <i class="fa-solid fa-trash-can"></i> Eliminar
+                </button>
+                <div style="display:flex; gap:1rem;">
+                  <a href="#/tipos-conocimiento" class="btn btn-secondary"
+                    onclick="navigateTo('#/tipos-conocimiento'); return false;">Cancelar</a>
+                  <button type="submit" class="btn btn-primary" id="btnSubmitEditTipoConocimiento">
                     <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
                   </button>
                 </div>

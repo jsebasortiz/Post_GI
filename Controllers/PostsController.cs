@@ -23,12 +23,13 @@ public class PostsController : ControllerBase
         [FromQuery] string? moduloSlug,
         [FromQuery] string? categoriaPadre,
         [FromQuery] byte? tipoId,
+        [FromQuery] byte? tipoConocimientoId,
         [FromQuery] string? search,
         [FromQuery] string? estado = "publicado",
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10)
     {
-        var result = await _postService.GetPostsAsync(moduloId, moduloSlug, categoriaPadre, tipoId, search, estado, page, pageSize);
+        var result = await _postService.GetPostsAsync(moduloId, moduloSlug, categoriaPadre, tipoId, tipoConocimientoId, search, estado, page, pageSize);
         return Ok(result);
     }
 

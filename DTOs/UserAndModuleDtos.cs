@@ -34,6 +34,12 @@ public class CreatePostTipoDto
     public byte? RolId { get; set; }
 }
 
+public class CreateTipoConocimientoDto
+{
+    public string Nombre { get; set; } = string.Empty;
+    public string? Descripcion { get; set; }
+}
+
 public class CreateUsuarioDto
 {
     public string Nombre { get; set; } = string.Empty;

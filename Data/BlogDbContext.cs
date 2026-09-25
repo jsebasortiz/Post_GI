@@ -21,6 +21,7 @@ public class BlogDbContext : DbContext
     public DbSet<Permiso> Permisos => Set<Permiso>();
     public DbSet<RolPermiso> RolPermisos => Set<RolPermiso>();
     public DbSet<Area> Areas => Set<Area>();
+    public DbSet<TipoConocimiento> TiposConocimiento => Set<TipoConocimiento>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -132,6 +133,13 @@ public class BlogDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        // Tabla tipo_conocimiento
+        modelBuilder.Entity<TipoConocimiento>(entity =>
+        {
+            entity.HasIndex(tc => tc.Nombre).IsUnique();
+            entity.Property(tc => tc.CreadoEn).HasDefaultValueSql("CURRENT_TIMESTAMP");
+        });
+
         // Tabla post
         modelBuilder.Entity<Post>(entity =>
         {
@@ -139,6 +147,7 @@ public class BlogDbContext : DbContext
             entity.HasIndex(p => p.UsuarioId).HasDatabaseName("idx_post_usuario");
             entity.HasIndex(p => p.ModuloId).HasDatabaseName("idx_post_modulo");
             entity.HasIndex(p => p.TipoId).HasDatabaseName("idx_post_tipo");
+            entity.HasIndex(p => p.TipoConocimientoId).HasDatabaseName("idx_post_tipo_conocimiento");
             entity.HasIndex(p => p.EstadoId).HasDatabaseName("idx_post_estado_id");
             entity.HasIndex(p => p.CreadoEn).HasDatabaseName("idx_post_creado");
 
@@ -160,6 +169,11 @@ public class BlogDbContext : DbContext
             entity.HasOne(p => p.Tipo)
                 .WithMany(t => t.Posts)
                 .HasForeignKey(p => p.TipoId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(p => p.TipoConocimiento)
+                .WithMany(tc => tc.Posts)
+                .HasForeignKey(p => p.TipoConocimientoId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(p => p.EstadoEntidad)

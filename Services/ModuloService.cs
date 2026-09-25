@@ -17,6 +17,10 @@ public interface IModuloService
     Task<PostTipo> CreatePostTipoAsync(CreatePostTipoDto dto);
     Task<PostTipo> UpdatePostTipoAsync(byte id, CreatePostTipoDto dto);
     Task<bool> InactivarPostTipoAsync(byte id);
+    Task<List<TipoConocimiento>> GetTiposConocimientoAsync(bool soloActivos = true);
+    Task<TipoConocimiento> CreateTipoConocimientoAsync(CreateTipoConocimientoDto dto);
+    Task<TipoConocimiento> UpdateTipoConocimientoAsync(byte id, CreateTipoConocimientoDto dto);
+    Task<bool> InactivarTipoConocimientoAsync(byte id);
 }
 
 public class ModuloService : IModuloService
@@ -168,6 +172,57 @@ public class ModuloService : IModuloService
         if (tipo == null) return false;
 
         tipo.EstadoId = 2; // Inactivado (borrado lógico)
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<List<TipoConocimiento>> GetTiposConocimientoAsync(bool soloActivos = true)
+    {
+        var query = _context.TiposConocimiento.AsQueryable();
+        if (soloActivos)
+        {
+            query = query.Where(tc => tc.EstadoId == 1);
+        }
+        return await query.OrderBy(tc => tc.Nombre).ToListAsync();
+    }
+
+    public async Task<TipoConocimiento> CreateTipoConocimientoAsync(CreateTipoConocimientoDto dto)
+    {
+        var tc = new TipoConocimiento
+        {
+            Nombre = dto.Nombre.Trim(),
+            Descripcion = string.IsNullOrWhiteSpace(dto.Descripcion) ? null : dto.Descripcion.Trim(),
+            EstadoId = 1,
+            CreadoEn = DateTime.UtcNow
+        };
+
+        _context.TiposConocimiento.Add(tc);
+        await _context.SaveChangesAsync();
+        return tc;
+    }
+
+    public async Task<TipoConocimiento> UpdateTipoConocimientoAsync(byte id, CreateTipoConocimientoDto dto)
+    {
+        var tc = await _context.TiposConocimiento.FirstOrDefaultAsync(x => x.Id == id);
+        if (tc == null)
+            throw new KeyNotFoundException("El tipo de conocimiento especificado no existe.");
+
+        if (string.IsNullOrWhiteSpace(dto.Nombre))
+            throw new ArgumentException("El nombre del tipo de conocimiento es requerido.");
+
+        tc.Nombre = dto.Nombre.Trim();
+        tc.Descripcion = string.IsNullOrWhiteSpace(dto.Descripcion) ? null : dto.Descripcion.Trim();
+
+        await _context.SaveChangesAsync();
+        return tc;
+    }
+
+    public async Task<bool> InactivarTipoConocimientoAsync(byte id)
+    {
+        var tc = await _context.TiposConocimiento.FirstOrDefaultAsync(x => x.Id == id);
+        if (tc == null) return false;
+
+        tc.EstadoId = 2;
         await _context.SaveChangesAsync();
         return true;
     }

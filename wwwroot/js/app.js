@@ -199,6 +199,7 @@ function switchAppView(viewId) {
     'viewAreaIndex', 'viewAreaCreate', 'viewAreaEdit',
     'viewModuleIndex', 'viewModuleCreate', 'viewModuleEdit',
     'viewPostTiposIndex', 'viewPostTiposCreate', 'viewPostTiposEdit',
+    'viewTipoConocimientoCreate', 'viewTipoConocimientoEdit',
     'viewRbacIndex', 'viewRoleCreate', 'viewRoleEdit'
   ];
   views.forEach(id => {
@@ -320,13 +321,17 @@ async function handleRoute() {
       switchAppView('viewModuleEdit');
       populateModuloAreaSelect();
       await loadModuleForEdit(modId);
-    } else if (cleanHash === '#/tipos') {
+    } else if (cleanHash === '#/tipos' || cleanHash === '#/tipos-conocimiento') {
       if (!hasPermission('tipos.manage') && !hasPermission('modulos.create') && !hasPermission('roles.manage')) {
         navigateTo('#/dashboard');
         return;
       }
       switchAppView('viewPostTiposIndex');
-      loadPostTiposList();
+      if (cleanHash === '#/tipos-conocimiento' || window.lastTiposSubTab === 'conocimiento') {
+        switchTiposSubTab('conocimiento');
+      } else {
+        switchTiposSubTab('publicacion');
+      }
     } else if (cleanHash === '#/tipos/create') {
       if (!hasPermission('tipos.manage') && !hasPermission('modulos.create') && !hasPermission('roles.manage')) {
         navigateTo('#/dashboard');
@@ -344,6 +349,22 @@ async function handleRoute() {
       const tipoId = cleanHash.replace('#/tipos/edit/', '');
       switchAppView('viewPostTiposEdit');
       await loadPostTipoForEdit(tipoId);
+    } else if (cleanHash === '#/tipos-conocimiento/create') {
+      if (!hasPermission('tipos.manage') && !hasPermission('modulos.create') && !hasPermission('roles.manage')) {
+        navigateTo('#/dashboard');
+        return;
+      }
+      switchAppView('viewTipoConocimientoCreate');
+      const f = document.getElementById('createTipoConocimientoForm');
+      if (f) f.reset();
+    } else if (cleanHash.startsWith('#/tipos-conocimiento/edit/')) {
+      if (!hasPermission('tipos.manage') && !hasPermission('modulos.create') && !hasPermission('roles.manage')) {
+        navigateTo('#/dashboard');
+        return;
+      }
+      const tipoId = cleanHash.replace('#/tipos-conocimiento/edit/', '');
+      switchAppView('viewTipoConocimientoEdit');
+      await loadTipoConocimientoForEdit(tipoId);
     } else if (cleanHash === '#/posts/create') {
       if (!hasPermission('posts.create')) {
         navigateTo('#/dashboard');
@@ -454,6 +475,7 @@ async function showMainApp() {
     await loadAreas();
     await loadModulos();
     await loadPostTipos();
+    await loadTiposConocimiento();
     await loadPosts();
   }
 }
@@ -776,6 +798,26 @@ async function loadPostTipos() {
   }
 }
 
+// Carga los tipos de conocimiento para los selectores
+async function loadTiposConocimiento() {
+  try {
+    const res = await apiFetch('/api/modulos/tipos-conocimiento');
+    if (!res.ok) return;
+    const tipos = await res.json();
+
+    const selectTipo = document.getElementById('selectTipoConocimiento');
+    const editSelectTipo = document.getElementById('editSelectTipoConocimiento');
+    let selectHtml = '<option value="">Seleccionar Tipo de Conocimiento</option>';
+    tipos.forEach(t => {
+      selectHtml += `<option value="${t.id}">${escapeHtml(t.nombre)}</option>`;
+    });
+    if (selectTipo) selectTipo.innerHTML = selectHtml;
+    if (editSelectTipo) editSelectTipo.innerHTML = selectHtml;
+  } catch (err) {
+    console.error('Error cargando tipos de conocimiento:', err);
+  }
+}
+
 // Cargar posts con filtros opcionales y paginación
 async function loadPosts(page = 1) {
   currentPage = page;
@@ -929,6 +971,20 @@ function renderPostCard(post) {
     </div>
   ` : '';
 
+  const tcBadge = post.tipoConocimientoNombre
+    ? `<span class="badge" style="background:var(--accent-purple); color:#fff;"><i class="fa-solid fa-brain"></i> ${escapeHtml(post.tipoConocimientoNombre)}</span>`
+    : '';
+
+  let tagsHtml = '';
+  if (post.palabrasClave) {
+    const tags = post.palabrasClave.split(',').map(t => t.trim()).filter(Boolean);
+    if (tags.length > 0) {
+      tagsHtml = `<div class="post-tags" style="display:flex; flex-wrap:wrap; gap:0.35rem; margin-top:0.6rem;">` +
+        tags.map(tag => `<span style="font-size:0.73rem; background:rgba(37,99,235,0.12); color:var(--primary); padding:2px 8px; border-radius:12px; font-weight:600;"><i class="fa-solid fa-hashtag" style="font-size:0.65rem; opacity:0.8;"></i>${escapeHtml(tag)}</span>`).join('') +
+        `</div>`;
+    }
+  }
+
   return `
     <article class="post-card" onclick="openDetailModal(${post.id})">
       ${actionsHtml}
@@ -937,12 +993,14 @@ function renderPostCard(post) {
           ${catBadge}
           <span class="badge badge-module">${escapeHtml(post.moduloNombre)}</span>
           <span class="badge badge-type">${escapeHtml(post.tipoNombre)}</span>
+          ${tcBadge}
         </div>
         ${coverHtml}
       </div>
       <div class="post-body">
         <h3 class="post-title">${escapeHtml(post.titulo)}</h3>
         <p class="post-summary">${escapeHtml(post.resumen || post.contenido)}</p>
+        ${tagsHtml}
         <div class="post-meta">
           <div class="author-info">
             <div class="avatar-sm">${escapeHtml(post.usuarioNombre.charAt(0).toUpperCase())}</div>
@@ -1076,6 +1134,9 @@ async function handleCreatePost(event) {
     formData.append('UsuarioId', currentUser.id);
     formData.append('ModuloId', document.getElementById('selectModulo').value);
     formData.append('TipoId', document.getElementById('selectTipo').value);
+    const tcIdVal = document.getElementById('selectTipoConocimiento').value;
+    if (tcIdVal) formData.append('TipoConocimientoId', tcIdVal);
+    formData.append('PalabrasClave', document.getElementById('postPalabrasClave').value.trim());
     formData.append('Titulo', document.getElementById('postTitulo').value);
     formData.append('Resumen', document.getElementById('postResumen').value);
     formData.append('Contenido', document.getElementById('postContenido').value);
@@ -1293,10 +1354,15 @@ async function openDetailView(postId) {
       ? `<span class="badge badge-cat-infra" style="position:static;"><i class="fa-solid fa-server"></i> Infraestructura</span>`
       : `<span class="badge badge-cat-apps" style="position:static;"><i class="fa-solid fa-rocket"></i> Apps</span>`;
 
+    const tcBadge = post.tipoConocimientoNombre
+      ? `<span class="badge" style="position:static; margin-left:0.5rem; background:var(--accent-purple); color:#fff;"><i class="fa-solid fa-brain"></i> ${escapeHtml(post.tipoConocimientoNombre)}</span>`
+      : '';
+
     document.getElementById('detailBadges').innerHTML = `
       ${catBadge}
       <span class="badge badge-module" style="position:static; margin-left:0.5rem;">${escapeHtml(post.moduloNombre)}</span>
       <span class="badge badge-type" style="position:static; margin-left:0.5rem;">${escapeHtml(post.tipoNombre)}</span>
+      ${tcBadge}
     `;
     document.getElementById('detailTitle').innerText = post.titulo;
 
@@ -1326,7 +1392,20 @@ async function openDetailView(postId) {
       coverContainer.innerHTML = '';
     }
 
+    let detailTagsHtml = '';
+    if (post.palabrasClave) {
+      const tags = post.palabrasClave.split(',').map(t => t.trim()).filter(Boolean);
+      if (tags.length > 0) {
+        detailTagsHtml = `<div style="display:flex; flex-wrap:wrap; gap:0.4rem; margin-bottom:1.5rem;">` +
+          tags.map(tag => `<span style="font-size:0.8rem; background:rgba(37,99,235,0.12); color:var(--primary); padding:3px 10px; border-radius:14px; font-weight:600;"><i class="fa-solid fa-hashtag" style="font-size:0.7rem;"></i>${escapeHtml(tag)}</span>`).join('') +
+          `</div>`;
+      }
+    }
+
     document.getElementById('detailContent').innerText = post.contenido;
+    if (detailTagsHtml) {
+      document.getElementById('detailContent').insertAdjacentHTML('afterend', detailTagsHtml);
+    }
 
     const attachContainer = document.getElementById('detailAttachments');
     if (post.adjuntos && post.adjuntos.length > 0) {
@@ -2533,6 +2612,15 @@ async function openEditView(postId) {
 
     await loadEditPostTipos(post.tipoId);
 
+    const tcSelect = document.getElementById('editSelectTipoConocimiento');
+    if (tcSelect) {
+      tcSelect.value = post.tipoConocimientoId || '';
+    }
+    const tagsInput = document.getElementById('editPostPalabrasClave');
+    if (tagsInput) {
+      tagsInput.value = post.palabrasClave || '';
+    }
+
     const existingContainer = document.getElementById('editExistingAdjuntos');
     if (existingContainer) {
       if (post.adjuntos && post.adjuntos.length > 0) {
@@ -2866,6 +2954,286 @@ async function handleDeletePostTipo(id, nombre) {
   }
 }
 
+function switchTiposSubTab(tab) {
+  window.lastTiposSubTab = tab;
+  const tabPublicacion = document.getElementById('tiposTabPublicacion');
+  const tabConocimiento = document.getElementById('tiposTabConocimiento');
+  const btnPublicacion = document.getElementById('tabBtnTiposPublicacion');
+  const btnConocimiento = document.getElementById('tabBtnTiposConocimiento');
+
+  if (tabPublicacion) tabPublicacion.classList.add('view-hidden');
+  if (tabConocimiento) tabConocimiento.classList.add('view-hidden');
+  if (btnPublicacion) btnPublicacion.classList.remove('active-rbac-tab');
+  if (btnConocimiento) btnConocimiento.classList.remove('active-rbac-tab');
+
+  if (tab === 'publicacion') {
+    if (tabPublicacion) tabPublicacion.classList.remove('view-hidden');
+    if (btnPublicacion) btnPublicacion.classList.add('active-rbac-tab');
+    loadPostTiposList();
+  } else if (tab === 'conocimiento') {
+    if (tabConocimiento) tabConocimiento.classList.remove('view-hidden');
+    if (btnConocimiento) btnConocimiento.classList.add('active-rbac-tab');
+    loadTiposConocimientoList();
+  }
+}
+
+let tiposConocimientoCurrentPage = 1;
+const tiposConocimientoPageSize = 5;
+
+function changeTiposConocimientoPage(delta) {
+  tiposConocimientoCurrentPage += delta;
+  loadTiposConocimientoList();
+}
+
+async function loadTiposConocimientoList() {
+  const container = document.getElementById('tiposConocimientoListContainer');
+  if (!container) return;
+
+  container.innerHTML = '<div style="text-align:center; padding:1.5rem;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando tipos de conocimiento...</div>';
+
+  try {
+    const res = await apiFetch('/api/modulos/tipos-conocimiento');
+    if (!res.ok) throw new Error('Error al obtener los tipos de conocimiento.');
+
+    const tipos = await res.json();
+    if (!tipos || tipos.length === 0) {
+      container.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-muted);">No hay tipos de conocimiento registrados.</div>';
+      return;
+    }
+
+    const totalItems = tipos.length;
+    const totalPages = Math.ceil(totalItems / tiposConocimientoPageSize) || 1;
+
+    if (tiposConocimientoCurrentPage > totalPages) tiposConocimientoCurrentPage = totalPages;
+    if (tiposConocimientoCurrentPage < 1) tiposConocimientoCurrentPage = 1;
+
+    const startIndex = (tiposConocimientoCurrentPage - 1) * tiposConocimientoPageSize;
+    const pageTipos = tipos.slice(startIndex, startIndex + tiposConocimientoPageSize);
+
+    let html = `
+      <div class="table-responsive">
+        <table class="rbac-table" style="width:100%; border-collapse:collapse;">
+          <thead>
+            <tr style="text-align:left; border-bottom:1px solid var(--bg-card-border); color:var(--text-muted); font-size:0.85rem;">
+              <th style="padding:0.75rem;">Nombre del Tipo de Conocimiento</th>
+              <th style="padding:0.75rem;">Descripción</th>
+              <th style="padding:0.75rem; text-align:right;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${pageTipos.map(t => `
+              <tr>
+                <td style="padding:0.75rem; font-weight:600; color:var(--text-main);">${escapeHtml(t.nombre)}</td>
+                <td style="padding:0.75rem; color:var(--text-muted); font-size:0.85rem;">${escapeHtml(t.descripcion || 'Sin descripción')}</td>
+                <td style="padding:0.75rem; text-align:right;">
+                  <div style="display:flex; gap:0.5rem; justify-content:flex-end; align-items:center;">
+                    <button class="btn btn-secondary" onclick="navigateTo('#/tipos-conocimiento/edit/' + ${t.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem;" title="Editar Tipo de Conocimiento">
+                      <i class="fa-solid fa-pen"></i> Editar
+                    </button>
+                    <button class="btn btn-secondary" onclick="handleDeleteTipoConocimiento(${t.id}, '${escapeHtml(t.nombre)}')" style="padding:0.35rem 0.65rem; font-size:0.8rem; color:var(--accent-rose); border-color:rgba(244,63,94,0.3);" title="Eliminar Tipo de Conocimiento">
+                      <i class="fa-solid fa-trash"></i> Eliminar
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    if (totalItems > tiposConocimientoPageSize) {
+      const prevDisabled = tiposConocimientoCurrentPage === 1 ? 'disabled' : '';
+      const nextDisabled = tiposConocimientoCurrentPage === totalPages ? 'disabled' : '';
+      html += `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; padding-top:0.75rem; border-top:1px solid var(--bg-card-border); font-size:0.85rem; color:var(--text-muted);">
+          <span>Página ${tiposConocimientoCurrentPage} de ${totalPages} (${totalItems} tipos en total)</span>
+          <div style="display:flex; gap:0.5rem;">
+            <button class="btn btn-secondary" style="padding:0.3rem 0.75rem; font-size:0.8rem;" ${prevDisabled} onclick="changeTiposConocimientoPage(-1)">
+              <i class="fa-solid fa-chevron-left"></i> Anterior
+            </button>
+            <button class="btn btn-secondary" style="padding:0.3rem 0.75rem; font-size:0.8rem;" ${nextDisabled} onclick="changeTiposConocimientoPage(1)">
+              Siguiente <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+      `;
+    } else {
+      html += `<div style="margin-top:1rem; padding-top:0.75rem; border-top:1px solid var(--bg-card-border); font-size:0.85rem; color:var(--text-muted);">Mostrando ${totalItems} tipo(s) de conocimiento</div>`;
+    }
+
+    container.innerHTML = html;
+  } catch (err) {
+    container.innerHTML = `<div style="color:var(--accent-rose); text-align:center;">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function handleCreateTipoConocimientoInline() {
+  const { value: formValues } = await getPrixmaSwal().fire({
+    title: 'Crear Tipo de Conocimiento',
+    html: `
+      <div style="text-align:left; display:flex; flex-direction:column; gap:0.75rem;">
+        <div>
+          <label style="font-size:0.85rem; color:var(--text-muted); display:block; margin-bottom:4px;">Nombre del Tipo de Conocimiento</label>
+          <input id="swal-input-tipo-conoc-nombre" class="swal2-input" style="width:100%; margin:0;" placeholder="Ej: General, Técnico, Operativo">
+        </div>
+        <div>
+          <label style="font-size:0.85rem; color:var(--text-muted); display:block; margin-bottom:4px;">Descripción</label>
+          <input id="swal-input-tipo-conoc-desc" class="swal2-input" style="width:100%; margin:0;" placeholder="Breve descripción del área de conocimiento...">
+        </div>
+      </div>
+    `,
+    focusConfirm: false,
+    showCancelButton: true,
+    confirmButtonText: 'Guardar',
+    cancelButtonText: 'Cancelar',
+    preConfirm: () => {
+      const nombre = document.getElementById('swal-input-tipo-conoc-nombre').value.trim();
+      const descripcion = document.getElementById('swal-input-tipo-conoc-desc').value.trim();
+      if (!nombre) {
+        getPrixmaSwal().showValidationMessage('El nombre es requerido');
+        return false;
+      }
+      return { nombre, descripcion };
+    }
+  });
+
+  if (!formValues) return;
+
+  try {
+    const res = await apiFetch('/api/modulos/tipos-conocimiento', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formValues)
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Error al crear el tipo de conocimiento.');
+    }
+
+    getPrixmaSwal().fire({
+      icon: 'success',
+      title: 'Tipo Creado',
+      text: 'El tipo de conocimiento se creó correctamente.',
+      timer: 2000,
+      showConfirmButton: false
+    });
+
+    await loadTiposConocimientoList();
+  } catch (err) {
+    getPrixmaSwal().fire({
+      icon: 'error',
+      title: 'Error',
+      text: err.message
+    });
+  }
+}
+
+async function handleEditTipoConocimientoInline(id, currentNombre, currentDesc) {
+  const { value: formValues } = await getPrixmaSwal().fire({
+    title: 'Editar Tipo de Conocimiento',
+    html: `
+      <div style="text-align:left; display:flex; flex-direction:column; gap:0.75rem;">
+        <div>
+          <label style="font-size:0.85rem; color:var(--text-muted); display:block; margin-bottom:4px;">Nombre</label>
+          <input id="swal-input-tipo-conoc-nombre" class="swal2-input" style="width:100%; margin:0;" value="${escapeHtml(currentNombre)}">
+        </div>
+        <div>
+          <label style="font-size:0.85rem; color:var(--text-muted); display:block; margin-bottom:4px;">Descripción</label>
+          <input id="swal-input-tipo-conoc-desc" class="swal2-input" style="width:100%; margin:0;" value="${escapeHtml(currentDesc)}">
+        </div>
+      </div>
+    `,
+    focusConfirm: false,
+    showCancelButton: true,
+    confirmButtonText: 'Guardar Cambios',
+    cancelButtonText: 'Cancelar',
+    preConfirm: () => {
+      const nombre = document.getElementById('swal-input-tipo-conoc-nombre').value.trim();
+      const descripcion = document.getElementById('swal-input-tipo-conoc-desc').value.trim();
+      if (!nombre) {
+        getPrixmaSwal().showValidationMessage('El nombre es requerido');
+        return false;
+      }
+      return { nombre, descripcion };
+    }
+  });
+
+  if (!formValues) return;
+
+  try {
+    const res = await apiFetch(`/api/modulos/tipos-conocimiento/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formValues)
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Error al actualizar el tipo de conocimiento.');
+    }
+
+    getPrixmaSwal().fire({
+      icon: 'success',
+      title: 'Tipo Actualizado',
+      text: 'Los datos del tipo de conocimiento se guardaron correctamente.',
+      timer: 2000,
+      showConfirmButton: false
+    });
+
+    await loadTiposConocimientoList();
+  } catch (err) {
+    getPrixmaSwal().fire({
+      icon: 'error',
+      title: 'Error',
+      text: err.message
+    });
+  }
+}
+
+async function handleDeleteTipoConocimiento(id, nombre) {
+  const result = await getPrixmaSwal().fire({
+    title: '¿Eliminar Tipo de Conocimiento?',
+    text: `¿Estás seguro de eliminar el tipo de conocimiento "${nombre}"?`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: 'var(--accent-rose, #f43f5e)',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Sí, eliminar',
+    cancelButtonText: 'Cancelar'
+  });
+
+  if (!result.isConfirmed) return false;
+
+  try {
+    const res = await apiFetch(`/api/modulos/tipos-conocimiento/${id}`, { method: 'DELETE' });
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      throw new Error(data.message || 'No se pudo eliminar el tipo de conocimiento.');
+    }
+
+    getPrixmaSwal().fire({
+      icon: 'success',
+      title: 'Tipo Eliminado',
+      text: `El tipo de conocimiento "${nombre}" ha sido eliminado.`,
+      timer: 2000,
+      showConfirmButton: false
+    });
+
+    await loadTiposConocimientoList();
+    return true;
+  } catch (err) {
+    getPrixmaSwal().fire({
+      icon: 'error',
+      title: 'Error al Eliminar',
+      text: err.message
+    });
+    return false;
+  }
+}
+
 async function loadEditPostTipos(selectedTipoId = null) {
   try {
     const res = await apiFetch('/api/modulos/tipos');
@@ -2941,6 +3309,8 @@ async function handleSaveEditPost(event) {
   const updateDto = {
     moduloId: parseInt(document.getElementById('editSelectModulo').value),
     tipoId: parseInt(document.getElementById('editSelectTipo').value),
+    tipoConocimientoId: parseInt(document.getElementById('editSelectTipoConocimiento').value) || null,
+    palabrasClave: document.getElementById('editPostPalabrasClave').value.trim(),
     titulo: document.getElementById('editPostTitulo').value.trim(),
     resumen: document.getElementById('editPostResumen').value.trim(),
     contenido: document.getElementById('editPostContenido').value.trim(),
@@ -3280,6 +3650,85 @@ async function handleDeleteTipoFromForm() {
     const success = await handleDeletePostTipo(id, nombre);
     if (success) {
       navigateTo('#/tipos');
+    }
+  }
+}
+
+async function loadTipoConocimientoForEdit(id) {
+  try {
+    const res = await apiFetch('/api/modulos/tipos-conocimiento');
+    if (res.ok) {
+      const tipos = await res.json();
+      const t = tipos.find(x => x.id === parseInt(id));
+      if (t) {
+        document.getElementById('editTipoConocimientoId').value = t.id;
+        document.getElementById('editTipoConocimientoNombre').value = t.nombre || '';
+        document.getElementById('editTipoConocimientoDesc').value = t.descripcion || '';
+      }
+    }
+  } catch (e) {
+    console.error('Error cargando tipo de conocimiento para edición:', e);
+  }
+}
+
+async function handleSaveCreateTipoConocimiento(event) {
+  event.preventDefault();
+  const nombre = document.getElementById('newTipoConocimientoNombre').value.trim();
+  const descripcion = document.getElementById('newTipoConocimientoDesc').value.trim();
+  if (!nombre) return;
+
+  try {
+    const res = await apiFetch('/api/modulos/tipos-conocimiento', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, descripcion })
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'Error al crear el tipo de conocimiento.');
+    }
+    await loadTiposConocimientoList();
+    getPrixmaSwal().fire({ icon: 'success', title: 'Tipo Creado', text: 'El tipo de conocimiento se creó correctamente.', timer: 1800, showConfirmButton: false });
+    window.lastTiposSubTab = 'conocimiento';
+    navigateTo('#/tipos-conocimiento');
+  } catch (err) {
+    getPrixmaSwal().fire({ icon: 'error', title: 'Error', text: err.message });
+  }
+}
+
+async function handleSaveEditTipoConocimiento(event) {
+  event.preventDefault();
+  const id = document.getElementById('editTipoConocimientoId').value;
+  const nombre = document.getElementById('editTipoConocimientoNombre').value.trim();
+  const descripcion = document.getElementById('editTipoConocimientoDesc').value.trim();
+
+  try {
+    const res = await apiFetch(`/api/modulos/tipos-conocimiento/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: parseInt(id), nombre, descripcion })
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'Error al actualizar el tipo de conocimiento.');
+    }
+    await loadTiposConocimientoList();
+    getPrixmaSwal().fire({ icon: 'success', title: 'Tipo Actualizado', text: 'Los cambios fueron guardados correctamente.', timer: 1800, showConfirmButton: false });
+    window.lastTiposSubTab = 'conocimiento';
+    navigateTo('#/tipos-conocimiento');
+  } catch (err) {
+    getPrixmaSwal().fire({ icon: 'error', title: 'Error', text: err.message });
+  }
+}
+
+async function handleDeleteTipoConocimientoFromForm() {
+  const id = document.getElementById('editTipoConocimientoId').value;
+  const nombre = document.getElementById('editTipoConocimientoNombre') ? document.getElementById('editTipoConocimientoNombre').value : '';
+  if (id) {
+    const success = await handleDeleteTipoConocimiento(id, nombre);
+    if (success) {
+      window.lastTiposSubTab = 'conocimiento';
+      navigateTo('#/tipos-conocimiento');
     }
   }
 }

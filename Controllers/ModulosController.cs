@@ -117,4 +117,48 @@ public class ModulosController : ControllerBase
         if (!success) return NotFound(new { message = "Tipo de publicación no encontrado." });
         return Ok(new { message = "El tipo de publicación fue inactivado (borrado lógico)." });
     }
+
+    [HttpGet("tipos-conocimiento")]
+    public async Task<IActionResult> GetTiposConocimiento()
+    {
+        var tipos = await _moduloService.GetTiposConocimientoAsync();
+        return Ok(tipos);
+    }
+
+    [HttpPost("tipos-conocimiento")]
+    [Authorize(Roles = "Administrador,Editor")]
+    public async Task<IActionResult> CreateTipoConocimiento([FromBody] CreateTipoConocimientoDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.Nombre)) return BadRequest(new { message = "El nombre del tipo de conocimiento es requerido." });
+        var tc = await _moduloService.CreateTipoConocimientoAsync(dto);
+        return Ok(tc);
+    }
+
+    [HttpPut("tipos-conocimiento/{id:int}")]
+    [Authorize(Roles = "Administrador,Editor")]
+    public async Task<IActionResult> UpdateTipoConocimiento(byte id, [FromBody] CreateTipoConocimientoDto dto)
+    {
+        try
+        {
+            var tc = await _moduloService.UpdateTipoConocimientoAsync(id, dto);
+            return Ok(tc);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpDelete("tipos-conocimiento/{id:int}")]
+    [Authorize(Roles = "Administrador,Editor")]
+    public async Task<IActionResult> InactivarTipoConocimiento(byte id)
+    {
+        var success = await _moduloService.InactivarTipoConocimientoAsync(id);
+        if (!success) return NotFound(new { message = "Tipo de conocimiento no encontrado." });
+        return Ok(new { message = "El tipo de conocimiento fue inactivado (borrado lógico)." });
+    }
 }

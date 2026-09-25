@@ -5,6 +5,8 @@ public class CreatePostDto
     public ulong UsuarioId { get; set; }
     public ushort ModuloId { get; set; }
     public byte TipoId { get; set; }
+    public byte? TipoConocimientoId { get; set; }
+    public string? PalabrasClave { get; set; }
     public string Titulo { get; set; } = string.Empty;
     public string? Resumen { get; set; }
     public string Contenido { get; set; } = string.Empty;
@@ -17,6 +19,8 @@ public class UpdatePostDto
 {
     public ushort ModuloId { get; set; }
     public byte TipoId { get; set; }
+    public byte? TipoConocimientoId { get; set; }
+    public string? PalabrasClave { get; set; }
     public string Titulo { get; set; } = string.Empty;
     public string? Resumen { get; set; }
     public string Contenido { get; set; } = string.Empty;
@@ -47,6 +51,9 @@ public class PostResponseDto
     public string ModuloCategoriaPadre { get; set; } = string.Empty;
     public byte TipoId { get; set; }
     public string TipoNombre { get; set; } = string.Empty;
+    public byte? TipoConocimientoId { get; set; }
+    public string? TipoConocimientoNombre { get; set; }
+    public string? PalabrasClave { get; set; }
     public byte EstadoId { get; set; } = 1;
     public string EstadoNombre { get; set; } = "Activo";
     public string Titulo { get; set; } = string.Empty;

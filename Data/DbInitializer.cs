@@ -168,6 +168,61 @@ public static class DbInitializer
                 Console.WriteLine($"[DbInitializer] Verificación de columna area_id en modulo: {ex.Message}");
             }
 
+            // Asegurar creación de tabla tipo_conocimiento y columnas en post
+            try
+            {
+                var createTipoConocimientoSql = @"
+                CREATE TABLE IF NOT EXISTS `tipo_conocimiento` (
+                  `id` tinyint unsigned NOT NULL AUTO_INCREMENT,
+                  `nombre` varchar(100) NOT NULL,
+                  `descripcion` varchar(255) DEFAULT NULL,
+                  `estado_id` tinyint unsigned NOT NULL DEFAULT '1',
+                  `creado_en` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+                  PRIMARY KEY (`id`),
+                  UNIQUE KEY `idx_tipo_conocimiento_nombre` (`nombre`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
+
+                await context.Database.ExecuteSqlRawAsync(createTipoConocimientoSql);
+
+                var conn = context.Database.GetDbConnection();
+                if (conn.State != System.Data.ConnectionState.Open)
+                    await conn.OpenAsync();
+
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'post' AND COLUMN_NAME = 'tipo_conocimiento_id'";
+                    var colCount = Convert.ToInt64(await cmd.ExecuteScalarAsync());
+                    if (colCount == 0)
+                    {
+                        await context.Database.ExecuteSqlRawAsync("ALTER TABLE `post` ADD COLUMN `tipo_conocimiento_id` TINYINT UNSIGNED NULL;");
+                    }
+                }
+
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'post' AND COLUMN_NAME = 'palabras_clave'";
+                    var colCount = Convert.ToInt64(await cmd.ExecuteScalarAsync());
+                    if (colCount == 0)
+                    {
+                        await context.Database.ExecuteSqlRawAsync("ALTER TABLE `post` ADD COLUMN `palabras_clave` VARCHAR(500) NULL;");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[DbInitializer] Verificación de tabla tipo_conocimiento y columnas en post: {ex.Message}");
+            }
+
+            // Seed TipoConocimiento
+            if (!await context.TiposConocimiento.AnyAsync())
+            {
+                context.TiposConocimiento.Add(new TipoConocimiento { Id = 1, Nombre = "Técnico", Descripcion = "Documentación de arquitectura, código, configuraciones e infraestructura" });
+                context.TiposConocimiento.Add(new TipoConocimiento { Id = 2, Nombre = "Funcional / Operativo", Descripcion = "Procedimientos corporativos, guías operativas e instructivos de uso" });
+                context.TiposConocimiento.Add(new TipoConocimiento { Id = 3, Nombre = "Normativo / Políticas", Descripcion = "Políticas de empresa, estándares de cumplimiento y normativas" });
+                context.TiposConocimiento.Add(new TipoConocimiento { Id = 4, Nombre = "Soporte / Incidencias", Descripcion = "Solución a fallos recurrentes, preguntas frecuentes y soporte técnico" });
+                await context.SaveChangesAsync();
+            }
+
             // Seed PostTipo con IDs explícitos (byte)
             if (!await context.PostTipos.AnyAsync())
             {
