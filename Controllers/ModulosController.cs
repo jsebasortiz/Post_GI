@@ -79,6 +79,7 @@ public class ModulosController : ControllerBase
     }
 
     [HttpPost("tipos")]
+    [Authorize(Roles = "Administrador,Editor")]
     public async Task<IActionResult> CreatePostTipo([FromBody] CreatePostTipoDto dto)
     {
         if (string.IsNullOrWhiteSpace(dto.Nombre)) return BadRequest(new { message = "El nombre del tipo es requerido." });
@@ -87,6 +88,7 @@ public class ModulosController : ControllerBase
     }
 
     [HttpPut("tipos/{id:int}")]
+    [Authorize(Roles = "Administrador,Editor")]
     public async Task<IActionResult> UpdatePostTipo(byte id, [FromBody] CreatePostTipoDto dto)
     {
         try
@@ -105,6 +107,7 @@ public class ModulosController : ControllerBase
     }
 
     [HttpDelete("tipos/{id:int}")]
+    [Authorize(Roles = "Administrador,Editor")]
     public async Task<IActionResult> InactivarPostTipo(byte id)
     {
         var success = await _moduloService.InactivarPostTipoAsync(id);

@@ -109,7 +109,7 @@ public class ModuloService : IModuloService
 
     public async Task<List<PostTipo>> GetPostTiposAsync(bool soloActivos = true)
     {
-        var query = _context.PostTipos.AsQueryable();
+        var query = _context.PostTipos.Include(pt => pt.Rol).AsQueryable();
         if (soloActivos)
         {
             query = query.Where(pt => pt.EstadoId == 1);
@@ -123,18 +123,23 @@ public class ModuloService : IModuloService
         {
             Nombre = dto.Nombre,
             Descripcion = dto.Descripcion,
+            RolId = dto.RolId,
             EstadoId = 1,
             CreadoEn = DateTime.UtcNow
         };
 
         _context.PostTipos.Add(tipo);
         await _context.SaveChangesAsync();
+        if (dto.RolId.HasValue)
+        {
+            tipo.Rol = await _context.Roles.FirstOrDefaultAsync(r => r.Id == dto.RolId.Value);
+        }
         return tipo;
     }
 
     public async Task<PostTipo> UpdatePostTipoAsync(byte id, CreatePostTipoDto dto)
     {
-        var tipo = await _context.PostTipos.FirstOrDefaultAsync(pt => pt.Id == id);
+        var tipo = await _context.PostTipos.Include(pt => pt.Rol).FirstOrDefaultAsync(pt => pt.Id == id);
         if (tipo == null)
             throw new KeyNotFoundException("El tipo de publicación especificado no existe.");
 
@@ -143,8 +148,17 @@ public class ModuloService : IModuloService
 
         tipo.Nombre = dto.Nombre.Trim();
         tipo.Descripcion = string.IsNullOrWhiteSpace(dto.Descripcion) ? null : dto.Descripcion.Trim();
+        tipo.RolId = dto.RolId;
 
         await _context.SaveChangesAsync();
+        if (dto.RolId.HasValue)
+        {
+            tipo.Rol = await _context.Roles.FirstOrDefaultAsync(r => r.Id == dto.RolId.Value);
+        }
+        else
+        {
+            tipo.Rol = null;
+        }
         return tipo;
     }
 

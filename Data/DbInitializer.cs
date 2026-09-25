@@ -63,6 +63,16 @@ public static class DbInitializer
                         await context.Database.ExecuteSqlRawAsync("ALTER TABLE `rol` ADD COLUMN `estado_id` TINYINT UNSIGNED NOT NULL DEFAULT 1;");
                     }
                 }
+
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'post_tipo' AND COLUMN_NAME = 'rol_id'";
+                    var colCount = Convert.ToInt64(await cmd.ExecuteScalarAsync());
+                    if (colCount == 0)
+                    {
+                        await context.Database.ExecuteSqlRawAsync("ALTER TABLE `post_tipo` ADD COLUMN `rol_id` TINYINT UNSIGNED NULL;");
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -210,6 +220,18 @@ public static class DbInitializer
                 context.Permisos.Add(new Permiso { Id = 3, Codigo = "posts.delete", Nombre = "Eliminar Publicaciones", Descripcion = "Permite eliminar publicaciones" });
                 context.Permisos.Add(new Permiso { Id = 4, Codigo = "modulos.create", Nombre = "Crear Módulos", Descripcion = "Permite registrar nuevos módulos temáticos" });
                 context.Permisos.Add(new Permiso { Id = 5, Codigo = "roles.manage", Nombre = "Gestionar Roles & Permisos", Descripcion = "Acceso al panel de administración de roles y permisos" });
+                context.Permisos.Add(new Permiso { Id = 6, Codigo = "tipos.manage", Nombre = "Gestionar Tipos de Publicación", Descripcion = "Permite crear, editar y eliminar tipos de publicación" });
+                await context.SaveChangesAsync();
+            }
+            else if (!await context.Permisos.AnyAsync(p => p.Codigo == "tipos.manage"))
+            {
+                context.Permisos.Add(new Permiso { Id = 6, Codigo = "tipos.manage", Nombre = "Gestionar Tipos de Publicación", Descripcion = "Permite crear, editar y eliminar tipos de publicación" });
+                await context.SaveChangesAsync();
+
+                if (!await context.RolPermisos.AnyAsync(rp => rp.RolId == 1 && rp.PermisoId == 6))
+                    context.RolPermisos.Add(new RolPermiso { RolId = 1, PermisoId = 6 });
+                if (!await context.RolPermisos.AnyAsync(rp => rp.RolId == 2 && rp.PermisoId == 6))
+                    context.RolPermisos.Add(new RolPermiso { RolId = 2, PermisoId = 6 });
                 await context.SaveChangesAsync();
             }
 
@@ -222,11 +244,13 @@ public static class DbInitializer
                 context.RolPermisos.Add(new RolPermiso { RolId = 1, PermisoId = 3 });
                 context.RolPermisos.Add(new RolPermiso { RolId = 1, PermisoId = 4 });
                 context.RolPermisos.Add(new RolPermiso { RolId = 1, PermisoId = 5 });
+                context.RolPermisos.Add(new RolPermiso { RolId = 1, PermisoId = 6 });
 
-                // Editor (Rol 2) puede crear/editar posts y módulos
+                // Editor (Rol 2) puede crear/editar posts, módulos y tipos
                 context.RolPermisos.Add(new RolPermiso { RolId = 2, PermisoId = 1 });
                 context.RolPermisos.Add(new RolPermiso { RolId = 2, PermisoId = 2 });
                 context.RolPermisos.Add(new RolPermiso { RolId = 2, PermisoId = 4 });
+                context.RolPermisos.Add(new RolPermiso { RolId = 2, PermisoId = 6 });
 
                 await context.SaveChangesAsync();
             }

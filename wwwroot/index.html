@@ -102,7 +102,7 @@
       </div>
     </header>
 
-    <main class="container" style="padding-top: 2rem; padding-bottom: 3rem;">
+    <main class="container" style="padding-top: 1rem; padding-bottom: 2rem;">
 
       <!-- 1. DASHBOARD VIEW -->
       <div id="viewDashboard" class="app-view">
@@ -349,23 +349,21 @@
 
       <!-- 5. AREAS VIEWS (Index, Create, Edit) -->
       <div id="viewAreaIndex" class="app-view view-hidden">
-        <div style="margin-bottom: 1.5rem;">
-          <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('#/dashboard'); return false;">
-            <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
-          </a>
-        </div>
         <div class="modal-card" style="max-width: 900px; margin: 0 auto; box-shadow: var(--shadow-md);">
           <div class="modal-header"
             style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
             <div>
-              <h2><i class="fa-solid fa-sitemap" style="color:var(--accent-cyan);"></i> Gestión de Áreas Corporativas
-              </h2>
-              <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0.25rem;">Categorías principales del
-                portal de publicaciones.</p>
+              <h2 style="margin:0;"><i class="fa-solid fa-sitemap" style="color:var(--accent-cyan);"></i> Gestión de Áreas Corporativas</h2>
+              <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0.25rem; margin-bottom:0;">Categorías principales del portal de publicaciones.</p>
             </div>
-            <a href="#/areas/create" class="btn btn-primary" onclick="navigateTo('#/areas/create'); return false;">
-              <i class="fa-solid fa-plus"></i> Nueva Área
-            </a>
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+              <a href="#/areas/create" class="btn btn-primary" onclick="navigateTo('#/areas/create'); return false;">
+                <i class="fa-solid fa-plus"></i> Nueva Área
+              </a>
+              <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('#/dashboard'); return false;">
+                <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
+              </a>
+            </div>
           </div>
           <div class="modal-body">
             <div id="areasListContainer"></div>
@@ -379,7 +377,7 @@
             <i class="fa-solid fa-arrow-left"></i> Volver a Gestión de Áreas
           </a>
         </div>
-        <div class="modal-card" style="max-width: 700px; margin: 0 auto; box-shadow: var(--shadow-md);">
+        <div class="modal-card form-card" style="margin: 0 auto; box-shadow: var(--shadow-md);">
           <div class="modal-header">
             <h2><i class="fa-solid fa-folder-plus" style="color:var(--accent-cyan);"></i> Crear Nueva Área</h2>
           </div>
@@ -448,23 +446,21 @@
 
       <!-- 6. MODULES VIEWS (Index, Create, Edit) -->
       <div id="viewModuleIndex" class="app-view view-hidden">
-        <div style="margin-bottom: 1.5rem;">
-          <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('#/dashboard'); return false;">
-            <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
-          </a>
-        </div>
         <div class="modal-card" style="max-width: 900px; margin: 0 auto; box-shadow: var(--shadow-md);">
           <div class="modal-header"
             style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
             <div>
-              <h2><i class="fa-solid fa-folder-plus" style="color:var(--accent-cyan);"></i> Gestión de Módulos Temáticos
-              </h2>
-              <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0.25rem;">Módulos organizados por áreas
-                principales.</p>
+              <h2 style="margin:0;"><i class="fa-solid fa-folder-plus" style="color:var(--accent-cyan);"></i> Gestión de Módulos Temáticos</h2>
+              <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0.25rem; margin-bottom:0;">Módulos organizados por áreas principales.</p>
             </div>
-            <a href="#/modulos/create" class="btn btn-primary" onclick="navigateTo('#/modulos/create'); return false;">
-              <i class="fa-solid fa-plus"></i> Nuevo Módulo
-            </a>
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+              <a href="#/modulos/create" class="btn btn-primary" onclick="navigateTo('#/modulos/create'); return false;">
+                <i class="fa-solid fa-plus"></i> Nuevo Módulo
+              </a>
+              <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('#/dashboard'); return false;">
+                <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
+              </a>
+            </div>
           </div>
           <div class="modal-body">
             <div id="modulesListContainer"></div>
@@ -565,22 +561,21 @@
 
       <!-- 7. POST TIPOS VIEWS (Index, Create, Edit) -->
       <div id="viewPostTiposIndex" class="app-view view-hidden">
-        <div style="margin-bottom: 1.5rem;">
-          <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('#/dashboard'); return false;">
-            <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
-          </a>
-        </div>
         <div class="modal-card" style="max-width: 900px; margin: 0 auto; box-shadow: var(--shadow-md);">
           <div class="modal-header"
             style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
             <div>
-              <h2><i class="fa-solid fa-tags" style="color:var(--accent-emerald);"></i> Tipos de Publicación</h2>
-              <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0.25rem;">Tipos de contenido para
-                artículos (Guía, Incidencia, Manual, etc.).</p>
+              <h2 style="margin:0;"><i class="fa-solid fa-tags" style="color:var(--accent-emerald);"></i> Tipos de Publicación</h2>
+              <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0.25rem; margin-bottom:0;">Tipos de contenido para artículos (Guía, Incidencia, Manual, etc.).</p>
             </div>
-            <a href="#/tipos/create" class="btn btn-primary" onclick="navigateTo('#/tipos/create'); return false;">
-              <i class="fa-solid fa-plus"></i> Nuevo Tipo
-            </a>
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+              <a href="#/tipos/create" class="btn btn-primary" onclick="navigateTo('#/tipos/create'); return false;">
+                <i class="fa-solid fa-plus"></i> Nuevo Tipo
+              </a>
+              <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('#/dashboard'); return false;">
+                <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
+              </a>
+            </div>
           </div>
           <div class="modal-body">
             <div id="postTiposListContainer"></div>
@@ -666,15 +661,12 @@
 
       <!-- 8. RBAC & ROLES VIEWS (Index, Create, Edit) -->
       <div id="viewRbacIndex" class="app-view view-hidden">
-        <div style="margin-bottom: 1.5rem;">
-          <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('#/dashboard'); return false;">
-            <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
-          </a>
-        </div>
         <div class="modal-card" style="max-width: 960px; margin: 0 auto; box-shadow: var(--shadow-md);">
-          <div class="modal-header">
-            <h2><i class="fa-solid fa-user-shield" style="color:var(--accent-purple);"></i> Gestión de Roles y Permisos
-              (RBAC)</h2>
+          <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+            <h2 style="margin:0;"><i class="fa-solid fa-user-shield" style="color:var(--accent-purple);"></i> Gestión de Roles y Permisos (RBAC)</h2>
+            <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('#/dashboard'); return false;">
+              <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
+            </a>
           </div>
           <div class="modal-body">
             <!-- Sub-tabs -->

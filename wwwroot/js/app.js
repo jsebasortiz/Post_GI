@@ -30,7 +30,7 @@ async function apiFetch(url, options = {}) {
 
   if ((response.status === 401 || response.status === 403) && !url.includes('/api/usuarios/login')) {
     console.warn('Sesión no autorizada o token expirado. Redirigiendo a Login.');
-    handleLogout();
+    handleLogout(true);
   }
 
   return response;
@@ -321,13 +321,26 @@ async function handleRoute() {
       populateModuloAreaSelect();
       await loadModuleForEdit(modId);
     } else if (cleanHash === '#/tipos') {
+      if (!hasPermission('tipos.manage') && !hasPermission('modulos.create') && !hasPermission('roles.manage')) {
+        navigateTo('#/dashboard');
+        return;
+      }
       switchAppView('viewPostTiposIndex');
       loadPostTiposList();
     } else if (cleanHash === '#/tipos/create') {
+      if (!hasPermission('tipos.manage') && !hasPermission('modulos.create') && !hasPermission('roles.manage')) {
+        navigateTo('#/dashboard');
+        return;
+      }
       switchAppView('viewPostTiposCreate');
       const f = document.getElementById('createPostTipoForm');
       if (f) f.reset();
+      await prepareCreatePostTipoForm();
     } else if (cleanHash.startsWith('#/tipos/edit/')) {
+      if (!hasPermission('tipos.manage') && !hasPermission('modulos.create') && !hasPermission('roles.manage')) {
+        navigateTo('#/dashboard');
+        return;
+      }
       const tipoId = cleanHash.replace('#/tipos/edit/', '');
       switchAppView('viewPostTiposEdit');
       await loadPostTipoForEdit(tipoId);
@@ -478,7 +491,7 @@ function renderUserNavArea() {
     const rolBadge = currentUser.rolNombre || 'Lector';
     container.innerHTML = `
       <div class="user-nav-profile">
-        <div class="avatar-sm" style="width:32px; height:32px; font-size:0.85rem; flex-shrink:0;">${escapeHtml(currentUser.nombre.charAt(0).toUpperCase())}</div>
+        <div class="avatar-sm" style="width:36px; height:36px; font-size:0.95rem; flex-shrink:0;">${escapeHtml(currentUser.nombre.charAt(0).toUpperCase())}</div>
         <div class="user-info-details">
           <strong class="user-display-name" title="${escapeHtml(currentUser.nombre)}">${escapeHtml(currentUser.nombre)}</strong>
           <span class="user-role-badge"><i class="fa-solid fa-shield-halved"></i> ${escapeHtml(rolBadge)}</span>
@@ -657,7 +670,21 @@ function clearInputError(inputEl) {
 }
 
 
-function handleLogout() {
+async function handleLogout(force = false) {
+  if (force !== true) {
+    const swal = getPrixmaSwal();
+    const result = await swal.fire({
+      title: '¿Cerrar Sesión?',
+      text: '¿Estás seguro de que deseas salir de la aplicación?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: '<i class="fa-solid fa-right-from-bracket"></i> Sí, cerrar sesión',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (!result.isConfirmed) return;
+  }
+
   currentUser = null;
   jwtToken = null;
   localStorage.removeItem('currentUser');
@@ -1064,10 +1091,13 @@ async function handleCreatePost(event) {
     }
 
     closeModal('createModal');
-    document.getElementById('createPostForm').reset();
+    const form = document.getElementById('createPostForm');
+    if (form) form.reset();
     selectedFiles = [];
     renderFilePreviews();
-    loadPosts();
+
+    navigateTo('#/dashboard');
+    await loadPosts(1);
 
     getPrixmaSwal().fire({
       icon: 'success',
@@ -2020,9 +2050,14 @@ function renderRbacUsersTable() {
         <td style="color:var(--text-muted); font-size:0.85rem;">${escapeHtml(u.correo)}</td>
         <td><span class="badge badge-type" style="position:static;">${escapeHtml(u.rolNombre)}</span></td>
         <td style="text-align:right;">
-          <select style="width:auto; padding:0.35rem 0.6rem; font-size:0.85rem;" onchange="handleAssignUserRole(${u.id}, this.value)">
-            ${roleOptions}
-          </select>
+          <div style="display:flex; gap:0.5rem; justify-content:flex-end; align-items:center;">
+            <select id="userRoleSelect_${u.id}" class="form-control" style="width:auto; padding:0.35rem 0.6rem; font-size:0.85rem;">
+              ${roleOptions}
+            </select>
+            <button class="btn btn-primary" onclick="handleAssignUserRole(${u.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem; display:inline-flex; align-items:center; gap:0.35rem;" title="Guardar cambios de rol">
+              <i class="fa-solid fa-floppy-disk"></i> Guardar
+            </button>
+          </div>
         </td>
       </tr>
     `;
@@ -2057,7 +2092,14 @@ function changeRbacUsersPage(newPage) {
   renderRbacUsersTable();
 }
 
-async function handleAssignUserRole(usuarioId, rolId) {
+async function handleAssignUserRole(usuarioId, explicitRolId = null) {
+  let rolId = explicitRolId;
+  if (!rolId) {
+    const select = document.getElementById(`userRoleSelect_${usuarioId}`);
+    if (select) rolId = select.value;
+  }
+  if (!rolId) return;
+
   try {
     const res = await apiFetch('/api/roles/asignar-usuario', {
       method: 'POST',
@@ -2076,6 +2118,14 @@ async function handleAssignUserRole(usuarioId, rolId) {
     }
 
     renderRbacUsersTable();
+
+    getPrixmaSwal().fire({
+      icon: 'success',
+      title: 'Rol Asignado',
+      text: `El rol de "${targetUser ? targetUser.nombre : 'usuario'}" ha sido actualizado a "${targetRole ? targetRole.nombre : ''}".`,
+      timer: 1800,
+      showConfirmButton: false
+    });
   } catch (err) {
     getPrixmaSwal().fire({
       icon: 'error',
@@ -2582,6 +2632,7 @@ async function loadPostTiposList() {
             <tr style="text-align:left; border-bottom:1px solid var(--bg-card-border); color:var(--text-muted); font-size:0.85rem;">
               <th style="padding:0.75rem;">Nombre del Tipo</th>
               <th style="padding:0.75rem;">Descripción</th>
+              <th style="padding:0.75rem;">Rol Asignado</th>
               <th style="padding:0.75rem; text-align:right;">Acciones</th>
             </tr>
           </thead>
@@ -2590,6 +2641,11 @@ async function loadPostTiposList() {
               <tr>
                 <td style="padding:0.75rem; font-weight:600; color:var(--text-main);">${escapeHtml(t.nombre)}</td>
                 <td style="padding:0.75rem; color:var(--text-muted); font-size:0.85rem;">${escapeHtml(t.descripcion || 'Sin descripción')}</td>
+                <td style="padding:0.75rem; color:var(--text-muted); font-size:0.85rem;">
+                  <span class="badge" style="background:rgba(59,130,246,0.1); color:var(--accent-blue, #3b82f6); border:1px solid rgba(59,130,246,0.2); padding:0.25rem 0.5rem; border-radius:4px; font-size:0.75rem;">
+                    <i class="fa-solid fa-user-shield"></i> ${t.rol ? escapeHtml(t.rol.nombre) : 'Todos los roles'}
+                  </span>
+                </td>
                 <td style="padding:0.75rem; text-align:right;">
                   <div style="display:flex; gap:0.5rem; justify-content:flex-end; align-items:center;">
                     <button class="btn btn-secondary" onclick="navigateTo('#/tipos/edit/' + ${t.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem;" title="Editar Tipo">
@@ -2915,7 +2971,8 @@ async function handleSaveEditPost(event) {
     }
 
     closeModal('editModal');
-    loadPosts(currentPage);
+    navigateTo('#/dashboard');
+    await loadPosts(1);
 
     getPrixmaSwal().fire({
       icon: 'success',
@@ -3102,6 +3159,24 @@ async function handleDeleteModuleFromForm() {
 }
 
 // 3. TIPOS DE PUBLICACIÓN
+async function populateRolesSelect(selectId, selectedRolId = null) {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+  try {
+    const res = await apiFetch('/api/roles');
+    if (!res.ok) return;
+    const roles = await res.json();
+    let html = '<option value="">-- Todos los Roles / Ninguno --</option>';
+    roles.forEach(r => {
+      const selected = selectedRolId && (r.id === parseInt(selectedRolId) || r.id === selectedRolId) ? 'selected' : '';
+      html += `<option value="${r.id}" ${selected}>${escapeHtml(r.nombre)}</option>`;
+    });
+    select.innerHTML = html;
+  } catch (e) {
+    console.error('Error poblando roles:', e);
+  }
+}
+
 async function loadPostTipoForEdit(id) {
   try {
     const res = await apiFetch('/api/modulos/tipos');
@@ -3112,6 +3187,7 @@ async function loadPostTipoForEdit(id) {
         document.getElementById('editPostTipoId').value = t.id;
         document.getElementById('editPostTipoNombre').value = t.nombre || '';
         document.getElementById('editPostTipoDesc').value = t.descripcion || '';
+        await populateRolesSelect('editPostTipoRolId', t.rolId || (t.rol ? t.rol.id : null));
       }
     }
   } catch (e) {
@@ -3119,19 +3195,28 @@ async function loadPostTipoForEdit(id) {
   }
 }
 
+async function prepareCreatePostTipoForm() {
+  await populateRolesSelect('newPostTipoRolId');
+}
+
 async function handleSaveCreatePostTipo(event) {
   event.preventDefault();
   const nombre = document.getElementById('newPostTipoNombre').value.trim();
   const descripcion = document.getElementById('newPostTipoDesc').value.trim();
+  const rolIdVal = document.getElementById('newPostTipoRolId') ? document.getElementById('newPostTipoRolId').value : '';
+  const rolId = rolIdVal ? parseInt(rolIdVal) : null;
   if (!nombre) return;
 
   try {
     const res = await apiFetch('/api/modulos/tipos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nombre, descripcion })
+      body: JSON.stringify({ nombre, descripcion, rolId })
     });
-    if (!res.ok) throw new Error('Error al crear el tipo de publicación.');
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'Error al crear el tipo de publicación.');
+    }
     await loadPostTiposList();
     getPrixmaSwal().fire({ icon: 'success', title: 'Tipo Creado', text: 'El tipo fue creado correctamente.', timer: 1800, showConfirmButton: false });
     navigateTo('#/tipos');
@@ -3145,14 +3230,19 @@ async function handleSaveEditPostTipo(event) {
   const id = document.getElementById('editPostTipoId').value;
   const nombre = document.getElementById('editPostTipoNombre').value.trim();
   const descripcion = document.getElementById('editPostTipoDesc').value.trim();
+  const rolIdVal = document.getElementById('editPostTipoRolId') ? document.getElementById('editPostTipoRolId').value : '';
+  const rolId = rolIdVal ? parseInt(rolIdVal) : null;
 
   try {
     const res = await apiFetch(`/api/modulos/tipos/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nombre, descripcion })
+      body: JSON.stringify({ nombre, descripcion, rolId })
     });
-    if (!res.ok) throw new Error('Error al actualizar el tipo.');
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'Error al actualizar el tipo.');
+    }
     await loadPostTiposList();
     getPrixmaSwal().fire({ icon: 'success', title: 'Tipo Actualizado', text: 'Los cambios fueron guardados correctamente.', timer: 1800, showConfirmButton: false });
     navigateTo('#/tipos');

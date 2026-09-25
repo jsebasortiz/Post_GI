@@ -27,6 +27,12 @@ public class PostTipo
     [ForeignKey("EstadoId")]
     public Estado? Estado { get; set; }
 
+    [Column("rol_id")]
+    public byte? RolId { get; set; }
+
+    [ForeignKey("RolId")]
+    public Rol? Rol { get; set; }
+
     [Column("creado_en")]
     public DateTime CreadoEn { get; set; } = DateTime.UtcNow;
 
