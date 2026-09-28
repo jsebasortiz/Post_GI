@@ -290,6 +290,19 @@ public static class DbInitializer
                 await context.SaveChangesAsync();
             }
 
+            if (!await context.Permisos.AnyAsync(p => p.Codigo == "tipos_conocimiento.manage"))
+            {
+                var p7 = new Permiso { Codigo = "tipos_conocimiento.manage", Nombre = "Gestionar Tipos de Conocimiento", Descripcion = "Permite crear, editar y eliminar tipos de conocimiento" };
+                context.Permisos.Add(p7);
+                await context.SaveChangesAsync();
+
+                if (!await context.RolPermisos.AnyAsync(rp => rp.RolId == 1 && rp.PermisoId == p7.Id))
+                    context.RolPermisos.Add(new RolPermiso { RolId = 1, PermisoId = p7.Id });
+                if (!await context.RolPermisos.AnyAsync(rp => rp.RolId == 2 && rp.PermisoId == p7.Id))
+                    context.RolPermisos.Add(new RolPermiso { RolId = 2, PermisoId = p7.Id });
+                await context.SaveChangesAsync();
+            }
+
             // Seed RolPermisos
             if (!await context.RolPermisos.AnyAsync())
             {

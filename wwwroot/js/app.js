@@ -322,7 +322,7 @@ async function handleRoute() {
       populateModuloAreaSelect();
       await loadModuleForEdit(modId);
     } else if (cleanHash === '#/tipos' || cleanHash === '#/tipos-conocimiento') {
-      if (!hasPermission('tipos.manage') && !hasPermission('modulos.create') && !hasPermission('roles.manage')) {
+      if (!hasPermission('tipos.manage') && !hasPermission('tipos_conocimiento.manage') && !hasPermission('modulos.create') && !hasPermission('roles.manage')) {
         navigateTo('#/dashboard');
         return;
       }
@@ -350,7 +350,7 @@ async function handleRoute() {
       switchAppView('viewPostTiposEdit');
       await loadPostTipoForEdit(tipoId);
     } else if (cleanHash === '#/tipos-conocimiento/create') {
-      if (!hasPermission('tipos.manage') && !hasPermission('modulos.create') && !hasPermission('roles.manage')) {
+      if (!hasPermission('tipos_conocimiento.manage') && !hasPermission('tipos.manage') && !hasPermission('modulos.create') && !hasPermission('roles.manage')) {
         navigateTo('#/dashboard');
         return;
       }
@@ -358,7 +358,7 @@ async function handleRoute() {
       const f = document.getElementById('createTipoConocimientoForm');
       if (f) f.reset();
     } else if (cleanHash.startsWith('#/tipos-conocimiento/edit/')) {
-      if (!hasPermission('tipos.manage') && !hasPermission('modulos.create') && !hasPermission('roles.manage')) {
+      if (!hasPermission('tipos_conocimiento.manage') && !hasPermission('tipos.manage') && !hasPermission('modulos.create') && !hasPermission('roles.manage')) {
         navigateTo('#/dashboard');
         return;
       }
@@ -507,7 +507,7 @@ function updateNavButtonsPermissions() {
   if (btnPost) btnPost.style.display = hasPermission('posts.create') ? 'inline-flex' : 'none';
   if (btnModule) btnModule.style.display = hasPermission('modulos.create') ? 'inline-flex' : 'none';
   if (btnArea) btnArea.style.display = hasPermission('modulos.create') ? 'inline-flex' : 'none';
-  if (btnTipo) btnTipo.style.display = (hasPermission('tipos.manage') || hasPermission('modulos.create')) ? 'inline-flex' : 'none';
+  if (btnTipo) btnTipo.style.display = (hasPermission('tipos.manage') || hasPermission('tipos_conocimiento.manage') || hasPermission('modulos.create')) ? 'inline-flex' : 'none';
   if (btnRbac) btnRbac.style.display = hasPermission('roles.manage') ? 'inline-flex' : 'none';
 }
 
