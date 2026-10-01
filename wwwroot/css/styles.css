@@ -176,6 +176,20 @@ header.navbar {
   font-size: 1.15rem;
 }
 
+.nav-controls .btn.btn-icon-only {
+  padding: 0;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+}
+
+.nav-controls .btn.btn-icon-only i {
+  margin: 0;
+}
+
 #userNavArea {
   margin-left: 0.35rem;
   display: flex;

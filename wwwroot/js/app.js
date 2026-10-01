@@ -149,9 +149,13 @@ function setTheme(theme) {
   localStorage.setItem('prixmaTheme', theme);
 
   const themeIcon = document.getElementById('themeIcon');
+  const themeBtn = document.getElementById('btnToggleTheme');
   const themeText = document.getElementById('themeText');
   if (themeIcon) {
     themeIcon.className = theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+  }
+  if (themeBtn) {
+    themeBtn.setAttribute('title', theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
   }
   if (themeText) {
     themeText.textContent = theme === 'dark' ? 'Claro' : 'Oscuro';
@@ -1091,7 +1095,7 @@ function renderPostCard(post) {
   const coverUrl = getPostCoverUrl(post);
   const coverHtml = `<img src="${coverUrl}" alt="${escapeHtml(post.titulo)}" loading="lazy" onerror="this.onerror=null; this.src='images/portada.jpg';">`;
 
-  const dateStr = new Date(post.creadoEn).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+  const dateStr = formatDate(post.creadoEn);
   const attachCount = post.adjuntos ? post.adjuntos.length : 0;
 
   const canEdit = hasPermission('posts.edit');
@@ -1131,7 +1135,7 @@ function renderPostCard(post) {
           </div>
           <div style="display:flex; gap:0.75rem; align-items:center;">
             ${attachCount > 0 ? `<span class="post-attachments-count"><i class="fa-solid fa-paperclip"></i> ${attachCount}</span>` : ''}
-            <span>${dateStr}</span>
+            <span style="white-space:nowrap;">${dateStr}</span>
           </div>
         </div>
       </div>
@@ -1522,10 +1526,10 @@ async function openDetailView(postId) {
       headerActions.innerHTML = actHtml;
     }
 
-    const dateStr = new Date(post.creadoEn).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+    const dateStr = formatDate(post.creadoEn);
     document.getElementById('detailMeta').innerHTML = `
       <span><i class="fa-regular fa-user"></i> ${escapeHtml(post.usuarioNombre)}</span>
-      <span><i class="fa-regular fa-calendar"></i> ${dateStr}</span>
+      <span style="white-space:nowrap;"><i class="fa-regular fa-calendar"></i> ${dateStr}</span>
     `;
 
     const coverContainer = document.getElementById('detailCoverContainer');
@@ -2148,6 +2152,16 @@ function closeModal(id) {
 function escapeHtml(text) {
   if (!text) return '';
   return text.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
+}
+
+function formatDate(dateInput) {
+  if (!dateInput) return '';
+  const d = new Date(dateInput);
+  if (isNaN(d.getTime())) return '';
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = String(d.getFullYear()).slice(-2);
+  return `${day}/${month}/${year}`;
 }
 
 // RBAC Management Modal Logic
