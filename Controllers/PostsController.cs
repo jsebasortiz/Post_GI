@@ -108,4 +108,14 @@ public class PostsController : ControllerBase
         if (!result) return NotFound(new { message = "Archivo adjunto no encontrado" });
         return Ok(new { message = "Adjunto eliminado correctamente" });
     }
+
+    [HttpPut("adjuntos/{adjuntoId:long}/portada")]
+    [Authorize(Roles = "Administrador,Editor")]
+    public async Task<IActionResult> SetPortada(ulong adjuntoId)
+    {
+        var result = await _postService.SetPortadaAsync(adjuntoId);
+        if (!result) return BadRequest(new { message = "No se pudo cambiar la portada. El archivo debe ser una imagen válida." });
+        return Ok(new { message = "Portada actualizada correctamente" });
+    }
 }
+

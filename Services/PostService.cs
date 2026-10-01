@@ -16,6 +16,7 @@ public interface IPostService
     Task<bool> DeletePostAsync(ulong id);
     Task<AdjuntoResponseDto?> AddAdjuntoToPostAsync(ulong postId, IFormFile file, bool esPortada = false);
     Task<bool> DeleteAdjuntoAsync(ulong adjuntoId);
+    Task<bool> SetPortadaAsync(ulong adjuntoId);
 }
 
 public class PostService : IPostService
@@ -148,13 +149,33 @@ public class PostService : IPostService
         // Procesar archivos adjuntos si los hay
         if (dto.Archivos != null && dto.Archivos.Count > 0)
         {
-            int portadaIdx = dto.PortadaIndex ?? 0;
+            int? targetPortadaIdx = dto.PortadaIndex;
+            if (targetPortadaIdx.HasValue && (targetPortadaIdx.Value < 0 || targetPortadaIdx.Value >= dto.Archivos.Count || !IsImageFile(dto.Archivos[targetPortadaIdx.Value].ContentType, dto.Archivos[targetPortadaIdx.Value].FileName)))
+            {
+                targetPortadaIdx = null;
+            }
+
+            if (!targetPortadaIdx.HasValue)
+            {
+                for (int i = 0; i < dto.Archivos.Count; i++)
+                {
+                    if (IsImageFile(dto.Archivos[i].ContentType, dto.Archivos[i].FileName))
+                    {
+                        targetPortadaIdx = i;
+                        break;
+                    }
+                }
+            }
+
             for (int i = 0; i < dto.Archivos.Count; i++)
             {
                 var file = dto.Archivos[i];
                 if (file.Length == 0) continue;
 
                 var savedFile = await _fileStorage.SaveFileAsync(file, "posts");
+                bool isImg = IsImageFile(savedFile.MimeType, savedFile.ArchivoNombreOriginal);
+                bool esPortada = isImg && targetPortadaIdx.HasValue && (i == targetPortadaIdx.Value);
+
                 var adjunto = new AdjuntoPost
                 {
                     PostId = post.Id,
@@ -162,7 +183,7 @@ public class PostService : IPostService
                     ArchivoNombreOriginal = savedFile.ArchivoNombreOriginal,
                     MimeType = savedFile.MimeType,
                     TamanioBytes = savedFile.TamanioBytes,
-                    EsPortada = (i == portadaIdx),
+                    EsPortada = esPortada,
                     CreadoEn = DateTime.UtcNow
                 };
                 _context.AdjuntosPost.Add(adjunto);
@@ -217,10 +238,11 @@ public class PostService : IPostService
         if (post == null) return null;
 
         var savedFile = await _fileStorage.SaveFileAsync(file, "posts");
+        bool isImg = IsImageFile(savedFile.MimeType, savedFile.ArchivoNombreOriginal);
 
-        if (esPortada)
+        if (esPortada && isImg)
         {
-            // Desmarcar portadas anteriores si esta será la portada principal
+            // Desmarcar portadas anteriores si esta nueva es una imagen
             foreach (var a in post.Adjuntos)
             {
                 a.EsPortada = false;
@@ -234,7 +256,7 @@ public class PostService : IPostService
             ArchivoNombreOriginal = savedFile.ArchivoNombreOriginal,
             MimeType = savedFile.MimeType,
             TamanioBytes = savedFile.TamanioBytes,
-            EsPortada = esPortada,
+            EsPortada = esPortada && isImg,
             CreadoEn = DateTime.UtcNow
         };
 
@@ -264,6 +286,41 @@ public class PostService : IPostService
         adjunto.EsPortada = false;
         await _context.SaveChangesAsync();
         return true;
+    }
+
+    public async Task<bool> SetPortadaAsync(ulong adjuntoId)
+    {
+        var targetAdjunto = await _context.AdjuntosPost.FirstOrDefaultAsync(a => a.Id == adjuntoId && a.EstadoId == 1);
+        if (targetAdjunto == null) return false;
+
+        if (!IsImageFile(targetAdjunto.MimeType, targetAdjunto.ArchivoNombreOriginal))
+            return false;
+
+        var allPostAdjuntos = await _context.AdjuntosPost
+            .Where(a => a.PostId == targetAdjunto.PostId && a.EstadoId == 1)
+            .ToListAsync();
+
+        foreach (var a in allPostAdjuntos)
+        {
+            a.EsPortada = (a.Id == targetAdjunto.Id);
+        }
+
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+
+    private static bool IsImageFile(string? mimeType, string? fileName)
+    {
+        if (!string.IsNullOrEmpty(mimeType) && mimeType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (!string.IsNullOrEmpty(fileName))
+        {
+            var ext = Path.GetExtension(fileName).ToLowerInvariant();
+            return ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".webp" || ext == ".gif" || ext == ".svg";
+        }
+        return false;
     }
 
     private async Task<string> GenerateUniqueSlugAsync(string title, ulong? excludeId = null)
@@ -302,7 +359,8 @@ public class PostService : IPostService
     {
         // Filtrar solo los adjuntos con EstadoId == 1 (Activos)
         var activeAdjuntos = post.Adjuntos.Where(a => a.EstadoId == 1).ToList();
-        var portada = activeAdjuntos.FirstOrDefault(a => a.EsPortada) ?? activeAdjuntos.FirstOrDefault();
+        var portada = activeAdjuntos.FirstOrDefault(a => a.EsPortada && IsImageFile(a.MimeType, a.ArchivoNombreOriginal)) 
+                      ?? activeAdjuntos.FirstOrDefault(a => IsImageFile(a.MimeType, a.ArchivoNombreOriginal));
 
         return new PostResponseDto
         {
@@ -336,7 +394,7 @@ public class PostService : IPostService
                 ArchivoNombreOriginal = a.ArchivoNombreOriginal,
                 MimeType = a.MimeType,
                 TamanioBytes = a.TamanioBytes,
-                EsPortada = a.EsPortada,
+                EsPortada = a.EsPortada && IsImageFile(a.MimeType, a.ArchivoNombreOriginal),
                 EstadoId = a.EstadoId,
                 CreadoEn = a.CreadoEn
             }).ToList()

@@ -36,6 +36,102 @@ async function apiFetch(url, options = {}) {
   return response;
 }
 
+// ==========================================================================
+// Spinner and Loading Feedback Helpers
+// ==========================================================================
+let topProgressTimer = null;
+let topProgressWidth = 0;
+
+function startTopProgressBar() {
+  const bar = document.getElementById('topProgressBar');
+  if (!bar) return;
+  
+  if (topProgressTimer) clearInterval(topProgressTimer);
+  topProgressWidth = 15;
+  bar.style.width = topProgressWidth + '%';
+  bar.classList.add('active');
+  
+  topProgressTimer = setInterval(() => {
+    if (topProgressWidth < 85) {
+      topProgressWidth += Math.random() * 10 + 3;
+      bar.style.width = topProgressWidth + '%';
+    }
+  }, 180);
+}
+
+function finishTopProgressBar() {
+  const bar = document.getElementById('topProgressBar');
+  if (!bar) return;
+  
+  if (topProgressTimer) {
+    clearInterval(topProgressTimer);
+    topProgressTimer = null;
+  }
+  bar.style.width = '100%';
+  setTimeout(() => {
+    bar.classList.remove('active');
+    setTimeout(() => {
+      bar.style.width = '0%';
+    }, 350);
+  }, 180);
+}
+
+let routeSpinnerCount = 0;
+function showRouteSpinner(title = 'Cargando...', subtext = 'Por favor espera un momento') {
+  routeSpinnerCount++;
+  const spinner = document.getElementById('globalRouteSpinner');
+  const titleEl = document.getElementById('globalSpinnerTitle');
+  const subtextEl = document.getElementById('globalSpinnerSubtext');
+  
+  if (titleEl) titleEl.textContent = title;
+  if (subtextEl) subtextEl.textContent = subtext;
+  
+  if (spinner) spinner.classList.add('active');
+  startTopProgressBar();
+}
+
+function hideRouteSpinner(force = false) {
+  if (force) {
+    routeSpinnerCount = 0;
+  } else {
+    routeSpinnerCount = Math.max(0, routeSpinnerCount - 1);
+  }
+  
+  if (routeSpinnerCount === 0) {
+    const spinner = document.getElementById('globalRouteSpinner');
+    if (spinner) spinner.classList.remove('active');
+    finishTopProgressBar();
+  }
+}
+
+/**
+ * Pone un botón en estado de carga con spinner
+ * @param {HTMLElement|string} btn Elemento del botón o id
+ * @param {boolean} isLoading True para activar spinner, false para restaurar
+ * @param {string} loadingText Texto a mostrar mientras carga (ej: "Guardando...", "Autenticando...")
+ */
+function setButtonLoading(btn, isLoading, loadingText = 'Procesando...') {
+  if (!btn) return;
+  if (typeof btn === 'string') btn = document.getElementById(btn);
+  if (!btn) return;
+
+  if (isLoading) {
+    if (btn.classList.contains('btn-loading')) return;
+    btn.dataset.originalHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.classList.add('btn-loading');
+    btn.innerHTML = `<span class="btn-text-content">${btn.innerHTML}</span><span class="btn-spinner"><i class="fa-solid fa-circle-notch fa-spin"></i> ${loadingText}</span>`;
+  } else {
+    btn.classList.remove('btn-loading');
+    btn.disabled = false;
+    if (btn.dataset.originalHtml !== undefined) {
+      btn.innerHTML = btn.dataset.originalHtml;
+      delete btn.dataset.originalHtml;
+    }
+  }
+}
+
+
 let currentTheme = localStorage.getItem('prixmaTheme') || 'light';
 
 function initTheme() {
@@ -221,6 +317,7 @@ let isAppInitialized = false;
 async function handleRoute() {
   if (isHandlingRoute) return;
   isHandlingRoute = true;
+  startTopProgressBar();
 
   try {
     const rawHash = window.location.hash || '#/dashboard';
@@ -412,6 +509,11 @@ async function handleRoute() {
       const modId = parseInt(cleanHash.replace('#/modulo/', ''));
       if (!isNaN(modId)) {
         currentModuloId = modId;
+        if (!allModulosCache || allModulosCache.length === 0) {
+          await loadModulos();
+        } else {
+          updateModulePillActiveState();
+        }
         await loadPosts(1);
       }
     } else {
@@ -427,6 +529,7 @@ async function handleRoute() {
     }
   } finally {
     isHandlingRoute = false;
+    finishTopProgressBar();
   }
 }
 
@@ -743,9 +846,9 @@ async function loadModulos() {
 
     const canManage = hasPermission('modulos.create');
     const filterContainer = document.getElementById('modulesFilter');
-    let filterHtml = `<button class="module-pill ${currentModuloId === null ? 'active' : ''}" onclick="filterByModule(null, this)">Todos los Módulos</button>`;
+    let filterHtml = `<button class="module-pill ${currentModuloId === null ? 'active' : ''}" data-module-id="null" onclick="filterByModule(null, this)">Todos los Módulos</button>`;
     modulosToRender.forEach(m => {
-      filterHtml += `<button class="module-pill ${currentModuloId === m.id ? 'active' : ''}" onclick="filterByModule(${m.id}, this)">${escapeHtml(m.nombre)}</button>`;
+      filterHtml += `<button class="module-pill ${currentModuloId === m.id ? 'active' : ''}" data-module-id="${m.id}" onclick="filterByModule(${m.id}, this)">${escapeHtml(m.nombre)}</button>`;
     });
     filterContainer.innerHTML = filterHtml;
 
@@ -755,6 +858,22 @@ async function loadModulos() {
   } catch (err) {
     console.error('Error cargando módulos:', err);
   }
+}
+
+function updateModulePillActiveState() {
+  const container = document.getElementById('modulesFilter');
+  if (!container) return;
+
+  const pills = container.querySelectorAll('.module-pill');
+  pills.forEach(pill => {
+    const modIdAttr = pill.getAttribute('data-module-id');
+    const isAll = (modIdAttr === 'null' || modIdAttr === null || modIdAttr === '');
+    if ((isAll && currentModuloId === null) || (!isAll && parseInt(modIdAttr, 10) === currentModuloId)) {
+      pill.classList.add('active');
+    } else {
+      pill.classList.remove('active');
+    }
+  });
 }
 
 function onPostCategoriaChange(cat) {
@@ -948,18 +1067,32 @@ function goToPage(page) {
   }
 }
 
+function isImageUrl(url) {
+  if (!url) return false;
+  const cleanUrl = url.split('?')[0].toLowerCase();
+  const nonImgExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.zip', '.rar', '.7z', '.tar', '.gz'];
+  if (nonImgExtensions.some(ext => cleanUrl.endsWith(ext))) return false;
+  return cleanUrl.endsWith('.jpg') || cleanUrl.endsWith('.jpeg') || cleanUrl.endsWith('.png') || cleanUrl.endsWith('.webp') || cleanUrl.endsWith('.gif') || cleanUrl.endsWith('.svg') || cleanUrl.includes('/uploads/') || cleanUrl.includes('image');
+}
+
+function getPostCoverUrl(post) {
+  if (post.portadaUrl && isImageUrl(post.portadaUrl)) {
+    return post.portadaUrl;
+  }
+  if (post.adjuntos && post.adjuntos.length > 0) {
+    const imgAdj = post.adjuntos.find(a => isImageUrl(a.archivoUrl));
+    if (imgAdj) return imgAdj.archivoUrl;
+  }
+  // Si no hay foto de portada o solo se subieron archivos PDF/documentos, usar la imagen de portada corporativa por defecto
+  return 'images/portada.jpg';
+}
+
 function renderPostCard(post) {
-  const coverUrl = post.portadaUrl || (post.adjuntos && post.adjuntos.length > 0 ? post.adjuntos[0].archivoUrl : null);
-  const coverHtml = coverUrl
-    ? `<img src="${coverUrl}" alt="${escapeHtml(post.titulo)}" loading="lazy">`
-    : `<div class="post-cover-placeholder"><i class="fa-solid fa-newspaper"></i></div>`;
+  const coverUrl = getPostCoverUrl(post);
+  const coverHtml = `<img src="${coverUrl}" alt="${escapeHtml(post.titulo)}" loading="lazy" onerror="this.onerror=null; this.src='images/portada.jpg';">`;
 
   const dateStr = new Date(post.creadoEn).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
   const attachCount = post.adjuntos ? post.adjuntos.length : 0;
-
-  const catBadge = post.moduloCategoriaPadre === 'infraestructura'
-    ? `<span class="badge badge-cat-infra"><i class="fa-solid fa-server"></i> Infraestructura</span>`
-    : `<span class="badge badge-cat-apps"><i class="fa-solid fa-rocket"></i> Apps</span>`;
 
   const canEdit = hasPermission('posts.edit');
   const canDelete = hasPermission('posts.delete');
@@ -970,10 +1103,6 @@ function renderPostCard(post) {
       ${canDelete ? `<button class="btn-card-action btn-card-delete" onclick="event.stopPropagation(); handleDeletePost(${post.id})" title="Eliminar Publicación"><i class="fa-solid fa-trash-can"></i></button>` : ''}
     </div>
   ` : '';
-
-  const tcBadge = post.tipoConocimientoNombre
-    ? `<span class="badge" style="background:var(--accent-purple); color:#fff;"><i class="fa-solid fa-brain"></i> ${escapeHtml(post.tipoConocimientoNombre)}</span>`
-    : '';
 
   let tagsHtml = '';
   if (post.palabrasClave) {
@@ -989,12 +1118,6 @@ function renderPostCard(post) {
     <article class="post-card" onclick="openDetailModal(${post.id})">
       ${actionsHtml}
       <div class="post-cover">
-        <div class="badge-group">
-          ${catBadge}
-          <span class="badge badge-module">${escapeHtml(post.moduloNombre)}</span>
-          <span class="badge badge-type">${escapeHtml(post.tipoNombre)}</span>
-          ${tcBadge}
-        </div>
         ${coverHtml}
       </div>
       <div class="post-body">
@@ -1016,7 +1139,10 @@ function renderPostCard(post) {
   `;
 }
 
+
 function filterByModule(moduloId, btnElement) {
+  currentModuloId = moduloId;
+  updateModulePillActiveState();
   if (moduloId) {
     navigateTo(`#/modulo/${moduloId}`);
   } else if (currentCategoriaPadre) {
@@ -1037,7 +1163,20 @@ function debounceSearch() {
 function handleFileSelect(event) {
   const files = Array.from(event.target.files);
   selectedFiles = [...selectedFiles, ...files];
+  autoSelectDefaultImageCover();
   renderFilePreviews();
+}
+
+function autoSelectDefaultImageCover() {
+  if (selectedFiles.length === 0) {
+    coverIndex = -1;
+    return;
+  }
+  if (coverIndex >= 0 && coverIndex < selectedFiles.length) {
+    const currentMeta = getFileMeta(selectedFiles[coverIndex].name, selectedFiles[coverIndex].type);
+    if (currentMeta.isImage) return;
+  }
+  coverIndex = selectedFiles.findIndex(f => getFileMeta(f.name, f.type).isImage);
 }
 
 function getFileMeta(fileName, mimeType = '') {
@@ -1093,13 +1232,17 @@ function renderFilePreviews() {
       `;
     }
 
+    const coverRadioHtml = meta.isImage ? `
+      <label class="cover-radio">
+        <input type="radio" name="portadaRadio" ${coverIndex === idx ? 'checked' : ''} onchange="coverIndex = ${idx}"> Portada
+      </label>
+    ` : '';
+
     return `
       <div class="file-preview-card" title="${escapeHtml(file.name)} (${sizeStr})">
         ${contentHtml}
         <button type="button" onclick="removeSelectedFile(${idx})" style="position:absolute; top:4px; right:4px; z-index:5; background:rgba(239,68,68,0.85); color:white; border:none; border-radius:50%; width:22px; height:22px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-weight:bold;">&times;</button>
-        <label class="cover-radio">
-          <input type="radio" name="portadaRadio" ${coverIndex === idx ? 'checked' : ''} onchange="coverIndex = ${idx}"> Portada
-        </label>
+        ${coverRadioHtml}
       </div>
     `;
   }).join('');
@@ -1107,9 +1250,10 @@ function renderFilePreviews() {
 
 function removeSelectedFile(index) {
   selectedFiles.splice(index, 1);
-  if (coverIndex >= selectedFiles.length) coverIndex = Math.max(0, selectedFiles.length - 1);
+  autoSelectDefaultImageCover();
   renderFilePreviews();
 }
+
 
 // Enviar creación de publicación
 async function handleCreatePost(event) {
@@ -1384,11 +1528,8 @@ async function openDetailView(postId) {
       <span><i class="fa-regular fa-calendar"></i> ${dateStr}</span>
     `;
 
-    const coverUrl = post.portadaUrl || (post.adjuntos && post.adjuntos.length > 0 ? post.adjuntos[0].archivoUrl : null);
     const coverContainer = document.getElementById('detailCoverContainer');
-    if (coverUrl) {
-      coverContainer.innerHTML = `<img src="${coverUrl}" class="post-detail-cover" alt="Portada">`;
-    } else {
+    if (coverContainer) {
       coverContainer.innerHTML = '';
     }
 
@@ -1428,7 +1569,7 @@ async function openDetailView(postId) {
               <a href="${att.archivoUrl}" target="_blank" style="color:var(--accent-cyan); text-decoration:none; font-weight:600; font-size:0.85rem; display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(att.archivoNombreOriginal)}">
                 <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.75rem;"></i> ${escapeHtml(att.archivoNombreOriginal)}
               </a>
-              <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;">${sizeStr} ${att.esPortada ? '• 🌟 Portada' : ''}</div>
+              <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;">${sizeStr} ${(meta.isImage && att.esPortada) ? '• 🌟 Portada' : ''}</div>
             </div>
           </div>
         `;
@@ -2641,10 +2782,17 @@ async function openEditView(postId) {
             `;
           }
 
+          const coverRadioHtml = meta.isImage ? `
+            <label class="cover-radio">
+              <input type="radio" name="existingPortadaRadio" ${att.esPortada ? 'checked' : ''} onchange="handleSetPortada(${att.id}, ${post.id})"> Portada
+            </label>
+          ` : '';
+
           return `
             <div class="file-preview-card" style="position:relative; width:120px; aspect-ratio:1;" title="${escapeHtml(att.archivoNombreOriginal)} (${sizeStr})">
               <button type="button" onclick="event.stopPropagation(); handleDeleteAttachment(${att.id}, ${post.id}, true)" title="Eliminar Adjunto" style="position:absolute; top:4px; right:4px; z-index:10; background:rgba(239, 68, 68, 0.9); color:white; width:22px; height:22px; border-radius:50%; border:none; display:flex; align-items:center; justify-content:center; cursor:pointer; font-weight:bold;">&times;</button>
               ${contentHtml}
+              ${coverRadioHtml}
             </div>
           `;
         }).join('');
@@ -2668,6 +2816,41 @@ async function openEditView(postId) {
     navigateTo('#/dashboard');
   }
 }
+
+async function handleSetPortada(adjuntoId, postId) {
+  try {
+    startTopProgressBar();
+    const res = await apiFetch(`/api/posts/adjuntos/${adjuntoId}/portada`, {
+      method: 'PUT'
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'No se pudo actualizar la portada.');
+    }
+
+    getPrixmaSwal().fire({
+      icon: 'success',
+      title: 'Portada Actualizada',
+      text: 'La imagen de portada ha sido asignada correctamente.',
+      timer: 1500,
+      showConfirmButton: false
+    });
+
+    if (postId) {
+      await openEditView(postId);
+    }
+  } catch (err) {
+    getPrixmaSwal().fire({
+      icon: 'error',
+      title: 'Error de Portada',
+      text: err.message
+    });
+  } finally {
+    finishTopProgressBar();
+  }
+}
+
 
 async function openEditModal(postId) {
   navigateTo('#/posts/edit/' + postId);

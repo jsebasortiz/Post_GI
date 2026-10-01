@@ -1233,3 +1233,139 @@ textarea {
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================================================================
+   Global Loader & Spinner Component Styles
+   ========================================================================== */
+#topProgressBar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 4px;
+  width: 0%;
+  background: linear-gradient(90deg, #06b6d4, #2563eb, #8b5cf6, #ec4899);
+  background-size: 200% 100%;
+  animation: gradientShift 2s linear infinite;
+  z-index: 99999;
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.7);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease;
+  pointer-events: none;
+  opacity: 0;
+}
+
+#topProgressBar.active {
+  opacity: 1;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+/* Screen / Route Loading Overlay */
+.route-spinner-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 99990;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.route-spinner-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.spinner-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  background: var(--bg-card);
+  padding: 2.25rem 3rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--bg-card-border);
+  box-shadow: var(--shadow-lg), 0 0 40px rgba(37, 99, 235, 0.15);
+  text-align: center;
+  transform: scale(0.92);
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.route-spinner-overlay.active .spinner-content {
+  transform: scale(1);
+}
+
+/* Modern Glowing Ring Spinner */
+.spinner-ring {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  border-top-color: var(--primary);
+  border-right-color: var(--accent-cyan);
+  animation: spinRing 0.85s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+  box-shadow: 0 0 15px rgba(37, 99, 235, 0.3);
+}
+
+@keyframes spinRing {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.spinner-text {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-main);
+  letter-spacing: 0.3px;
+}
+
+.spinner-subtext {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: -0.75rem;
+}
+
+/* Button Loading State */
+.btn-loading {
+  position: relative;
+  pointer-events: none !important;
+  opacity: 0.8 !important;
+  cursor: wait !important;
+}
+
+.btn-loading .btn-text-content {
+  visibility: hidden;
+  opacity: 0;
+}
+
+.btn-loading .btn-spinner {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.95em;
+}
+
+/* Local Section Spinner */
+.section-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+  gap: 1rem;
+  width: 100%;
+}
+
