@@ -71,6 +71,51 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = jwtAudience,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey))
     };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnChallenge = async context =>
+        {
+            context.HandleResponse();
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            context.Response.ContentType = "application/problem+json";
+
+            var problem = new Microsoft.AspNetCore.Mvc.ProblemDetails
+            {
+                Status = 401,
+                Title = "No autorizado",
+                Detail = "Acceso denegado. Se requiere un token JWT válido para acceder a este recurso.",
+                Instance = context.Request.Path
+            };
+
+            var json = System.Text.Json.JsonSerializer.Serialize(problem, new System.Text.Json.JsonSerializerOptions
+            {
+                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
+            });
+
+            await context.Response.WriteAsync(json);
+        },
+        OnForbidden = async context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            context.Response.ContentType = "application/problem+json";
+
+            var problem = new Microsoft.AspNetCore.Mvc.ProblemDetails
+            {
+                Status = 403,
+                Title = "Acceso prohibido",
+                Detail = "No tienes los permisos necesarios para acceder a este recurso.",
+                Instance = context.Request.Path
+            };
+
+            var json = System.Text.Json.JsonSerializer.Serialize(problem, new System.Text.Json.JsonSerializerOptions
+            {
+                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
+            });
+
+            await context.Response.WriteAsync(json);
+        }
+    };
 });
 
 builder.Services.AddControllers();
@@ -97,6 +142,9 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+
+// Middleware Global de Manejo de Excepciones (RFC 7807)
+app.UseMiddleware<BlogApp.Middleware.GlobalExceptionMiddleware>();
 
 // Inicialización de datos semilla
 using (var scope = app.Services.CreateScope())

@@ -26,7 +26,7 @@ public class JwtService : IJwtService
             ?? throw new InvalidOperationException("La clave secreta de JWT (Jwt:SecretKey) no está configurada.");
         var issuer = _configuration["Jwt:Issuer"] ?? "BlogAppAPI";
         var audience = _configuration["Jwt:Audience"] ?? "BlogAppClient";
-        var expirationMinutes = int.TryParse(_configuration["Jwt:ExpirationMinutes"], out var mins) ? mins : 480;
+        var expirationMinutes = int.TryParse(_configuration["Jwt:ExpirationMinutes"], out var mins) ? mins : 60;
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

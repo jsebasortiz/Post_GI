@@ -66,12 +66,3 @@ public class PostResponseDto
     public string? PortadaUrl { get; set; }
     public List<AdjuntoResponseDto> Adjuntos { get; set; } = new();
 }
-
-public class PagedResultDto<T>
-{
-    public List<T> Items { get; set; } = new();
-    public int TotalItems { get; set; }
-    public int Page { get; set; }
-    public int PageSize { get; set; }
-    public int TotalPages => PageSize > 0 ? (int)Math.Ceiling((double)TotalItems / PageSize) : 0;
-}
