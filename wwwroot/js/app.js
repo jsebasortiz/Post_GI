@@ -156,7 +156,85 @@ function setFormSkeletonState(formIdOrElement, isLoading) {
 
   buttons.forEach(btn => {
     btn.disabled = isLoading;
+    if (isLoading) {
+      btn.classList.add('skeleton-input');
+    } else {
+      btn.classList.remove('skeleton-input');
+    }
   });
+}
+
+// Helper: Toggle Read-Only Mode for Forms (Ver / Detalles)
+function setFormReadOnlyMode(formIdOrElement, isReadOnly, titleText, titleIcon) {
+  const container = typeof formIdOrElement === 'string' ? document.getElementById(formIdOrElement) : formIdOrElement;
+  if (!container) return;
+
+  container.dataset.readOnly = isReadOnly ? 'true' : 'false';
+
+  const inputs = container.querySelectorAll('.form-control, input, select, textarea');
+  inputs.forEach(input => {
+    if (isReadOnly) {
+      input.setAttribute('disabled', 'disabled');
+      input.style.pointerEvents = 'none';
+      input.style.opacity = '0.85';
+    } else {
+      input.removeAttribute('disabled');
+      input.style.pointerEvents = '';
+      input.style.opacity = '';
+    }
+  });
+
+  const checkables = container.querySelectorAll('input[type="checkbox"], input[type="radio"]');
+  checkables.forEach(chk => {
+    chk.disabled = isReadOnly;
+  });
+
+  const submitBtns = container.querySelectorAll('button[type="submit"], .btn-primary:not([onclick*="navigateTo"])');
+  submitBtns.forEach(btn => {
+    btn.style.display = isReadOnly ? 'none' : '';
+  });
+
+  const dangerBtns = container.querySelectorAll('.btn-danger, button[onclick*="Inactivar"], button[onclick*="Delete"], button[onclick*="inactivar"], button[onclick*="delete"]');
+  dangerBtns.forEach(btn => {
+    btn.style.display = isReadOnly ? 'none' : '';
+  });
+
+  const parentView = container.closest('.app-view') || container.parentElement;
+  if (parentView) {
+    const titleEl = parentView.querySelector('h2, h3, .card-title, .view-title');
+    if (titleEl) {
+      if (!titleEl.dataset.originalTitle) {
+        titleEl.dataset.originalTitle = titleEl.innerHTML;
+      }
+      if (isReadOnly && titleText) {
+        const iconClass = titleIcon || 'fa-eye';
+        titleEl.innerHTML = `<i class="fa-solid ${iconClass}" style="color:var(--accent-cyan);"></i> ${escapeHtml(titleText)}`;
+      } else {
+        titleEl.innerHTML = titleEl.dataset.originalTitle;
+      }
+    }
+  }
+}
+
+// Helper: Skeleton HTML generator for Table Rows
+function getTableSkeletonHtml(rowsCount = 5, colsCount = 4) {
+  return `
+    <div class="table-responsive">
+      <table class="rbac-table" style="width:100%; border-collapse:collapse;">
+        <tbody>
+          ${Array.from({ length: rowsCount }).map(() => `
+            <tr>
+              ${Array.from({ length: colsCount }).map(() => `
+                <td style="padding:0.75rem;">
+                  <div class="skeleton-box" style="height:18px; width:85%; border-radius:4px;"></div>
+                </td>
+              `).join('')}
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
 }
 
 
@@ -312,13 +390,16 @@ function populateAreaSelects() {
   });
 }
 
-// --- SPA HASH ROUTER ---
-function navigateTo(hash) {
-  if (window.location.hash !== hash) {
-    window.location.hash = hash;
-  } else {
-    handleRoute();
+// --- SPA ROUTER (Clean HTML5 URLs without '#') ---
+function navigateTo(path) {
+  if (!path) path = '/dashboard';
+  if (path.startsWith('#')) path = path.substring(1);
+  if (!path.startsWith('/')) path = '/' + path;
+
+  if (window.location.pathname !== path) {
+    window.history.pushState({}, '', path);
   }
+  handleRoute();
 }
 
 function switchAppView(viewId) {
@@ -352,23 +433,30 @@ async function handleRoute() {
   startTopProgressBar();
 
   try {
-    const rawHash = window.location.hash || '#/dashboard';
-    const cleanHash = rawHash.split('?')[0];
+    let rawPath = window.location.pathname;
+    if (window.location.hash) {
+      const hashPath = window.location.hash.replace(/^#/, '');
+      if (hashPath) rawPath = hashPath.startsWith('/') ? hashPath : '/' + hashPath;
+    }
+    if (!rawPath || rawPath === '/' || rawPath === '/index.html') {
+      rawPath = '/dashboard';
+    }
+    const cleanHash = rawPath.split('?')[0];
 
     // 1. Ruta de Login
-    if (cleanHash === '#/login') {
+    if (cleanHash === '/login') {
       if (currentUser && (jwtToken || localStorage.getItem('jwtToken'))) {
-        window.location.hash = '#/dashboard';
+        navigateTo('/dashboard');
         return;
       }
       showAuthGate();
       return;
     }
 
-    // 2. Control de Acceso: si no hay sesión activa ni token, redirigir a #/login
+    // 2. Control de Acceso: si no hay sesión activa ni token, redirigir a /login
     const activeToken = jwtToken || localStorage.getItem('jwtToken');
     if (!currentUser || !activeToken) {
-      window.location.hash = '#/login';
+      navigateTo('/login');
       return;
     }
 
@@ -376,127 +464,142 @@ async function handleRoute() {
     await showMainApp();
 
     // 4. Subrutas de Navegación SPA por Recurso
-    if (cleanHash === '#/rbac' || cleanHash === '#/roles') {
+    if (cleanHash === '/rbac' || cleanHash === '/roles') {
       if (!hasPermission('roles.manage')) {
-        navigateTo('#/dashboard');
+        navigateTo('/dashboard');
         return;
       }
       switchAppView('viewRbacIndex');
       loadRbacUsers();
       loadRbacRolesList();
       loadRbacMatrix();
-    } else if (cleanHash === '#/roles/create') {
+    } else if (cleanHash === '/roles/create') {
       if (!hasPermission('roles.manage')) {
-        navigateTo('#/dashboard');
+        navigateTo('/dashboard');
         return;
       }
       switchAppView('viewRoleCreate');
       const f = document.getElementById('createRoleForm');
       if (f) f.reset();
-    } else if (cleanHash.startsWith('#/roles/edit/')) {
+    } else if (cleanHash.startsWith('/roles/show/')) {
+      const roleId = cleanHash.replace('/roles/show/', '');
+      await loadRoleForShow(roleId);
+    } else if (cleanHash.startsWith('/roles/edit/')) {
       if (!hasPermission('roles.manage')) {
-        navigateTo('#/dashboard');
+        navigateTo('/dashboard');
         return;
       }
-      const roleId = cleanHash.replace('#/roles/edit/', '');
+      const roleId = cleanHash.replace('/roles/edit/', '');
       switchAppView('viewRoleEdit');
       await loadRoleForEdit(roleId);
-    } else if (cleanHash === '#/areas') {
+    } else if (cleanHash === '/areas') {
       if (!hasPermission('modulos.create')) {
-        navigateTo('#/dashboard');
+        navigateTo('/dashboard');
         return;
       }
       switchAppView('viewAreaIndex');
       loadAreasList();
-    } else if (cleanHash === '#/areas/create') {
+    } else if (cleanHash === '/areas/create') {
       if (!hasPermission('modulos.create')) {
-        navigateTo('#/dashboard');
+        navigateTo('/dashboard');
         return;
       }
       switchAppView('viewAreaCreate');
       const f = document.getElementById('createAreaForm');
       if (f) f.reset();
-    } else if (cleanHash.startsWith('#/areas/edit/')) {
+    } else if (cleanHash.startsWith('/areas/show/')) {
+      const areaId = cleanHash.replace('/areas/show/', '');
+      await loadAreaForShow(areaId);
+    } else if (cleanHash.startsWith('/areas/edit/')) {
       if (!hasPermission('modulos.create')) {
-        navigateTo('#/dashboard');
+        navigateTo('/dashboard');
         return;
       }
-      const areaId = cleanHash.replace('#/areas/edit/', '');
+      const areaId = cleanHash.replace('/areas/edit/', '');
       switchAppView('viewAreaEdit');
       loadAreaForEdit(areaId);
-    } else if (cleanHash === '#/modulos') {
+    } else if (cleanHash === '/modulos') {
       if (!hasPermission('modulos.create')) {
-        navigateTo('#/dashboard');
+        navigateTo('/dashboard');
         return;
       }
       switchAppView('viewModuleIndex');
       populateModuloAreaSelect();
       loadModulesList();
-    } else if (cleanHash === '#/modulos/create') {
+    } else if (cleanHash === '/modulos/create') {
       if (!hasPermission('modulos.create')) {
-        navigateTo('#/dashboard');
+        navigateTo('/dashboard');
         return;
       }
       switchAppView('viewModuleCreate');
       populateModuloAreaSelect();
       const f = document.getElementById('createModuleForm');
       if (f) f.reset();
-    } else if (cleanHash.startsWith('#/modulos/edit/')) {
+    } else if (cleanHash.startsWith('/modulos/show/')) {
+      const modId = cleanHash.replace('/modulos/show/', '');
+      await loadModuleForShow(modId);
+    } else if (cleanHash.startsWith('/modulos/edit/')) {
       if (!hasPermission('modulos.create')) {
-        navigateTo('#/dashboard');
+        navigateTo('/dashboard');
         return;
       }
-      const modId = cleanHash.replace('#/modulos/edit/', '');
+      const modId = cleanHash.replace('/modulos/edit/', '');
       switchAppView('viewModuleEdit');
       populateModuloAreaSelect();
       await loadModuleForEdit(modId);
-    } else if (cleanHash === '#/tipos' || cleanHash === '#/tipos-conocimiento') {
+    } else if (cleanHash === '/tipos' || cleanHash === '/tipos-conocimiento') {
       if (!hasPermission('tipos.manage') && !hasPermission('tipos_conocimiento.manage') && !hasPermission('modulos.create') && !hasPermission('roles.manage')) {
-        navigateTo('#/dashboard');
+        navigateTo('/dashboard');
         return;
       }
       switchAppView('viewPostTiposIndex');
-      if (cleanHash === '#/tipos-conocimiento' || window.lastTiposSubTab === 'conocimiento') {
+      if (cleanHash === '/tipos-conocimiento' || window.lastTiposSubTab === 'conocimiento') {
         switchTiposSubTab('conocimiento');
       } else {
         switchTiposSubTab('publicacion');
       }
-    } else if (cleanHash === '#/tipos/create') {
+    } else if (cleanHash === '/tipos/create') {
       if (!hasPermission('tipos.manage') && !hasPermission('modulos.create') && !hasPermission('roles.manage')) {
-        navigateTo('#/dashboard');
+        navigateTo('/dashboard');
         return;
       }
       switchAppView('viewPostTiposCreate');
       const f = document.getElementById('createPostTipoForm');
       if (f) f.reset();
       await prepareCreatePostTipoForm();
-    } else if (cleanHash.startsWith('#/tipos/edit/')) {
+    } else if (cleanHash.startsWith('/tipos/show/')) {
+      const tipoId = cleanHash.replace('/tipos/show/', '');
+      await loadPostTipoForShow(tipoId);
+    } else if (cleanHash.startsWith('/tipos/edit/')) {
       if (!hasPermission('tipos.manage') && !hasPermission('modulos.create') && !hasPermission('roles.manage')) {
-        navigateTo('#/dashboard');
+        navigateTo('/dashboard');
         return;
       }
-      const tipoId = cleanHash.replace('#/tipos/edit/', '');
+      const tipoId = cleanHash.replace('/tipos/edit/', '');
       switchAppView('viewPostTiposEdit');
       await loadPostTipoForEdit(tipoId);
-    } else if (cleanHash === '#/tipos-conocimiento/create') {
+    } else if (cleanHash === '/tipos-conocimiento/create') {
       if (!hasPermission('tipos_conocimiento.manage') && !hasPermission('tipos.manage') && !hasPermission('modulos.create') && !hasPermission('roles.manage')) {
-        navigateTo('#/dashboard');
+        navigateTo('/dashboard');
         return;
       }
       switchAppView('viewTipoConocimientoCreate');
       const f = document.getElementById('createTipoConocimientoForm');
       if (f) f.reset();
-    } else if (cleanHash.startsWith('#/tipos-conocimiento/edit/')) {
+    } else if (cleanHash.startsWith('/tipos-conocimiento/show/')) {
+      const tipoId = cleanHash.replace('/tipos-conocimiento/show/', '');
+      await loadTipoConocimientoForShow(tipoId);
+    } else if (cleanHash.startsWith('/tipos-conocimiento/edit/')) {
       if (!hasPermission('tipos_conocimiento.manage') && !hasPermission('tipos.manage') && !hasPermission('modulos.create') && !hasPermission('roles.manage')) {
-        navigateTo('#/dashboard');
+        navigateTo('/dashboard');
         return;
       }
-      const tipoId = cleanHash.replace('#/tipos-conocimiento/edit/', '');
+      const tipoId = cleanHash.replace('/tipos-conocimiento/edit/', '');
       switchAppView('viewTipoConocimientoEdit');
       await loadTipoConocimientoForEdit(tipoId);
-    } else if (cleanHash === '#/posts/create') {
+    } else if (cleanHash === '/posts/create') {
       if (!hasPermission('posts.create')) {
-        navigateTo('#/dashboard');
+        navigateTo('/dashboard');
         return;
       }
       switchAppView('viewCreatePost');
@@ -506,29 +609,29 @@ async function handleRoute() {
       }
       const catSelect = document.getElementById('selectCategoriaPadre');
       updatePostSubmoduloSelect(catSelect ? catSelect.value : '');
-    } else if (cleanHash.startsWith('#/posts/edit/')) {
+    } else if (cleanHash.startsWith('/posts/edit/')) {
       if (!hasPermission('posts.edit') && !hasPermission('posts.create')) {
-        navigateTo('#/dashboard');
+        navigateTo('/dashboard');
         return;
       }
-      const postId = cleanHash.replace('#/posts/edit/', '');
+      const postId = cleanHash.replace('/posts/edit/', '');
       if (postId) {
         switchAppView('viewEditPost');
         await openEditView(postId);
       } else {
-        navigateTo('#/dashboard');
+        navigateTo('/dashboard');
       }
-    } else if (cleanHash.startsWith('#/post/')) {
-      const postId = cleanHash.replace('#/post/', '');
+    } else if (cleanHash.startsWith('/post/')) {
+      const postId = cleanHash.replace('/post/', '');
       if (postId) {
         switchAppView('viewPostDetail');
         await openDetailView(postId);
       } else {
-        navigateTo('#/dashboard');
+        navigateTo('/dashboard');
       }
-    } else if (cleanHash.startsWith('#/area/')) {
+    } else if (cleanHash.startsWith('/area/')) {
       switchAppView('viewDashboard');
-      const areaCode = decodeURIComponent(cleanHash.replace('#/area/', ''));
+      const areaCode = decodeURIComponent(cleanHash.replace('/area/', ''));
       if (areaCode) {
         currentCategoriaPadre = areaCode;
         currentModuloId = null;
@@ -536,9 +639,9 @@ async function handleRoute() {
         await loadModulos();
         await loadPosts(1);
       }
-    } else if (cleanHash.startsWith('#/modulo/')) {
+    } else if (cleanHash.startsWith('/modulo/')) {
       switchAppView('viewDashboard');
-      const modId = parseInt(cleanHash.replace('#/modulo/', ''));
+      const modId = parseInt(cleanHash.replace('/modulo/', ''));
       if (!isNaN(modId)) {
         currentModuloId = modId;
         if (!allModulosCache || allModulosCache.length === 0) {
@@ -549,7 +652,7 @@ async function handleRoute() {
         await loadPosts(1);
       }
     } else {
-      // #/dashboard o ruta por defecto
+      // /dashboard o ruta por defecto
       switchAppView('viewDashboard');
       if (currentCategoriaPadre !== null || currentModuloId !== null) {
         currentCategoriaPadre = null;
@@ -565,6 +668,7 @@ async function handleRoute() {
   }
 }
 
+window.addEventListener('popstate', handleRoute);
 window.addEventListener('hashchange', handleRoute);
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -744,7 +848,7 @@ async function handleLogin(event) {
     const form = document.getElementById('gateLoginForm');
     if (form) form.reset();
 
-    navigateTo('#/dashboard');
+    navigateTo('/dashboard');
   } catch (err) {
     if (err.name === 'TypeError') {
       // Error de red/conexión sin respuesta de servidor
@@ -853,14 +957,14 @@ async function handleLogout(force = false) {
   localStorage.removeItem('currentUser');
   localStorage.removeItem('jwtToken');
   isAppInitialized = false;
-  navigateTo('#/login');
+  navigateTo('/login');
 }
 
 function switchMainCategory(categoriaPadre, tabBtnElement) {
   if (categoriaPadre) {
-    navigateTo(`#/area/${encodeURIComponent(categoriaPadre)}`);
+    navigateTo(`/area/${encodeURIComponent(categoriaPadre)}`);
   } else {
-    navigateTo('#/dashboard');
+    navigateTo('/dashboard');
   }
 }
 
@@ -975,12 +1079,21 @@ async function loadPosts(page = 1) {
   const grid = document.getElementById('postsGrid');
   const pagination = document.getElementById('paginationContainer');
 
-  grid.innerHTML = `
-    <div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 3rem;">
-      <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
-      <p style="margin-top: 1rem;">Cargando publicaciones...</p>
+  grid.innerHTML = Array.from({ length: 6 }).map(() => `
+    <div class="skeleton-card">
+      <div class="skeleton-box" style="height:135px; width:100%;"></div>
+      <div style="padding:1rem;">
+        <div class="skeleton-box" style="height:14px; width:35%; margin-bottom:0.75rem; border-radius:10px;"></div>
+        <div class="skeleton-box" style="height:20px; width:85%; margin-bottom:0.75rem; border-radius:6px;"></div>
+        <div class="skeleton-box" style="height:14px; width:95%; margin-bottom:0.4rem; border-radius:4px;"></div>
+        <div class="skeleton-box" style="height:14px; width:65%; margin-bottom:1.25rem; border-radius:4px;"></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--bg-card-border); padding-top:0.75rem;">
+          <div class="skeleton-box" style="height:14px; width:40%; border-radius:4px;"></div>
+          <div class="skeleton-box" style="height:14px; width:25%; border-radius:4px;"></div>
+        </div>
+      </div>
     </div>
-  `;
+  `).join('');
 
   try {
     let url = `/api/posts?estado=publicado&page=${currentPage}&pageSize=${pageSize}`;
@@ -1176,11 +1289,11 @@ function filterByModule(moduloId, btnElement) {
   currentModuloId = moduloId;
   updateModulePillActiveState();
   if (moduloId) {
-    navigateTo(`#/modulo/${moduloId}`);
+    navigateTo(`/modulo/${moduloId}`);
   } else if (currentCategoriaPadre) {
-    navigateTo(`#/area/${encodeURIComponent(currentCategoriaPadre)}`);
+    navigateTo(`/area/${encodeURIComponent(currentCategoriaPadre)}`);
   } else {
-    navigateTo('#/dashboard');
+    navigateTo('/dashboard');
   }
 }
 
@@ -1339,7 +1452,7 @@ async function handleCreatePost(event) {
     selectedFiles = [];
     renderFilePreviews();
 
-    navigateTo('#/dashboard');
+    navigateTo('/dashboard');
     await loadPosts(1);
 
     getPrixmaSwal().fire({
@@ -1521,10 +1634,20 @@ async function handleInactivarModulo(id) {
 }
 
 async function openDetailView(postId) {
+  const titleEl = document.getElementById('detailTitle');
+  const badgesEl = document.getElementById('detailBadges');
+  const metaEl = document.getElementById('detailMeta');
+  const contentEl = document.getElementById('detailContent');
+
+  if (badgesEl) badgesEl.innerHTML = `<div class="skeleton-box" style="height:22px; width:180px; border-radius:12px;"></div>`;
+  if (titleEl) titleEl.innerHTML = `<div class="skeleton-box" style="height:30px; width:70%; border-radius:6px; margin:0.4rem 0;"></div>`;
+  if (metaEl) metaEl.innerHTML = `<div class="skeleton-box" style="height:16px; width:220px; border-radius:4px;"></div>`;
+  if (contentEl) contentEl.innerHTML = `<div class="skeleton-box" style="height:18px; width:95%; margin-bottom:0.5rem; border-radius:4px;"></div><div class="skeleton-box" style="height:18px; width:80%; margin-bottom:0.5rem; border-radius:4px;"></div><div class="skeleton-box" style="height:18px; width:60%; border-radius:4px;"></div>`;
+
   try {
     const res = await apiFetch(`/api/posts/${postId}`);
     if (!res.ok) {
-      navigateTo('#/dashboard');
+      navigateTo('/dashboard');
       return;
     }
     const post = await res.json();
@@ -1549,7 +1672,7 @@ async function openDetailView(postId) {
     if (headerActions) {
       let actHtml = '';
       if (hasPermission('posts.edit')) {
-        actHtml += `<button class="btn btn-secondary" style="padding:0.35rem 0.75rem; font-size:0.85rem;" onclick="navigateTo('#/posts/edit/${post.id}')"><i class="fa-solid fa-pen-to-square"></i> Editar</button>`;
+        actHtml += `<button class="btn btn-secondary" style="padding:0.35rem 0.75rem; font-size:0.85rem;" onclick="navigateTo('/posts/edit/${post.id}')"><i class="fa-solid fa-pen-to-square"></i> Editar</button>`;
       }
       if (hasPermission('posts.delete')) {
         actHtml += `<button class="btn btn-danger" style="padding:0.35rem 0.75rem; font-size:0.85rem;" onclick="handleDeletePost(${post.id})"><i class="fa-solid fa-trash-can"></i> Eliminar</button>`;
@@ -1616,12 +1739,12 @@ async function openDetailView(postId) {
     }
   } catch (err) {
     console.error('Error al abrir detalle:', err);
-    navigateTo('#/dashboard');
+    navigateTo('/dashboard');
   }
 }
 
 async function openDetailModal(postId) {
-  navigateTo('#/post/' + postId);
+  navigateTo('/post/' + postId);
 }
 
 async function handleDeleteAttachment(adjuntoId, postId, isFromEdit = false) {
@@ -1673,13 +1796,13 @@ async function handleDeleteAttachment(adjuntoId, postId, isFromEdit = false) {
   }
 }
 
-function openCreateModal() { navigateTo('#/posts/create'); }
-function openModuleModal() { navigateTo('#/modulos'); }
-function openAreaModal() { navigateTo('#/areas'); }
-function openPostTiposModal() { navigateTo('#/tipos'); }
-function openRbacModal() { navigateTo('#/rbac'); }
-function openModal(id) { navigateTo('#/dashboard'); }
-function closeModal(id) { navigateTo('#/dashboard'); }
+function openCreateModal() { navigateTo('/posts/create'); }
+function openModuleModal() { navigateTo('/modulos'); }
+function openAreaModal() { navigateTo('/areas'); }
+function openPostTiposModal() { navigateTo('/tipos'); }
+function openRbacModal() { navigateTo('/rbac'); }
+function openModal(id) { navigateTo('/dashboard'); }
+function closeModal(id) { navigateTo('/dashboard'); }
 
 function populateModuloAreaSelect() {
   const select = document.getElementById('moduloCategoriaPadre');
@@ -1704,6 +1827,8 @@ const areasPageSize = 5;
 async function loadAreasList() {
   const container = document.getElementById('areasListContainer');
   if (!container) return;
+
+  container.innerHTML = getTableSkeletonHtml(5, 4);
 
   const areas = getAllAreas() || [];
   const totalItems = areas.length;
@@ -1739,7 +1864,10 @@ async function loadAreasList() {
               <td style="padding:0.75rem; color:var(--text-muted); font-size:0.85rem;">${escapeHtml(a.desc || 'Sin descripción')}</td>
               <td style="padding:0.75rem; text-align:right;">
                 <div style="display:flex; gap:0.5rem; justify-content:flex-end; align-items:center;">
-                  <button class="btn btn-secondary" onclick="navigateTo('#/areas/edit/' + ${a.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem;" title="Editar Área">
+                  <button class="btn btn-secondary" onclick="navigateTo('/areas/show/' + ${a.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem; color:var(--accent-cyan); border-color:rgba(6,182,212,0.3);" title="Ver Área">
+                    <i class="fa-solid fa-eye"></i> Ver
+                  </button>
+                  <button class="btn btn-secondary" onclick="navigateTo('/areas/edit/' + ${a.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem;" title="Editar Área">
                     <i class="fa-solid fa-pen"></i> Editar
                   </button>
                   <button class="btn btn-secondary" onclick="handleInactivarArea(${a.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem; color:var(--accent-rose); border-color:rgba(244,63,94,0.3);" title="Eliminar Área">
@@ -1789,7 +1917,7 @@ async function loadModulesList() {
   const container = document.getElementById('modulesListContainer');
   if (!container) return;
 
-  container.innerHTML = '<div style="text-align:center; padding:1.5rem;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando módulos...</div>';
+  container.innerHTML = getTableSkeletonHtml(5, 4);
 
   try {
     const res = await apiFetch('/api/modulos?soloActivos=true');
@@ -1829,7 +1957,10 @@ async function loadModulesList() {
                 <td style="padding:0.75rem; color:var(--text-muted); font-size:0.85rem;">${escapeHtml(m.descripcion || 'Sin descripción')}</td>
                 <td style="padding:0.75rem; text-align:right;">
                   <div style="display:flex; gap:0.5rem; justify-content:flex-end; align-items:center;">
-                    <button class="btn btn-secondary" onclick="navigateTo('#/modulos/edit/' + ${m.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem;" title="Editar Módulo">
+                    <button class="btn btn-secondary" onclick="navigateTo('/modulos/show/' + ${m.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem; color:var(--accent-cyan); border-color:rgba(6,182,212,0.3);" title="Ver Módulo">
+                      <i class="fa-solid fa-eye"></i> Ver
+                    </button>
+                    <button class="btn btn-secondary" onclick="navigateTo('/modulos/edit/' + ${m.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem;" title="Editar Módulo">
                       <i class="fa-solid fa-pen"></i> Editar
                     </button>
                     <button class="btn btn-secondary" onclick="handleInactivarModulo(${m.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem; color:var(--accent-rose); border-color:rgba(244,63,94,0.3);" title="Eliminar Módulo">
@@ -2040,7 +2171,7 @@ async function handleCreateArea(event) {
 
     await loadAreas();
     loadAreasList();
-    navigateTo('#/areas');
+    navigateTo('/areas');
 
     getPrixmaSwal().fire({
       icon: 'success',
@@ -2178,8 +2309,8 @@ function openModal(id) {
 function closeModal(id) {
   const modalEl = document.getElementById(id);
   if (modalEl) modalEl.classList.remove('active');
-  if (id === 'rbacModal' && window.location.hash === '#/rbac') {
-    navigateTo('#/dashboard');
+  if (id === 'rbacModal' && (window.location.hash === '#/rbac' || window.location.pathname === '/rbac')) {
+    navigateTo('/dashboard');
   }
 }
 
@@ -2559,7 +2690,7 @@ async function loadRbacRolesList() {
   const tbody = document.getElementById('rolesManagementTableBody');
   if (!tbody) return;
 
-  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:1.5rem;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando lista de roles...</td></tr>';
+  tbody.innerHTML = Array.from({ length: 4 }).map(() => '<tr><td colspan="4" style="padding:0.75rem;"><div class="skeleton-box" style="height:18px; width:85%; border-radius:4px;"></div></td></tr>').join('');
 
   try {
     const res = await apiFetch('/api/roles');
@@ -2616,7 +2747,10 @@ function renderRbacRolesTable() {
         <td style="padding:0.75rem;"><span class="badge" style="position:static; background:var(--primary-glow); color:var(--primary); font-weight:700; font-size:0.85rem; padding:4px 10px; border-radius:12px;">${r.permisos ? r.permisos.length : 0}</span></td>
         <td style="padding:0.75rem; text-align:right;">
           <div style="display:flex; gap:0.5rem; justify-content:flex-end; align-items:center;">
-            <button class="btn btn-secondary" onclick="navigateTo('#/roles/edit/' + ${r.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem;" title="Editar Rol">
+            <button class="btn btn-secondary" onclick="navigateTo('/roles/show/' + ${r.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem; color:var(--accent-cyan); border-color:rgba(6,182,212,0.3);" title="Ver Rol">
+              <i class="fa-solid fa-eye"></i> Ver
+            </button>
+            <button class="btn btn-secondary" onclick="navigateTo('/roles/edit/' + ${r.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem;" title="Editar Rol">
               <i class="fa-solid fa-pen"></i> Editar
             </button>
             ${deleteBtnHtml}
@@ -2767,13 +2901,14 @@ let selectedEditFiles = [];
 let currentEditingPost = null;
 
 async function openEditView(postId) {
+  setFormSkeletonState('editPostForm', true);
   if (!hasPermission('posts.edit')) {
     getPrixmaSwal().fire({
       icon: 'error',
       title: 'Acceso Denegado',
       text: 'No tienes permisos para editar esta publicación.'
     });
-    navigateTo('#/dashboard');
+    navigateTo('/dashboard');
     return;
   }
 
@@ -2861,7 +2996,9 @@ async function openEditView(postId) {
       title: 'Error de Lectura',
       text: err.message
     });
-    navigateTo('#/dashboard');
+    navigateTo('/dashboard');
+  } finally {
+    setTimeout(() => setFormSkeletonState('editPostForm', false), 250);
   }
 }
 
@@ -2901,7 +3038,7 @@ async function handleSetPortada(adjuntoId, postId) {
 
 
 async function openEditModal(postId) {
-  navigateTo('#/posts/edit/' + postId);
+  navigateTo('/posts/edit/' + postId);
 }
 
 function onEditPostCategoriaChange(cat) {
@@ -2935,7 +3072,7 @@ async function loadPostTiposList() {
   const container = document.getElementById('postTiposListContainer');
   if (!container) return;
 
-  container.innerHTML = '<div style="text-align:center; padding:1.5rem;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando tipos de publicación...</div>';
+  container.innerHTML = getTableSkeletonHtml(5, 4);
 
   try {
     const res = await apiFetch('/api/modulos/tipos');
@@ -2979,7 +3116,10 @@ async function loadPostTiposList() {
                 </td>
                 <td style="padding:0.75rem; text-align:right;">
                   <div style="display:flex; gap:0.5rem; justify-content:flex-end; align-items:center;">
-                    <button class="btn btn-secondary" onclick="navigateTo('#/tipos/edit/' + ${t.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem;" title="Editar Tipo">
+                    <button class="btn btn-secondary" onclick="navigateTo('/tipos/show/' + ${t.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem; color:var(--accent-cyan); border-color:rgba(6,182,212,0.3);" title="Ver Tipo">
+                      <i class="fa-solid fa-eye"></i> Ver
+                    </button>
+                    <button class="btn btn-secondary" onclick="navigateTo('/tipos/edit/' + ${t.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem;" title="Editar Tipo">
                       <i class="fa-solid fa-pen"></i> Editar
                     </button>
                     <button class="btn btn-secondary" onclick="handleDeletePostTipo(${t.id}, '${escapeHtml(t.nombre)}')" style="padding:0.35rem 0.65rem; font-size:0.8rem; color:var(--accent-rose); border-color:rgba(244,63,94,0.3);" title="Eliminar Tipo">
@@ -3220,7 +3360,7 @@ async function loadTiposConocimientoList() {
   const container = document.getElementById('tiposConocimientoListContainer');
   if (!container) return;
 
-  container.innerHTML = '<div style="text-align:center; padding:1.5rem;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando tipos de conocimiento...</div>';
+  container.innerHTML = getTableSkeletonHtml(5, 3);
 
   try {
     const res = await apiFetch('/api/modulos/tipos-conocimiento');
@@ -3258,7 +3398,10 @@ async function loadTiposConocimientoList() {
                 <td style="padding:0.75rem; color:var(--text-muted); font-size:0.85rem;">${escapeHtml(t.descripcion || 'Sin descripción')}</td>
                 <td style="padding:0.75rem; text-align:right;">
                   <div style="display:flex; gap:0.5rem; justify-content:flex-end; align-items:center;">
-                    <button class="btn btn-secondary" onclick="navigateTo('#/tipos-conocimiento/edit/' + ${t.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem;" title="Editar Tipo de Conocimiento">
+                    <button class="btn btn-secondary" onclick="navigateTo('/tipos-conocimiento/show/' + ${t.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem; color:var(--accent-cyan); border-color:rgba(6,182,212,0.3);" title="Ver Tipo de Conocimiento">
+                      <i class="fa-solid fa-eye"></i> Ver
+                    </button>
+                    <button class="btn btn-secondary" onclick="navigateTo('/tipos-conocimiento/edit/' + ${t.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem;" title="Editar Tipo de Conocimiento">
                       <i class="fa-solid fa-pen"></i> Editar
                     </button>
                     <button class="btn btn-secondary" onclick="handleDeleteTipoConocimiento(${t.id}, '${escapeHtml(t.nombre)}')" style="padding:0.35rem 0.65rem; font-size:0.8rem; color:var(--accent-rose); border-color:rgba(244,63,94,0.3);" title="Eliminar Tipo de Conocimiento">
@@ -3586,7 +3729,7 @@ async function handleSaveEditPost(event) {
     }
 
     closeModal('editModal');
-    navigateTo('#/dashboard');
+    navigateTo('/dashboard');
     await loadPosts(1);
 
     getPrixmaSwal().fire({
@@ -3660,7 +3803,7 @@ async function handleDeletePostFromModal() {
   if (postId) {
     const success = await handleDeletePost(postId);
     if (success) {
-      navigateTo('#/dashboard');
+      navigateTo('/dashboard');
     }
   }
 }
@@ -3670,7 +3813,14 @@ async function handleDeletePostFromModal() {
 // 1. ÁREAS
 let editAreaInitialValues = { nombre: '', descripcion: '' };
 
+async function loadAreaForShow(id) {
+  switchAppView('viewAreaEdit');
+  await loadAreaForEdit(id);
+  setFormReadOnlyMode('editAreaForm', true, 'Detalles del Área Corporativa', 'fa-eye');
+}
+
 async function loadAreaForEdit(id) {
+  setFormReadOnlyMode('editAreaForm', false);
   setFormSkeletonState('editAreaForm', true);
   try {
     const areas = getAllAreas();
@@ -3705,6 +3855,7 @@ async function loadAreaForEdit(id) {
 }
 
 function hasAreaEditChanged() {
+  if (document.getElementById('editAreaForm')?.dataset.readOnly === 'true') return false;
   const currentNombre = (document.getElementById('editAreaNombre')?.value || '').trim();
   const currentDesc = (document.getElementById('editAreaDesc')?.value || '').trim();
   return currentNombre !== editAreaInitialValues.nombre || currentDesc !== editAreaInitialValues.descripcion;
@@ -3756,7 +3907,7 @@ async function handleSaveEditArea(event) {
       timer: 1800,
       showConfirmButton: false
     });
-    navigateTo('#/areas');
+    navigateTo('/areas');
   } catch (err) {
     getPrixmaSwal().fire({ icon: 'error', title: 'Error', text: err.message });
   }
@@ -3780,7 +3931,7 @@ async function handleCancelEditArea(event) {
     if (!confirmResult.isConfirmed) return;
   }
 
-  navigateTo('#/areas');
+  navigateTo('/areas');
 }
 
 async function handleDeleteAreaFromForm() {
@@ -3788,7 +3939,7 @@ async function handleDeleteAreaFromForm() {
   if (id) {
     const success = await handleInactivarArea(id);
     if (success) {
-      navigateTo('#/areas');
+      navigateTo('/areas');
     }
   }
 }
@@ -3796,7 +3947,15 @@ async function handleDeleteAreaFromForm() {
 // 2. MÓDULOS
 let editModuleInitialValues = { categoriaPadre: '', nombre: '', descripcion: '' };
 
+async function loadModuleForShow(id) {
+  switchAppView('viewModuleEdit');
+  populateModuloAreaSelect();
+  await loadModuleForEdit(id);
+  setFormReadOnlyMode('editModuleForm', true, 'Detalles del Módulo Temático', 'fa-eye');
+}
+
 async function loadModuleForEdit(id) {
+  setFormReadOnlyMode('editModuleForm', false);
   setFormSkeletonState('editModuleForm', true);
   try {
     const res = await apiFetch(`/api/modulos/${id}`);
@@ -3827,6 +3986,7 @@ async function loadModuleForEdit(id) {
 }
 
 function hasModuleEditChanged() {
+  if (document.getElementById('editModuleForm')?.dataset.readOnly === 'true') return false;
   const cat = (document.getElementById('editModuloCategoriaPadre')?.value || '').trim();
   const nombre = (document.getElementById('editModuloNombre')?.value || '').trim();
   const desc = (document.getElementById('editModuloDesc')?.value || '').trim();
@@ -3851,7 +4011,7 @@ async function handleCreateModule(event) {
     if (!res.ok) throw new Error('Error al crear el módulo.');
     await loadModulos();
     getPrixmaSwal().fire({ icon: 'success', title: 'Módulo Creado', text: 'El módulo fue registrado correctamente.', timer: 1800, showConfirmButton: false });
-    navigateTo('#/modulos');
+    navigateTo('/modulos');
   } catch (err) {
     getPrixmaSwal().fire({ icon: 'error', title: 'Error', text: err.message });
   }
@@ -3891,7 +4051,7 @@ async function handleSaveEditModule(event) {
     if (!res.ok) throw new Error('Error al actualizar el módulo.');
     await loadModulos();
     getPrixmaSwal().fire({ icon: 'success', title: 'Módulo Actualizado', text: 'Los cambios fueron guardados correctamente.', timer: 1800, showConfirmButton: false });
-    navigateTo('#/modulos');
+    navigateTo('/modulos');
   } catch (err) {
     getPrixmaSwal().fire({ icon: 'error', title: 'Error', text: err.message });
   }
@@ -3915,7 +4075,7 @@ async function handleCancelEditModule(event) {
     if (!confirmResult.isConfirmed) return;
   }
 
-  navigateTo('#/modulos');
+  navigateTo('/modulos');
 }
 
 async function handleDeleteModuleFromForm() {
@@ -3923,7 +4083,7 @@ async function handleDeleteModuleFromForm() {
   if (id) {
     const success = await handleInactivarModulo(id);
     if (success) {
-      navigateTo('#/modulos');
+      navigateTo('/modulos');
     }
   }
 }
@@ -3949,7 +4109,14 @@ async function populateRolesSelect(selectId, selectedRolId = null) {
   }
 }
 
+async function loadPostTipoForShow(id) {
+  switchAppView('viewPostTiposEdit');
+  await loadPostTipoForEdit(id);
+  setFormReadOnlyMode('editPostTipoForm', true, 'Detalles del Tipo de Publicación', 'fa-eye');
+}
+
 async function loadPostTipoForEdit(id) {
+  setFormReadOnlyMode('editPostTipoForm', false);
   setFormSkeletonState('editPostTipoForm', true);
   try {
     const res = await apiFetch('/api/modulos/tipos');
@@ -3982,6 +4149,7 @@ async function loadPostTipoForEdit(id) {
 }
 
 function hasPostTipoEditChanged() {
+  if (document.getElementById('editPostTipoForm')?.dataset.readOnly === 'true') return false;
   const nombre = (document.getElementById('editPostTipoNombre')?.value || '').trim();
   const desc = (document.getElementById('editPostTipoDesc')?.value || '').trim();
   const rolId = (document.getElementById('editPostTipoRolId')?.value || '').trim();
@@ -4014,7 +4182,7 @@ async function handleSaveCreatePostTipo(event) {
     }
     await loadPostTiposList();
     getPrixmaSwal().fire({ icon: 'success', title: 'Tipo Creado', text: 'El tipo fue creado correctamente.', timer: 1800, showConfirmButton: false });
-    navigateTo('#/tipos');
+    navigateTo('/tipos');
   } catch (err) {
     getPrixmaSwal().fire({ icon: 'error', title: 'Error', text: err.message });
   }
@@ -4058,7 +4226,7 @@ async function handleSaveEditPostTipo(event) {
     }
     await loadPostTiposList();
     getPrixmaSwal().fire({ icon: 'success', title: 'Tipo Actualizado', text: 'Los cambios fueron guardados correctamente.', timer: 1800, showConfirmButton: false });
-    navigateTo('#/tipos');
+    navigateTo('/tipos');
   } catch (err) {
     getPrixmaSwal().fire({ icon: 'error', title: 'Error', text: err.message });
   }
@@ -4082,7 +4250,7 @@ async function handleCancelEditPostTipo(event) {
     if (!confirmResult.isConfirmed) return;
   }
 
-  navigateTo('#/tipos');
+  navigateTo('/tipos');
 }
 
 async function handleDeleteTipoFromForm() {
@@ -4091,7 +4259,7 @@ async function handleDeleteTipoFromForm() {
   if (id) {
     const success = await handleDeletePostTipo(id, nombre);
     if (success) {
-      navigateTo('#/tipos');
+      navigateTo('/tipos');
     }
   }
 }
@@ -4099,7 +4267,14 @@ async function handleDeleteTipoFromForm() {
 // 3.5 TIPOS DE CONOCIMIENTO
 let editTipoConocimientoInitialValues = { nombre: '', descripcion: '' };
 
+async function loadTipoConocimientoForShow(id) {
+  switchAppView('viewTipoConocimientoEdit');
+  await loadTipoConocimientoForEdit(id);
+  setFormReadOnlyMode('editTipoConocimientoForm', true, 'Detalles del Tipo de Conocimiento', 'fa-eye');
+}
+
 async function loadTipoConocimientoForEdit(id) {
+  setFormReadOnlyMode('editTipoConocimientoForm', false);
   setFormSkeletonState('editTipoConocimientoForm', true);
   try {
     const res = await apiFetch('/api/modulos/tipos-conocimiento');
@@ -4129,6 +4304,7 @@ async function loadTipoConocimientoForEdit(id) {
 }
 
 function hasTipoConocimientoEditChanged() {
+  if (document.getElementById('editTipoConocimientoForm')?.dataset.readOnly === 'true') return false;
   const nombre = (document.getElementById('editTipoConocimientoNombre')?.value || '').trim();
   const desc = (document.getElementById('editTipoConocimientoDesc')?.value || '').trim();
   return nombre !== editTipoConocimientoInitialValues.nombre || desc !== editTipoConocimientoInitialValues.descripcion;
@@ -4153,7 +4329,7 @@ async function handleSaveCreateTipoConocimiento(event) {
     await loadTiposConocimientoList();
     getPrixmaSwal().fire({ icon: 'success', title: 'Tipo Creado', text: 'El tipo de conocimiento se creó correctamente.', timer: 1800, showConfirmButton: false });
     window.lastTiposSubTab = 'conocimiento';
-    navigateTo('#/tipos-conocimiento');
+    navigateTo('/tipos-conocimiento');
   } catch (err) {
     getPrixmaSwal().fire({ icon: 'error', title: 'Error', text: err.message });
   }
@@ -4196,7 +4372,7 @@ async function handleSaveEditTipoConocimiento(event) {
     await loadTiposConocimientoList();
     getPrixmaSwal().fire({ icon: 'success', title: 'Tipo Actualizado', text: 'Los cambios fueron guardados correctamente.', timer: 1800, showConfirmButton: false });
     window.lastTiposSubTab = 'conocimiento';
-    navigateTo('#/tipos-conocimiento');
+    navigateTo('/tipos-conocimiento');
   } catch (err) {
     getPrixmaSwal().fire({ icon: 'error', title: 'Error', text: err.message });
   }
@@ -4221,7 +4397,7 @@ async function handleCancelEditTipoConocimiento(event) {
   }
 
   window.lastTiposSubTab = 'conocimiento';
-  navigateTo('#/tipos-conocimiento');
+  navigateTo('/tipos-conocimiento');
 }
 
 async function handleDeleteTipoConocimientoFromForm() {
@@ -4231,7 +4407,7 @@ async function handleDeleteTipoConocimientoFromForm() {
     const success = await handleDeleteTipoConocimiento(id, nombre);
     if (success) {
       window.lastTiposSubTab = 'conocimiento';
-      navigateTo('#/tipos-conocimiento');
+      navigateTo('/tipos-conocimiento');
     }
   }
 }
@@ -4239,7 +4415,14 @@ async function handleDeleteTipoConocimientoFromForm() {
 // 4. ROLES Y PERMISOS
 let editRoleInitialValues = { nombre: '', descripcion: '' };
 
+async function loadRoleForShow(id) {
+  switchAppView('viewRoleEdit');
+  await loadRoleForEdit(id);
+  setFormReadOnlyMode('editRoleForm', true, 'Detalles del Rol y Permisos', 'fa-eye');
+}
+
 async function loadRoleForEdit(id) {
+  setFormReadOnlyMode('editRoleForm', false);
   setFormSkeletonState('editRoleForm', true);
   try {
     const res = await apiFetch('/api/roles');
@@ -4269,6 +4452,7 @@ async function loadRoleForEdit(id) {
 }
 
 function hasRoleEditChanged() {
+  if (document.getElementById('editRoleForm')?.dataset.readOnly === 'true') return false;
   const nombre = (document.getElementById('editRoleNombre')?.value || '').trim();
   const desc = (document.getElementById('editRoleDesc')?.value || '').trim();
   return nombre !== editRoleInitialValues.nombre || desc !== editRoleInitialValues.descripcion;
@@ -4288,7 +4472,7 @@ async function handleSaveCreateRole(event) {
     });
     if (!res.ok) throw new Error('Error al crear el rol.');
     getPrixmaSwal().fire({ icon: 'success', title: 'Rol Creado', text: 'El rol ha sido registrado correctamente.', timer: 1800, showConfirmButton: false });
-    navigateTo('#/rbac');
+    navigateTo('/rbac');
   } catch (err) {
     getPrixmaSwal().fire({ icon: 'error', title: 'Error', text: err.message });
   }
@@ -4326,7 +4510,7 @@ async function handleSaveEditRole(event) {
     });
     if (!res.ok) throw new Error('Error al actualizar el rol.');
     getPrixmaSwal().fire({ icon: 'success', title: 'Rol Actualizado', text: 'Los cambios fueron guardados correctamente.', timer: 1800, showConfirmButton: false });
-    navigateTo('#/rbac');
+    navigateTo('/rbac');
   } catch (err) {
     getPrixmaSwal().fire({ icon: 'error', title: 'Error', text: err.message });
   }
@@ -4350,7 +4534,7 @@ async function handleCancelEditRole(event) {
     if (!confirmResult.isConfirmed) return;
   }
 
-  navigateTo('#/rbac');
+  navigateTo('/rbac');
 }
 
 async function handleDeleteRoleFromForm() {
@@ -4359,7 +4543,7 @@ async function handleDeleteRoleFromForm() {
   if (id) {
     const success = await handleDeleteRole(id, nombre);
     if (success) {
-      navigateTo('#/rbac');
+      navigateTo('/rbac');
     }
   }
 }
