@@ -1463,3 +1463,35 @@ textarea {
   width: 100%;
 }
 
+/* ==========================================================================
+   Skeleton Loading State for Edit Forms
+   ========================================================================== */
+@keyframes skeletonShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.form-control.skeleton-input,
+.skeleton-input {
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 37%, #e2e8f0 63%) !important;
+  background-size: 400% 100% !important;
+  animation: skeletonShimmer 1.4s ease infinite !important;
+  color: transparent !important;
+  pointer-events: none !important;
+  user-select: none !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark"] .form-control.skeleton-input,
+[data-theme="dark"] .skeleton-input {
+  background: linear-gradient(90deg, #1e293b 25%, #334155 37%, #1e293b 63%) !important;
+  background-size: 400% 100% !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+

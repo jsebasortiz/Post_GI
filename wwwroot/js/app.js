@@ -131,6 +131,34 @@ function setButtonLoading(btn, isLoading, loadingText = 'Procesando...') {
   }
 }
 
+// Helper: Skeleton Loading State for Forms
+function setFormSkeletonState(formIdOrElement, isLoading) {
+  const container = typeof formIdOrElement === 'string' ? document.getElementById(formIdOrElement) : formIdOrElement;
+  if (!container) return;
+
+  const inputs = container.querySelectorAll('.form-control, input:not([type="hidden"]), select, textarea');
+  const buttons = container.querySelectorAll('button[type="submit"], .btn-primary, .btn-secondary, .btn-danger');
+
+  inputs.forEach(input => {
+    if (isLoading) {
+      input.classList.add('skeleton-input');
+      if (input.tagName === 'INPUT' || input.tagName === 'TEXTAREA') {
+        input.dataset.oldVal = input.value || '';
+        input.value = 'Cargando...';
+      }
+    } else {
+      input.classList.remove('skeleton-input');
+      if (input.dataset.oldVal !== undefined) {
+        delete input.dataset.oldVal;
+      }
+    }
+  });
+
+  buttons.forEach(btn => {
+    btn.disabled = isLoading;
+  });
+}
+
 
 let currentTheme = localStorage.getItem('prixmaTheme') || 'light';
 
@@ -1372,20 +1400,22 @@ async function handleCreateModule(event) {
 }
 
 function openEditModuleModal(id) {
-  populateAreaSelects();
-  const modulo = (allModulosCache || []).find(m => m.id === id || m.id === parseInt(id));
-  if (!modulo) return;
-
-  document.getElementById('editModuloId').value = modulo.id;
-  document.getElementById('editModuloNombre').value = modulo.nombre || '';
-  document.getElementById('editModuloDesc').value = modulo.descripcion || '';
-
-  const catSelect = document.getElementById('editModuloCategoriaPadre');
-  if (catSelect) {
-    const catCode = modulo.categoriaPadre || (modulo.area ? modulo.area.codigo : 'apps');
-    catSelect.value = catCode;
-  }
+  setFormSkeletonState('editModuleModal', true);
   openModal('editModuleModal');
+  populateAreaSelects();
+  const modulo = (allModulosCache || []).find(m => m.id === id || m.id === parseInt(id, 10));
+  if (modulo) {
+    document.getElementById('editModuloId').value = modulo.id;
+    document.getElementById('editModuloNombre').value = modulo.nombre || '';
+    document.getElementById('editModuloDesc').value = modulo.descripcion || '';
+
+    const catSelect = document.getElementById('editModuloCategoriaPadre');
+    if (catSelect) {
+      const catCode = modulo.categoriaPadre || (modulo.area ? modulo.area.codigo : 'apps');
+      catSelect.value = catCode;
+    }
+  }
+  setTimeout(() => setFormSkeletonState('editModuleModal', false), 250);
 }
 
 async function handleUpdateModule(event) {
@@ -1478,6 +1508,7 @@ async function handleInactivarModulo(id) {
 
     if (currentModuloId === id) filterByModule(null, null);
     await loadModulos();
+    loadModulesList();
     return true;
   } catch (err) {
     getPrixmaSwal().fire({
@@ -2128,6 +2159,7 @@ async function handleInactivarArea(id) {
 
     if (currentCategoriaPadre) switchMainCategory(null, null);
     await loadAreas();
+    loadAreasList();
     return true;
   } catch (err) {
     getPrixmaSwal().fire({
@@ -3638,22 +3670,37 @@ async function handleDeletePostFromModal() {
 // 1. ÁREAS
 let editAreaInitialValues = { nombre: '', descripcion: '' };
 
-function loadAreaForEdit(id) {
-  const areas = getAllAreas();
-  const area = areas.find(a => a.id === parseInt(id, 10));
-  if (area) {
-    const idEl = document.getElementById('editAreaId');
-    const nombreEl = document.getElementById('editAreaNombre');
-    const descEl = document.getElementById('editAreaDesc');
+async function loadAreaForEdit(id) {
+  setFormSkeletonState('editAreaForm', true);
+  try {
+    const areas = getAllAreas();
+    let area = areas.find(a => a.id === parseInt(id, 10));
+    if (!area) {
+      const res = await apiFetch(`/api/areas/${id}`);
+      if (res.ok) area = await res.json();
+    }
 
-    if (idEl) idEl.value = area.id;
-    if (nombreEl) nombreEl.value = area.name || '';
-    if (descEl) descEl.value = area.desc || '';
+    if (area) {
+      const idEl = document.getElementById('editAreaId');
+      const nombreEl = document.getElementById('editAreaNombre');
+      const descEl = document.getElementById('editAreaDesc');
 
-    editAreaInitialValues = {
-      nombre: (area.name || '').trim(),
-      descripcion: (area.desc || '').trim()
-    };
+      const nameVal = area.name || area.nombre || '';
+      const descVal = area.desc || area.descripcion || '';
+
+      if (idEl) idEl.value = area.id;
+      if (nombreEl) nombreEl.value = nameVal;
+      if (descEl) descEl.value = descVal;
+
+      editAreaInitialValues = {
+        nombre: nameVal.trim(),
+        descripcion: descVal.trim()
+      };
+    }
+  } catch (e) {
+    console.error('Error cargando área para edición:', e);
+  } finally {
+    setTimeout(() => setFormSkeletonState('editAreaForm', false), 250);
   }
 }
 
@@ -3750,6 +3797,7 @@ async function handleDeleteAreaFromForm() {
 let editModuleInitialValues = { categoriaPadre: '', nombre: '', descripcion: '' };
 
 async function loadModuleForEdit(id) {
+  setFormSkeletonState('editModuleForm', true);
   try {
     const res = await apiFetch(`/api/modulos/${id}`);
     if (res.ok) {
@@ -3773,6 +3821,8 @@ async function loadModuleForEdit(id) {
     }
   } catch (e) {
     console.error('Error cargando módulo para edición:', e);
+  } finally {
+    setTimeout(() => setFormSkeletonState('editModuleForm', false), 250);
   }
 }
 
@@ -3900,6 +3950,7 @@ async function populateRolesSelect(selectId, selectedRolId = null) {
 }
 
 async function loadPostTipoForEdit(id) {
+  setFormSkeletonState('editPostTipoForm', true);
   try {
     const res = await apiFetch('/api/modulos/tipos');
     if (res.ok) {
@@ -3925,6 +3976,8 @@ async function loadPostTipoForEdit(id) {
     }
   } catch (e) {
     console.error('Error cargando tipo para edición:', e);
+  } finally {
+    setTimeout(() => setFormSkeletonState('editPostTipoForm', false), 250);
   }
 }
 
@@ -4047,6 +4100,7 @@ async function handleDeleteTipoFromForm() {
 let editTipoConocimientoInitialValues = { nombre: '', descripcion: '' };
 
 async function loadTipoConocimientoForEdit(id) {
+  setFormSkeletonState('editTipoConocimientoForm', true);
   try {
     const res = await apiFetch('/api/modulos/tipos-conocimiento');
     if (res.ok) {
@@ -4069,6 +4123,8 @@ async function loadTipoConocimientoForEdit(id) {
     }
   } catch (e) {
     console.error('Error cargando tipo de conocimiento para edición:', e);
+  } finally {
+    setTimeout(() => setFormSkeletonState('editTipoConocimientoForm', false), 250);
   }
 }
 
@@ -4184,6 +4240,7 @@ async function handleDeleteTipoConocimientoFromForm() {
 let editRoleInitialValues = { nombre: '', descripcion: '' };
 
 async function loadRoleForEdit(id) {
+  setFormSkeletonState('editRoleForm', true);
   try {
     const res = await apiFetch('/api/roles');
     if (res.ok) {
@@ -4206,6 +4263,8 @@ async function loadRoleForEdit(id) {
     }
   } catch (e) {
     console.error('Error cargando rol para edición:', e);
+  } finally {
+    setTimeout(() => setFormSkeletonState('editRoleForm', false), 250);
   }
 }
 
