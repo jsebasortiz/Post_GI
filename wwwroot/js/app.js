@@ -2004,10 +2004,12 @@ async function handleCreateArea(event) {
 
     const newArea = await res.json();
 
-    document.getElementById('createAreaForm').reset();
+    const form = document.getElementById('createAreaForm');
+    if (form) form.reset();
 
     await loadAreas();
     loadAreasList();
+    navigateTo('#/areas');
 
     getPrixmaSwal().fire({
       icon: 'success',
@@ -3634,22 +3636,58 @@ async function handleDeletePostFromModal() {
 // --- MANIPULADORES DEDICADOS PARA VISTAS DE RECURSOS (Áreas, Módulos, Tipos, Roles) ---
 
 // 1. ÁREAS
+let editAreaInitialValues = { nombre: '', descripcion: '' };
+
 function loadAreaForEdit(id) {
   const areas = getAllAreas();
-  const area = areas.find(a => a.id === parseInt(id));
+  const area = areas.find(a => a.id === parseInt(id, 10));
   if (area) {
-    document.getElementById('editAreaId').value = area.id;
-    document.getElementById('editAreaNombre').value = area.name || '';
-    document.getElementById('editAreaDesc').value = area.desc || '';
+    const idEl = document.getElementById('editAreaId');
+    const nombreEl = document.getElementById('editAreaNombre');
+    const descEl = document.getElementById('editAreaDesc');
+
+    if (idEl) idEl.value = area.id;
+    if (nombreEl) nombreEl.value = area.name || '';
+    if (descEl) descEl.value = area.desc || '';
+
+    editAreaInitialValues = {
+      nombre: (area.name || '').trim(),
+      descripcion: (area.desc || '').trim()
+    };
   }
 }
 
+function hasAreaEditChanged() {
+  const currentNombre = (document.getElementById('editAreaNombre')?.value || '').trim();
+  const currentDesc = (document.getElementById('editAreaDesc')?.value || '').trim();
+  return currentNombre !== editAreaInitialValues.nombre || currentDesc !== editAreaInitialValues.descripcion;
+}
+
 async function handleSaveEditArea(event) {
-  event.preventDefault();
+  if (event) event.preventDefault();
+
   const id = document.getElementById('editAreaId').value;
   const nombre = document.getElementById('editAreaNombre').value.trim();
   const descripcion = document.getElementById('editAreaDesc').value.trim();
   if (!id || !nombre) return;
+
+  const hasChanged = hasAreaEditChanged();
+
+  // Preguntar confirmación antes de guardar los cambios
+  const confirmResult = await getPrixmaSwal().fire({
+    title: '¿Guardar cambios?',
+    text: hasChanged
+      ? `¿Deseas guardar las modificaciones realizadas en el área "${nombre}"?`
+      : `¿Deseas guardar la información del área "${nombre}"?`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#2563eb',
+    cancelButtonColor: '#64748b',
+    confirmButtonText: '<i class="fa-solid fa-floppy-disk"></i> Sí, guardar',
+    cancelButtonText: 'Cancelar'
+  });
+
+  if (!confirmResult.isConfirmed) return;
 
   try {
     const res = await apiFetch(`/api/areas/${id}`, {
@@ -3657,13 +3695,45 @@ async function handleSaveEditArea(event) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nombre, descripcion })
     });
-    if (!res.ok) throw new Error('Error al actualizar el área.');
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'Error al actualizar el área.');
+    }
+
     await loadAreas();
-    getPrixmaSwal().fire({ icon: 'success', title: 'Área Actualizada', text: 'Los cambios fueron guardados correctamente.', timer: 1800, showConfirmButton: false });
+    getPrixmaSwal().fire({
+      icon: 'success',
+      title: 'Área Actualizada',
+      text: 'Los cambios fueron guardados correctamente.',
+      timer: 1800,
+      showConfirmButton: false
+    });
     navigateTo('#/areas');
   } catch (err) {
     getPrixmaSwal().fire({ icon: 'error', title: 'Error', text: err.message });
   }
+}
+
+async function handleCancelEditArea(event) {
+  if (event) event.preventDefault();
+
+  if (hasAreaEditChanged()) {
+    const confirmResult = await getPrixmaSwal().fire({
+      title: '¿Descartar cambios?',
+      text: 'Has realizado modificaciones en esta área. ¿Estás seguro de que deseas salir sin guardar?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#e11d48',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: '<i class="fa-solid fa-arrow-left"></i> Sí, descartar',
+      cancelButtonText: 'Continuar editando'
+    });
+
+    if (!confirmResult.isConfirmed) return;
+  }
+
+  navigateTo('#/areas');
 }
 
 async function handleDeleteAreaFromForm() {
@@ -3677,20 +3747,42 @@ async function handleDeleteAreaFromForm() {
 }
 
 // 2. MÓDULOS
+let editModuleInitialValues = { categoriaPadre: '', nombre: '', descripcion: '' };
+
 async function loadModuleForEdit(id) {
   try {
     const res = await apiFetch(`/api/modulos/${id}`);
     if (res.ok) {
       const mod = await res.json();
-      document.getElementById('editModuleId').value = mod.id;
-      document.getElementById('editModuloNombre').value = mod.nombre || '';
-      document.getElementById('editModuloDesc').value = mod.descripcion || '';
+      const idEl = document.getElementById('editModuleId');
+      const nombreEl = document.getElementById('editModuloNombre');
+      const descEl = document.getElementById('editModuloDesc');
       const catSelect = document.getElementById('editModuloCategoriaPadre');
-      if (catSelect) catSelect.value = mod.categoriaPadre || (mod.area ? mod.area.codigo : '');
+      const catVal = mod.categoriaPadre || (mod.area ? mod.area.codigo : '');
+
+      if (idEl) idEl.value = mod.id;
+      if (nombreEl) nombreEl.value = mod.nombre || '';
+      if (descEl) descEl.value = mod.descripcion || '';
+      if (catSelect) catSelect.value = catVal;
+
+      editModuleInitialValues = {
+        categoriaPadre: (catVal || '').trim(),
+        nombre: (mod.nombre || '').trim(),
+        descripcion: (mod.descripcion || '').trim()
+      };
     }
   } catch (e) {
     console.error('Error cargando módulo para edición:', e);
   }
+}
+
+function hasModuleEditChanged() {
+  const cat = (document.getElementById('editModuloCategoriaPadre')?.value || '').trim();
+  const nombre = (document.getElementById('editModuloNombre')?.value || '').trim();
+  const desc = (document.getElementById('editModuloDesc')?.value || '').trim();
+  return cat !== editModuleInitialValues.categoriaPadre ||
+         nombre !== editModuleInitialValues.nombre ||
+         desc !== editModuleInitialValues.descripcion;
 }
 
 async function handleCreateModule(event) {
@@ -3716,11 +3808,29 @@ async function handleCreateModule(event) {
 }
 
 async function handleSaveEditModule(event) {
-  event.preventDefault();
+  if (event) event.preventDefault();
   const id = document.getElementById('editModuleId').value;
   const categoriaPadre = document.getElementById('editModuloCategoriaPadre').value;
   const nombre = document.getElementById('editModuloNombre').value.trim();
   const descripcion = document.getElementById('editModuloDesc').value.trim();
+  if (!id || !nombre) return;
+
+  const hasChanged = hasModuleEditChanged();
+
+  const confirmResult = await getPrixmaSwal().fire({
+    title: '¿Guardar cambios?',
+    text: hasChanged
+      ? `¿Deseas guardar las modificaciones realizadas en el módulo "${nombre}"?`
+      : `¿Deseas guardar la información del módulo "${nombre}"?`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#2563eb',
+    cancelButtonColor: '#64748b',
+    confirmButtonText: '<i class="fa-solid fa-floppy-disk"></i> Sí, guardar',
+    cancelButtonText: 'Cancelar'
+  });
+
+  if (!confirmResult.isConfirmed) return;
 
   try {
     const res = await apiFetch(`/api/modulos/${id}`, {
@@ -3737,6 +3847,27 @@ async function handleSaveEditModule(event) {
   }
 }
 
+async function handleCancelEditModule(event) {
+  if (event) event.preventDefault();
+
+  if (hasModuleEditChanged()) {
+    const confirmResult = await getPrixmaSwal().fire({
+      title: '¿Descartar cambios?',
+      text: 'Has realizado modificaciones en este módulo. ¿Estás seguro de que deseas salir sin guardar?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#e11d48',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: '<i class="fa-solid fa-arrow-left"></i> Sí, descartar',
+      cancelButtonText: 'Continuar editando'
+    });
+
+    if (!confirmResult.isConfirmed) return;
+  }
+
+  navigateTo('#/modulos');
+}
+
 async function handleDeleteModuleFromForm() {
   const id = document.getElementById('editModuleId').value;
   if (id) {
@@ -3748,6 +3879,8 @@ async function handleDeleteModuleFromForm() {
 }
 
 // 3. TIPOS DE PUBLICACIÓN
+let editPostTipoInitialValues = { nombre: '', descripcion: '', rolId: '' };
+
 async function populateRolesSelect(selectId, selectedRolId = null) {
   const select = document.getElementById(selectId);
   if (!select) return;
@@ -3757,7 +3890,7 @@ async function populateRolesSelect(selectId, selectedRolId = null) {
     const roles = await res.json();
     let html = '<option value="">-- Todos los Roles / Ninguno --</option>';
     roles.forEach(r => {
-      const selected = selectedRolId && (r.id === parseInt(selectedRolId) || r.id === selectedRolId) ? 'selected' : '';
+      const selected = selectedRolId && (r.id === parseInt(selectedRolId, 10) || r.id === selectedRolId) ? 'selected' : '';
       html += `<option value="${r.id}" ${selected}>${escapeHtml(r.nombre)}</option>`;
     });
     select.innerHTML = html;
@@ -3771,17 +3904,37 @@ async function loadPostTipoForEdit(id) {
     const res = await apiFetch('/api/modulos/tipos');
     if (res.ok) {
       const tipos = await res.json();
-      const t = tipos.find(x => x.id === parseInt(id));
+      const t = tipos.find(x => x.id === parseInt(id, 10));
       if (t) {
-        document.getElementById('editPostTipoId').value = t.id;
-        document.getElementById('editPostTipoNombre').value = t.nombre || '';
-        document.getElementById('editPostTipoDesc').value = t.descripcion || '';
-        await populateRolesSelect('editPostTipoRolId', t.rolId || (t.rol ? t.rol.id : null));
+        const idEl = document.getElementById('editPostTipoId');
+        const nombreEl = document.getElementById('editPostTipoNombre');
+        const descEl = document.getElementById('editPostTipoDesc');
+        const rId = t.rolId || (t.rol ? t.rol.id : '');
+
+        if (idEl) idEl.value = t.id;
+        if (nombreEl) nombreEl.value = t.nombre || '';
+        if (descEl) descEl.value = t.descripcion || '';
+        await populateRolesSelect('editPostTipoRolId', rId);
+
+        editPostTipoInitialValues = {
+          nombre: (t.nombre || '').trim(),
+          descripcion: (t.descripcion || '').trim(),
+          rolId: String(rId || '')
+        };
       }
     }
   } catch (e) {
     console.error('Error cargando tipo para edición:', e);
   }
+}
+
+function hasPostTipoEditChanged() {
+  const nombre = (document.getElementById('editPostTipoNombre')?.value || '').trim();
+  const desc = (document.getElementById('editPostTipoDesc')?.value || '').trim();
+  const rolId = (document.getElementById('editPostTipoRolId')?.value || '').trim();
+  return nombre !== editPostTipoInitialValues.nombre ||
+         desc !== editPostTipoInitialValues.descripcion ||
+         rolId !== editPostTipoInitialValues.rolId;
 }
 
 async function prepareCreatePostTipoForm() {
@@ -3793,7 +3946,7 @@ async function handleSaveCreatePostTipo(event) {
   const nombre = document.getElementById('newPostTipoNombre').value.trim();
   const descripcion = document.getElementById('newPostTipoDesc').value.trim();
   const rolIdVal = document.getElementById('newPostTipoRolId') ? document.getElementById('newPostTipoRolId').value : '';
-  const rolId = rolIdVal ? parseInt(rolIdVal) : null;
+  const rolId = rolIdVal ? parseInt(rolIdVal, 10) : null;
   if (!nombre) return;
 
   try {
@@ -3815,12 +3968,30 @@ async function handleSaveCreatePostTipo(event) {
 }
 
 async function handleSaveEditPostTipo(event) {
-  event.preventDefault();
+  if (event) event.preventDefault();
   const id = document.getElementById('editPostTipoId').value;
   const nombre = document.getElementById('editPostTipoNombre').value.trim();
   const descripcion = document.getElementById('editPostTipoDesc').value.trim();
   const rolIdVal = document.getElementById('editPostTipoRolId') ? document.getElementById('editPostTipoRolId').value : '';
-  const rolId = rolIdVal ? parseInt(rolIdVal) : null;
+  const rolId = rolIdVal ? parseInt(rolIdVal, 10) : null;
+  if (!id || !nombre) return;
+
+  const hasChanged = hasPostTipoEditChanged();
+
+  const confirmResult = await getPrixmaSwal().fire({
+    title: '¿Guardar cambios?',
+    text: hasChanged
+      ? `¿Deseas guardar las modificaciones realizadas en el tipo "${nombre}"?`
+      : `¿Deseas guardar la información del tipo "${nombre}"?`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#2563eb',
+    cancelButtonColor: '#64748b',
+    confirmButtonText: '<i class="fa-solid fa-floppy-disk"></i> Sí, guardar',
+    cancelButtonText: 'Cancelar'
+  });
+
+  if (!confirmResult.isConfirmed) return;
 
   try {
     const res = await apiFetch(`/api/modulos/tipos/${id}`, {
@@ -3840,6 +4011,27 @@ async function handleSaveEditPostTipo(event) {
   }
 }
 
+async function handleCancelEditPostTipo(event) {
+  if (event) event.preventDefault();
+
+  if (hasPostTipoEditChanged()) {
+    const confirmResult = await getPrixmaSwal().fire({
+      title: '¿Descartar cambios?',
+      text: 'Has realizado modificaciones en este tipo de publicación. ¿Estás seguro de que deseas salir sin guardar?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#e11d48',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: '<i class="fa-solid fa-arrow-left"></i> Sí, descartar',
+      cancelButtonText: 'Continuar editando'
+    });
+
+    if (!confirmResult.isConfirmed) return;
+  }
+
+  navigateTo('#/tipos');
+}
+
 async function handleDeleteTipoFromForm() {
   const id = document.getElementById('editPostTipoId').value;
   const nombre = document.getElementById('editPostTipoNombre') ? document.getElementById('editPostTipoNombre').value : '';
@@ -3851,21 +4043,39 @@ async function handleDeleteTipoFromForm() {
   }
 }
 
+// 3.5 TIPOS DE CONOCIMIENTO
+let editTipoConocimientoInitialValues = { nombre: '', descripcion: '' };
+
 async function loadTipoConocimientoForEdit(id) {
   try {
     const res = await apiFetch('/api/modulos/tipos-conocimiento');
     if (res.ok) {
       const tipos = await res.json();
-      const t = tipos.find(x => x.id === parseInt(id));
+      const t = tipos.find(x => x.id === parseInt(id, 10));
       if (t) {
-        document.getElementById('editTipoConocimientoId').value = t.id;
-        document.getElementById('editTipoConocimientoNombre').value = t.nombre || '';
-        document.getElementById('editTipoConocimientoDesc').value = t.descripcion || '';
+        const idEl = document.getElementById('editTipoConocimientoId');
+        const nombreEl = document.getElementById('editTipoConocimientoNombre');
+        const descEl = document.getElementById('editTipoConocimientoDesc');
+
+        if (idEl) idEl.value = t.id;
+        if (nombreEl) nombreEl.value = t.nombre || '';
+        if (descEl) descEl.value = t.descripcion || '';
+
+        editTipoConocimientoInitialValues = {
+          nombre: (t.nombre || '').trim(),
+          descripcion: (t.descripcion || '').trim()
+        };
       }
     }
   } catch (e) {
     console.error('Error cargando tipo de conocimiento para edición:', e);
   }
+}
+
+function hasTipoConocimientoEditChanged() {
+  const nombre = (document.getElementById('editTipoConocimientoNombre')?.value || '').trim();
+  const desc = (document.getElementById('editTipoConocimientoDesc')?.value || '').trim();
+  return nombre !== editTipoConocimientoInitialValues.nombre || desc !== editTipoConocimientoInitialValues.descripcion;
 }
 
 async function handleSaveCreateTipoConocimiento(event) {
@@ -3894,16 +4104,34 @@ async function handleSaveCreateTipoConocimiento(event) {
 }
 
 async function handleSaveEditTipoConocimiento(event) {
-  event.preventDefault();
+  if (event) event.preventDefault();
   const id = document.getElementById('editTipoConocimientoId').value;
   const nombre = document.getElementById('editTipoConocimientoNombre').value.trim();
   const descripcion = document.getElementById('editTipoConocimientoDesc').value.trim();
+  if (!id || !nombre) return;
+
+  const hasChanged = hasTipoConocimientoEditChanged();
+
+  const confirmResult = await getPrixmaSwal().fire({
+    title: '¿Guardar cambios?',
+    text: hasChanged
+      ? `¿Deseas guardar las modificaciones realizadas en el tipo de conocimiento "${nombre}"?`
+      : `¿Deseas guardar la información del tipo "${nombre}"?`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#2563eb',
+    cancelButtonColor: '#64748b',
+    confirmButtonText: '<i class="fa-solid fa-floppy-disk"></i> Sí, guardar',
+    cancelButtonText: 'Cancelar'
+  });
+
+  if (!confirmResult.isConfirmed) return;
 
   try {
     const res = await apiFetch(`/api/modulos/tipos-conocimiento/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: parseInt(id), nombre, descripcion })
+      body: JSON.stringify({ id: parseInt(id, 10), nombre, descripcion })
     });
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
@@ -3916,6 +4144,28 @@ async function handleSaveEditTipoConocimiento(event) {
   } catch (err) {
     getPrixmaSwal().fire({ icon: 'error', title: 'Error', text: err.message });
   }
+}
+
+async function handleCancelEditTipoConocimiento(event) {
+  if (event) event.preventDefault();
+
+  if (hasTipoConocimientoEditChanged()) {
+    const confirmResult = await getPrixmaSwal().fire({
+      title: '¿Descartar cambios?',
+      text: 'Has realizado modificaciones en este tipo de conocimiento. ¿Estás seguro de que deseas salir sin guardar?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#e11d48',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: '<i class="fa-solid fa-arrow-left"></i> Sí, descartar',
+      cancelButtonText: 'Continuar editando'
+    });
+
+    if (!confirmResult.isConfirmed) return;
+  }
+
+  window.lastTiposSubTab = 'conocimiento';
+  navigateTo('#/tipos-conocimiento');
 }
 
 async function handleDeleteTipoConocimientoFromForm() {
@@ -3931,21 +4181,38 @@ async function handleDeleteTipoConocimientoFromForm() {
 }
 
 // 4. ROLES Y PERMISOS
+let editRoleInitialValues = { nombre: '', descripcion: '' };
+
 async function loadRoleForEdit(id) {
   try {
     const res = await apiFetch('/api/roles');
     if (res.ok) {
       const roles = await res.json();
-      const r = roles.find(x => x.id === parseInt(id));
+      const r = roles.find(x => x.id === parseInt(id, 10));
       if (r) {
-        document.getElementById('editRoleId').value = r.id;
-        document.getElementById('editRoleNombre').value = r.nombre || '';
-        document.getElementById('editRoleDesc').value = r.descripcion || '';
+        const idEl = document.getElementById('editRoleId');
+        const nombreEl = document.getElementById('editRoleNombre');
+        const descEl = document.getElementById('editRoleDesc');
+
+        if (idEl) idEl.value = r.id;
+        if (nombreEl) nombreEl.value = r.nombre || '';
+        if (descEl) descEl.value = r.descripcion || '';
+
+        editRoleInitialValues = {
+          nombre: (r.nombre || '').trim(),
+          descripcion: (r.descripcion || '').trim()
+        };
       }
     }
   } catch (e) {
     console.error('Error cargando rol para edición:', e);
   }
+}
+
+function hasRoleEditChanged() {
+  const nombre = (document.getElementById('editRoleNombre')?.value || '').trim();
+  const desc = (document.getElementById('editRoleDesc')?.value || '').trim();
+  return nombre !== editRoleInitialValues.nombre || desc !== editRoleInitialValues.descripcion;
 }
 
 async function handleSaveCreateRole(event) {
@@ -3969,10 +4236,28 @@ async function handleSaveCreateRole(event) {
 }
 
 async function handleSaveEditRole(event) {
-  event.preventDefault();
+  if (event) event.preventDefault();
   const id = document.getElementById('editRoleId').value;
   const nombre = document.getElementById('editRoleNombre').value.trim();
   const descripcion = document.getElementById('editRoleDesc').value.trim();
+  if (!id || !nombre) return;
+
+  const hasChanged = hasRoleEditChanged();
+
+  const confirmResult = await getPrixmaSwal().fire({
+    title: '¿Guardar cambios?',
+    text: hasChanged
+      ? `¿Deseas guardar las modificaciones realizadas en el rol "${nombre}"?`
+      : `¿Deseas guardar la información del rol "${nombre}"?`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#2563eb',
+    cancelButtonColor: '#64748b',
+    confirmButtonText: '<i class="fa-solid fa-floppy-disk"></i> Sí, guardar',
+    cancelButtonText: 'Cancelar'
+  });
+
+  if (!confirmResult.isConfirmed) return;
 
   try {
     const res = await apiFetch(`/api/roles/${id}`, {
@@ -3986,6 +4271,27 @@ async function handleSaveEditRole(event) {
   } catch (err) {
     getPrixmaSwal().fire({ icon: 'error', title: 'Error', text: err.message });
   }
+}
+
+async function handleCancelEditRole(event) {
+  if (event) event.preventDefault();
+
+  if (hasRoleEditChanged()) {
+    const confirmResult = await getPrixmaSwal().fire({
+      title: '¿Descartar cambios?',
+      text: 'Has realizado modificaciones en este rol. ¿Estás seguro de que deseas salir sin guardar?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#e11d48',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: '<i class="fa-solid fa-arrow-left"></i> Sí, descartar',
+      cancelButtonText: 'Continuar editando'
+    });
+
+    if (!confirmResult.isConfirmed) return;
+  }
+
+  navigateTo('#/rbac');
 }
 
 async function handleDeleteRoleFromForm() {

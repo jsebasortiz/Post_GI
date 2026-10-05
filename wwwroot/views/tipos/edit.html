@@ -1,7 +1,7 @@
 <!-- VISTA EDITAR TIPO -->
 <div id="viewPostTiposEdit" class="app-view view-hidden">
   <div style="margin-bottom: 1.5rem;">
-    <a href="/tipos" class="btn btn-secondary" onclick="navigateTo('/tipos'); return false;">
+    <a href="/tipos" class="btn btn-secondary" onclick="handleCancelEditPostTipo(event); return false;">
       <i class="fa-solid fa-arrow-left"></i> Volver a Tipos de Publicación
     </a>
   </div>
@@ -31,7 +31,7 @@
             <i class="fa-solid fa-trash-can"></i> Eliminar
           </button>
           <div style="display:flex; gap:1rem;">
-            <a href="/tipos" class="btn btn-secondary" onclick="navigateTo('/tipos'); return false;">Cancelar</a>
+            <button type="button" class="btn btn-secondary" onclick="handleCancelEditPostTipo(event)">Cancelar</button>
             <button type="submit" class="btn btn-primary" id="btnSubmitEditPostTipo">
               <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
             </button>

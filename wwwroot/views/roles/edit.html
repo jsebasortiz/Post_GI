@@ -1,7 +1,7 @@
 <!-- VISTA EDITAR ROL -->
 <div id="viewRoleEdit" class="app-view view-hidden">
   <div style="margin-bottom: 1.5rem;">
-    <a href="/rbac" class="btn btn-secondary" onclick="navigateTo('/rbac'); return false;">
+    <a href="/rbac" class="btn btn-secondary" onclick="handleCancelEditRole(event); return false;">
       <i class="fa-solid fa-arrow-left"></i> Volver a Roles y Permisos
     </a>
   </div>
@@ -25,7 +25,7 @@
             <i class="fa-solid fa-trash-can"></i> Eliminar Rol
           </button>
           <div style="display:flex; gap:1rem;">
-            <a href="/rbac" class="btn btn-secondary" onclick="navigateTo('/rbac'); return false;">Cancelar</a>
+            <button type="button" class="btn btn-secondary" onclick="handleCancelEditRole(event)">Cancelar</button>
             <button type="submit" class="btn btn-primary" id="btnSubmitEditRole">
               <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
             </button>
