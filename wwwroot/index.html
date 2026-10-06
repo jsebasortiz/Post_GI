@@ -7,7 +7,8 @@
   <title>Prixma - Portal de Publicaciones & Blogs Corporativos</title>
   <meta name="description"
     content="Base de conocimiento corporativa. Consulta guías técnicas, estándares y documentación interna centralizada por módulos.">
-  <link rel="stylesheet" href="css/styles.css">
+  <base href="/">
+  <link rel="stylesheet" href="/css/styles.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
@@ -29,7 +30,7 @@
   <!-- Mandatory Active Directory Login Gate View -->
   <section id="authGateScreen" class="auth-gate-screen">
     <div class="login-interface-container">
-      
+
       <!-- Left Hero Showcase Panel -->
       <div class="login-hero-panel">
         <div>
@@ -47,7 +48,8 @@
             </div>
             <h1 class="login-hero-title">El Portal del Conocimiento Corporativo</h1>
             <p class="login-hero-desc">
-              Plataforma unificada para la difusión de novedades, manuales, normativas y blogs especializados de CentroAguas SA ESP.
+              Plataforma unificada para la difusión de novedades, manuales, normativas y blogs especializados de
+              CentroAguas SA ESP.
             </p>
 
             <div class="login-feature-list">
@@ -99,7 +101,8 @@
           <div class="login-sec-badge">
             <i class="fa-solid fa-shield-halved"></i> Conexión Cifrada SSL / AD
           </div>
-          <button class="btn btn-secondary btn-icon-only" id="btnLoginToggleTheme" onclick="toggleTheme()" title="Cambiar Tema">
+          <button class="btn btn-secondary btn-icon-only" id="btnLoginToggleTheme" onclick="toggleTheme()"
+            title="Cambiar Tema">
             <i class="fa-solid fa-moon"></i>
           </button>
         </div>
@@ -108,16 +111,20 @@
           <div class="login-header-box">
             <span class="login-welcome-tag">Acceso Institucional</span>
             <h2 class="login-main-title">Iniciar Sesión</h2>
-            <p class="login-main-subtitle">Ingresa tus credenciales de Directorio Activo para acceder a la plataforma.</p>
+            <p class="login-main-subtitle">Ingresa tus credenciales de Directorio Activo para acceder a la plataforma.
+            </p>
           </div>
 
-          <form id="gateLoginForm" onsubmit="if (window.handleLogin) { window.handleLogin(event); } else if (event) { event.preventDefault(); } return false;" novalidate>
+          <form id="gateLoginForm"
+            onsubmit="if (window.handleLogin) { window.handleLogin(event); } else if (event) { event.preventDefault(); } return false;"
+            novalidate>
             <div class="login-form-group">
               <label class="login-form-label" for="loginUser">Usuario de Red / Correo</label>
               <div class="input-with-icon-wrapper">
                 <i class="fa-regular fa-user input-icon-left" aria-hidden="true"></i>
-                <input type="text" id="loginUser" class="form-control" placeholder="Ej: jdperez o jdperez@centroaguas.com"
-                  required autocomplete="username" aria-required="true" oninput="if(window.clearInputError) window.clearInputError(this)">
+                <input type="text" id="loginUser" class="form-control"
+                  placeholder="Ej: jdperez o jdperez@centroaguas.com" required autocomplete="username"
+                  aria-required="true" oninput="if(window.clearInputError) window.clearInputError(this)">
               </div>
             </div>
 
@@ -125,9 +132,11 @@
               <label class="login-form-label" for="loginPass">Contraseña de Red</label>
               <div class="input-with-icon-wrapper">
                 <i class="fa-solid fa-key input-icon-left" aria-hidden="true"></i>
-                <input type="password" id="loginPass" class="form-control" placeholder="Tu contraseña de Directorio Activo"
-                  required autocomplete="current-password" aria-required="true" oninput="if(window.clearInputError) window.clearInputError(this)">
-                <button type="button" class="btn-toggle-password" onclick="toggleLoginPassword()" title="Mostrar u ocultar contraseña">
+                <input type="password" id="loginPass" class="form-control"
+                  placeholder="Tu contraseña de Directorio Activo" required autocomplete="current-password"
+                  aria-required="true" oninput="if(window.clearInputError) window.clearInputError(this)">
+                <button type="button" class="btn-toggle-password" onclick="toggleLoginPassword()"
+                  title="Mostrar u ocultar contraseña">
                   <i id="loginPassEyeIcon" class="fa-regular fa-eye"></i>
                 </button>
               </div>
@@ -138,7 +147,8 @@
               <span>Usa el mismo usuario y contraseña con el que ingresas a tu equipo de trabajo corporativo.</span>
             </div>
 
-            <div id="loginErrorMsg" class="alert-error-banner" role="alert" aria-live="assertive" style="display:none; margin-bottom: 1.25rem;">
+            <div id="loginErrorMsg" class="alert-error-banner" role="alert" aria-live="assertive"
+              style="display:none; margin-bottom: 1.25rem;">
               <i class="fa-solid fa-circle-exclamation alert-icon" aria-hidden="true"></i>
               <span id="loginErrorText"></span>
             </div>
@@ -150,7 +160,8 @@
         </div>
 
         <div class="login-form-footer">
-          <i class="fa-solid fa-headset" style="margin-right:0.3rem;"></i> ¿Requieres asistencia? Soporte de TI CentroAguas SA ESP
+          <i class="fa-solid fa-headset" style="margin-right:0.3rem;"></i> ¿Requieres asistencia? Soporte de TI
+          CentroAguas SA ESP
         </div>
       </div>
 
@@ -531,7 +542,7 @@
                 <label class="form-label" for="areaDesc"><i class="fa-solid fa-align-left"></i> Descripción
                   (Opcional)</label>
                 <textarea id="areaDesc" rows="3" class="form-control"
-                  placeholder="Breve descripción del área corporativa..."></textarea>
+                  placeholder="Breve descripción del área..."></textarea>
               </div>
               <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:1.5rem;">
                 <a href="#/areas" class="btn btn-secondary" onclick="navigateTo('#/areas'); return false;">Cancelar</a>
@@ -1122,7 +1133,7 @@
     </main>
   </div>
 
-  <script type="module" src="js/app.js"></script>
+  <script type="module" src="/js/app.js"></script>
 </body>
 
 </html>

@@ -1,7 +1,7 @@
 import { state } from '../core/state.js';
 import { apiFetch } from '../core/api.js';
 import { escapeHtml } from '../core/utils.js';
-import { getPrixmaSwal, setFormSkeletonState, getTableSkeletonHtml } from '../core/ui-helpers.js';
+import { getPrixmaSwal, setFormSkeletonState, getTableSkeletonHtml, setFormReadOnlyMode } from '../core/ui-helpers.js';
 import { hasPermission } from './auth.js';
 import { getAllAreas, populateAreaSelects } from './areas.js';
 
@@ -192,14 +192,16 @@ export function changeModulesPage(delta) {
 export async function handleCreateModule(event) {
   if (event) event.preventDefault();
   const categoriaPadre = document.getElementById('moduloCategoriaPadre').value;
-  const nombre = document.getElementById('moduloNombre').value;
-  const descripcion = document.getElementById('moduloDesc').value;
+  const nombre = document.getElementById('moduloNombre').value.trim();
+  const descripcion = document.getElementById('moduloDesc').value.trim();
+
+  if (!nombre) return;
 
   try {
     const res = await apiFetch('/api/modulos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nombre, categoriaPadre, descripcion })
+      body: JSON.stringify({ categoriaPadre, nombre, descripcion })
     });
 
     if (!res.ok) {
@@ -234,7 +236,7 @@ export function openEditModuleModal(id) {
   populateAreaSelects();
   const modulo = (state.allModulosCache || []).find(m => m.id === id || m.id === parseInt(id, 10));
   if (modulo) {
-    const idInput = document.getElementById('editModuloId');
+    const idInput = document.getElementById('editModuleId');
     const nameInput = document.getElementById('editModuloNombre');
     const descInput = document.getElementById('editModuloDesc');
     const catSelect = document.getElementById('editModuloCategoriaPadre');
@@ -253,7 +255,7 @@ export function openEditModuleModal(id) {
 
 export async function handleUpdateModule(event) {
   if (event) event.preventDefault();
-  const id = document.getElementById('editModuloId').value;
+  const id = document.getElementById('editModuleId').value;
   const nombre = document.getElementById('editModuloNombre').value.trim();
   const categoriaPadre = document.getElementById('editModuloCategoriaPadre').value;
   const descripcion = document.getElementById('editModuloDesc').value.trim();
@@ -357,7 +359,7 @@ export async function handleEditModuloInline(id, currentName, currentCat, curren
   const areaOptionsHtml = areas.map(a => `<option value="${escapeHtml(a.code)}" ${a.code === currentCat ? 'selected' : ''}>${escapeHtml(a.name)}</option>`).join('');
 
   const { value: formValues } = await getPrixmaSwal().fire({
-    title: 'Editar Módulo Temático',
+    title: 'Editar Módulo',
     html: `
       <div style="text-align:left; display:flex; flex-direction:column; gap:0.75rem;">
         <div>
@@ -422,5 +424,127 @@ export async function handleEditModuloInline(id, currentName, currentCat, curren
       title: 'Error',
       text: err.message
     });
+  }
+}
+
+// Dedicated View Functions for Module Detail / Edit View
+export let editModuleInitialValues = { categoriaPadre: '', nombre: '', descripcion: '' };
+
+export async function loadModuleForShow(id) {
+  if (window.switchAppView) window.switchAppView('viewModuleEdit');
+  populateModuloAreaSelect();
+  await loadModuleForEdit(id);
+  setFormReadOnlyMode('editModuleForm', true, 'Detalles del Módulo', 'fa-eye');
+}
+
+export async function loadModuleForEdit(id) {
+  setFormReadOnlyMode('editModuleForm', false);
+  setFormSkeletonState('editModuleForm', true);
+  try {
+    const res = await apiFetch(`/api/modulos/${id}`);
+    if (res.ok) {
+      const mod = await res.json();
+      const idEl = document.getElementById('editModuleId');
+      const nombreEl = document.getElementById('editModuloNombre');
+      const descEl = document.getElementById('editModuloDesc');
+      const catSelect = document.getElementById('editModuloCategoriaPadre');
+      const catVal = mod.categoriaPadre || (mod.area ? mod.area.codigo : '');
+
+      if (idEl) idEl.value = mod.id;
+      if (nombreEl) nombreEl.value = mod.nombre || '';
+      if (descEl) descEl.value = mod.descripcion || '';
+      if (catSelect) catSelect.value = catVal;
+
+      editModuleInitialValues = {
+        categoriaPadre: (catVal || '').trim(),
+        nombre: (mod.nombre || '').trim(),
+        descripcion: (mod.descripcion || '').trim()
+      };
+    }
+  } catch (e) {
+    console.error('Error cargando módulo para edición:', e);
+  } finally {
+    setTimeout(() => setFormSkeletonState('editModuleForm', false), 250);
+  }
+}
+
+export function hasModuleEditChanged() {
+  if (document.getElementById('editModuleForm')?.dataset.readOnly === 'true') return false;
+  const cat = (document.getElementById('editModuloCategoriaPadre')?.value || '').trim();
+  const nombre = (document.getElementById('editModuloNombre')?.value || '').trim();
+  const desc = (document.getElementById('editModuloDesc')?.value || '').trim();
+  return cat !== editModuleInitialValues.categoriaPadre ||
+    nombre !== editModuleInitialValues.nombre ||
+    desc !== editModuleInitialValues.descripcion;
+}
+
+export async function handleSaveEditModule(event) {
+  if (event) event.preventDefault();
+  const id = document.getElementById('editModuleId').value;
+  const categoriaPadre = document.getElementById('editModuloCategoriaPadre').value;
+  const nombre = document.getElementById('editModuloNombre').value.trim();
+  const descripcion = document.getElementById('editModuloDesc').value.trim();
+  if (!id || !nombre) return;
+
+  const hasChanged = hasModuleEditChanged();
+
+  const confirmResult = await getPrixmaSwal().fire({
+    title: '¿Guardar cambios?',
+    text: hasChanged
+      ? `¿Deseas guardar las modificaciones realizadas en el módulo "${nombre}"?`
+      : `¿Deseas guardar la información del módulo "${nombre}"?`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#2563eb',
+    cancelButtonColor: '#64748b',
+    confirmButtonText: '<i class="fa-solid fa-floppy-disk"></i> Sí, guardar',
+    cancelButtonText: 'Cancelar'
+  });
+
+  if (!confirmResult.isConfirmed) return;
+
+  try {
+    const res = await apiFetch(`/api/modulos/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ categoriaPadre, nombre, descripcion })
+    });
+    if (!res.ok) throw new Error('Error al actualizar el módulo.');
+    await loadModulos();
+    getPrixmaSwal().fire({ icon: 'success', title: 'Módulo Actualizado', text: 'Los cambios fueron guardados correctamente.', timer: 1800, showConfirmButton: false });
+    if (window.navigateTo) window.navigateTo('/modulos');
+  } catch (err) {
+    getPrixmaSwal().fire({ icon: 'error', title: 'Error', text: err.message });
+  }
+}
+
+export async function handleCancelEditModule(event) {
+  if (event) event.preventDefault();
+
+  if (hasModuleEditChanged()) {
+    const confirmResult = await getPrixmaSwal().fire({
+      title: '¿Descartar cambios?',
+      text: 'Has realizado modificaciones en este módulo. ¿Estás seguro de que deseas salir sin guardar?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#e11d48',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: '<i class="fa-solid fa-arrow-left"></i> Sí, descartar',
+      cancelButtonText: 'Continuar editando'
+    });
+
+    if (!confirmResult.isConfirmed) return;
+  }
+
+  if (window.navigateTo) window.navigateTo('/modulos');
+}
+
+export async function handleDeleteModuleFromForm() {
+  const id = document.getElementById('editModuleId').value;
+  if (id) {
+    const success = await handleInactivarModulo(id);
+    if (success) {
+      if (window.navigateTo) window.navigateTo('/modulos');
+    }
   }
 }

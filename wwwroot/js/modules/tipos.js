@@ -1,6 +1,6 @@
 import { apiFetch } from '../core/api.js';
 import { escapeHtml } from '../core/utils.js';
-import { getPrixmaSwal, getTableSkeletonHtml } from '../core/ui-helpers.js';
+import { getPrixmaSwal, getTableSkeletonHtml, setFormReadOnlyMode, setFormSkeletonState } from '../core/ui-helpers.js';
 
 export async function loadPostTipos() {
   try {
@@ -600,3 +600,282 @@ export async function loadEditPostTipos(selectedTipoId = null) {
     console.error('Error cargando tipos:', err);
   }
 }
+
+// Initial values for dirty tracking
+export let editPostTipoInitialValues = { nombre: '', descripcion: '' };
+export let editTipoConocimientoInitialValues = { nombre: '', descripcion: '' };
+
+export async function prepareCreatePostTipoForm() {
+  const form = document.getElementById('createPostTipoForm');
+  if (form) form.reset();
+}
+
+export async function loadPostTipoForShow(id) {
+  if (window.switchAppView) window.switchAppView('viewPostTiposEdit');
+  await loadPostTipoForEdit(id);
+  setFormReadOnlyMode('editPostTipoForm', true, 'Detalles del Tipo de Publicación', 'fa-eye');
+}
+
+export async function loadPostTipoForEdit(id) {
+  setFormReadOnlyMode('editPostTipoForm', false);
+  setFormSkeletonState('editPostTipoForm', true);
+  try {
+    const res = await apiFetch(`/api/modulos/tipos/${id}`);
+    if (res.ok) {
+      const tipo = await res.json();
+      const idEl = document.getElementById('editPostTipoId');
+      const nombreEl = document.getElementById('editPostTipoNombre');
+      const descEl = document.getElementById('editPostTipoDesc');
+
+      if (idEl) idEl.value = tipo.id;
+      if (nombreEl) nombreEl.value = tipo.nombre || '';
+      if (descEl) descEl.value = tipo.descripcion || '';
+
+      editPostTipoInitialValues = {
+        nombre: (tipo.nombre || '').trim(),
+        descripcion: (tipo.descripcion || '').trim()
+      };
+    }
+  } catch (e) {
+    console.error('Error cargando tipo de publicación para edición:', e);
+  } finally {
+    setTimeout(() => setFormSkeletonState('editPostTipoForm', false), 250);
+  }
+}
+
+export function hasPostTipoEditChanged() {
+  if (document.getElementById('editPostTipoForm')?.dataset.readOnly === 'true') return false;
+  const nombre = (document.getElementById('editPostTipoNombre')?.value || '').trim();
+  const desc = (document.getElementById('editPostTipoDesc')?.value || '').trim();
+  return nombre !== editPostTipoInitialValues.nombre || desc !== editPostTipoInitialValues.descripcion;
+}
+
+export async function handleSaveCreatePostTipo(event) {
+  if (event) event.preventDefault();
+  const nombre = (document.getElementById('newPostTipoNombre')?.value || '').trim();
+  const descripcion = (document.getElementById('newPostTipoDesc')?.value || '').trim();
+  if (!nombre) return;
+
+  try {
+    const res = await apiFetch('/api/modulos/tipos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, descripcion })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Error al crear el tipo de publicación.');
+    }
+    await loadPostTipos();
+    await loadPostTiposList();
+    getPrixmaSwal().fire({ icon: 'success', title: 'Tipo Creado', text: 'El tipo de publicación fue creado correctamente.', timer: 2000, showConfirmButton: false });
+    if (window.navigateTo) window.navigateTo('/tipos');
+  } catch (err) {
+    getPrixmaSwal().fire({ icon: 'error', title: 'Error', text: err.message });
+  }
+}
+
+export async function handleSaveEditPostTipo(event) {
+  if (event) event.preventDefault();
+  const id = document.getElementById('editPostTipoId')?.value;
+  const nombre = (document.getElementById('editPostTipoNombre')?.value || '').trim();
+  const descripcion = (document.getElementById('editPostTipoDesc')?.value || '').trim();
+  if (!id || !nombre) return;
+
+  const hasChanged = hasPostTipoEditChanged();
+  const confirmResult = await getPrixmaSwal().fire({
+    title: '¿Guardar cambios?',
+    text: hasChanged
+      ? `¿Deseas guardar las modificaciones realizadas en el tipo "${nombre}"?`
+      : `¿Deseas guardar la información del tipo "${nombre}"?`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#2563eb',
+    cancelButtonColor: '#64748b',
+    confirmButtonText: '<i class="fa-solid fa-floppy-disk"></i> Sí, guardar',
+    cancelButtonText: 'Cancelar'
+  });
+
+  if (!confirmResult.isConfirmed) return;
+
+  try {
+    const res = await apiFetch(`/api/modulos/tipos/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, descripcion })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Error al actualizar el tipo de publicación.');
+    }
+    await loadPostTipos();
+    await loadPostTiposList();
+    getPrixmaSwal().fire({ icon: 'success', title: 'Tipo Actualizado', text: 'Los cambios fueron guardados correctamente.', timer: 1800, showConfirmButton: false });
+    if (window.navigateTo) window.navigateTo('/tipos');
+  } catch (err) {
+    getPrixmaSwal().fire({ icon: 'error', title: 'Error', text: err.message });
+  }
+}
+
+export async function handleCancelEditPostTipo(event) {
+  if (event) event.preventDefault();
+  if (hasPostTipoEditChanged()) {
+    const confirmResult = await getPrixmaSwal().fire({
+      title: '¿Descartar cambios?',
+      text: 'Has realizado modificaciones. ¿Estás seguro de que deseas salir sin guardar?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#e11d48',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: '<i class="fa-solid fa-arrow-left"></i> Sí, descartar',
+      cancelButtonText: 'Continuar editando'
+    });
+    if (!confirmResult.isConfirmed) return;
+  }
+  if (window.navigateTo) window.navigateTo('/tipos');
+}
+
+export async function handleDeleteTipoFromForm() {
+  const id = document.getElementById('editPostTipoId')?.value;
+  const nombre = document.getElementById('editPostTipoNombre')?.value || 'este tipo';
+  if (id) {
+    const success = await handleDeletePostTipo(id, nombre);
+    if (success && window.navigateTo) window.navigateTo('/tipos');
+  }
+}
+
+// Tipo de Conocimiento show / edit lifecycles
+export async function loadTipoConocimientoForShow(id) {
+  if (window.switchAppView) window.switchAppView('viewTipoConocimientoEdit');
+  await loadTipoConocimientoForEdit(id);
+  setFormReadOnlyMode('editTipoConocimientoForm', true, 'Detalles del Tipo de Conocimiento', 'fa-eye');
+}
+
+export async function loadTipoConocimientoForEdit(id) {
+  setFormReadOnlyMode('editTipoConocimientoForm', false);
+  setFormSkeletonState('editTipoConocimientoForm', true);
+  try {
+    const res = await apiFetch(`/api/modulos/tipos-conocimiento/${id}`);
+    if (res.ok) {
+      const tipo = await res.json();
+      const idEl = document.getElementById('editTipoConocimientoId');
+      const nombreEl = document.getElementById('editTipoConocimientoNombre');
+      const descEl = document.getElementById('editTipoConocimientoDesc');
+
+      if (idEl) idEl.value = tipo.id;
+      if (nombreEl) nombreEl.value = tipo.nombre || '';
+      if (descEl) descEl.value = tipo.descripcion || '';
+
+      editTipoConocimientoInitialValues = {
+        nombre: (tipo.nombre || '').trim(),
+        descripcion: (tipo.descripcion || '').trim()
+      };
+    }
+  } catch (e) {
+    console.error('Error cargando tipo de conocimiento para edición:', e);
+  } finally {
+    setTimeout(() => setFormSkeletonState('editTipoConocimientoForm', false), 250);
+  }
+}
+
+export function hasTipoConocimientoEditChanged() {
+  if (document.getElementById('editTipoConocimientoForm')?.dataset.readOnly === 'true') return false;
+  const nombre = (document.getElementById('editTipoConocimientoNombre')?.value || '').trim();
+  const desc = (document.getElementById('editTipoConocimientoDesc')?.value || '').trim();
+  return nombre !== editTipoConocimientoInitialValues.nombre || desc !== editTipoConocimientoInitialValues.descripcion;
+}
+
+export async function handleSaveCreateTipoConocimiento(event) {
+  if (event) event.preventDefault();
+  const nombre = (document.getElementById('newTipoConocimientoNombre')?.value || '').trim();
+  const descripcion = (document.getElementById('newTipoConocimientoDesc')?.value || '').trim();
+  if (!nombre) return;
+
+  try {
+    const res = await apiFetch('/api/modulos/tipos-conocimiento', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, descripcion })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Error al crear el tipo de conocimiento.');
+    }
+    await loadTiposConocimiento();
+    await loadTiposConocimientoList();
+    getPrixmaSwal().fire({ icon: 'success', title: 'Tipo Creado', text: 'El tipo de conocimiento fue creado correctamente.', timer: 2000, showConfirmButton: false });
+    if (window.navigateTo) window.navigateTo('/tipos-conocimiento');
+  } catch (err) {
+    getPrixmaSwal().fire({ icon: 'error', title: 'Error', text: err.message });
+  }
+}
+
+export async function handleSaveEditTipoConocimiento(event) {
+  if (event) event.preventDefault();
+  const id = document.getElementById('editTipoConocimientoId')?.value;
+  const nombre = (document.getElementById('editTipoConocimientoNombre')?.value || '').trim();
+  const descripcion = (document.getElementById('editTipoConocimientoDesc')?.value || '').trim();
+  if (!id || !nombre) return;
+
+  const hasChanged = hasTipoConocimientoEditChanged();
+  const confirmResult = await getPrixmaSwal().fire({
+    title: '¿Guardar cambios?',
+    text: hasChanged
+      ? `¿Deseas guardar las modificaciones realizadas en el tipo "${nombre}"?`
+      : `¿Deseas guardar la información del tipo "${nombre}"?`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#2563eb',
+    cancelButtonColor: '#64748b',
+    confirmButtonText: '<i class="fa-solid fa-floppy-disk"></i> Sí, guardar',
+    cancelButtonText: 'Cancelar'
+  });
+
+  if (!confirmResult.isConfirmed) return;
+
+  try {
+    const res = await apiFetch(`/api/modulos/tipos-conocimiento/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, descripcion })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Error al actualizar el tipo de conocimiento.');
+    }
+    await loadTiposConocimiento();
+    await loadTiposConocimientoList();
+    getPrixmaSwal().fire({ icon: 'success', title: 'Tipo Actualizado', text: 'Los cambios fueron guardados correctamente.', timer: 1800, showConfirmButton: false });
+    if (window.navigateTo) window.navigateTo('/tipos-conocimiento');
+  } catch (err) {
+    getPrixmaSwal().fire({ icon: 'error', title: 'Error', text: err.message });
+  }
+}
+
+export async function handleCancelEditTipoConocimiento(event) {
+  if (event) event.preventDefault();
+  if (hasTipoConocimientoEditChanged()) {
+    const confirmResult = await getPrixmaSwal().fire({
+      title: '¿Descartar cambios?',
+      text: 'Has realizado modificaciones. ¿Estás seguro de que deseas salir sin guardar?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#e11d48',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: '<i class="fa-solid fa-arrow-left"></i> Sí, descartar',
+      cancelButtonText: 'Continuar editando'
+    });
+    if (!confirmResult.isConfirmed) return;
+  }
+  if (window.navigateTo) window.navigateTo('/tipos-conocimiento');
+}
+
+export async function handleDeleteTipoConocimientoFromForm() {
+  const id = document.getElementById('editTipoConocimientoId')?.value;
+  const nombre = document.getElementById('editTipoConocimientoNombre')?.value || 'este tipo de conocimiento';
+  if (id) {
+    const success = await handleDeleteTipoConocimiento(id, nombre);
+    if (success && window.navigateTo) window.navigateTo('/tipos-conocimiento');
+  }
+}
+

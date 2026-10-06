@@ -1,7 +1,7 @@
 import { state } from '../core/state.js';
 import { apiFetch } from '../core/api.js';
 import { escapeHtml } from '../core/utils.js';
-import { getPrixmaSwal } from '../core/ui-helpers.js';
+import { getPrixmaSwal, setFormReadOnlyMode, setFormSkeletonState } from '../core/ui-helpers.js';
 import { hasPermission } from './auth.js';
 
 let rbacAllUsersCache = [];
@@ -498,3 +498,146 @@ export async function handleDeleteRole(rolId, rolNombre) {
     return false;
   }
 }
+
+// Dedicated View Functions for Role Detail / Edit View
+export let editRoleInitialValues = { nombre: '', descripcion: '' };
+
+export async function loadRoleForShow(id) {
+  if (window.switchAppView) window.switchAppView('viewRoleEdit');
+  await loadRoleForEdit(id);
+  setFormReadOnlyMode('editRoleForm', true, 'Detalles del Rol', 'fa-eye');
+}
+
+export async function loadRoleForEdit(id) {
+  setFormReadOnlyMode('editRoleForm', false);
+  setFormSkeletonState('editRoleForm', true);
+  try {
+    let role = rbacAllRolesCache.find(r => r.id === parseInt(id, 10));
+    if (!role) {
+      const res = await apiFetch(`/api/roles/${id}`);
+      if (res.ok) role = await res.json();
+    }
+    if (role) {
+      const idEl = document.getElementById('editRoleId');
+      const nombreEl = document.getElementById('editRoleNombre');
+      const descEl = document.getElementById('editRoleDesc');
+
+      if (idEl) idEl.value = role.id;
+      if (nombreEl) nombreEl.value = role.nombre || '';
+      if (descEl) descEl.value = role.descripcion || '';
+
+      editRoleInitialValues = {
+        nombre: (role.nombre || '').trim(),
+        descripcion: (role.descripcion || '').trim()
+      };
+    }
+  } catch (e) {
+    console.error('Error cargando rol para edición:', e);
+  } finally {
+    setTimeout(() => setFormSkeletonState('editRoleForm', false), 250);
+  }
+}
+
+export function hasRoleEditChanged() {
+  if (document.getElementById('editRoleForm')?.dataset.readOnly === 'true') return false;
+  const nombre = (document.getElementById('editRoleNombre')?.value || '').trim();
+  const desc = (document.getElementById('editRoleDesc')?.value || '').trim();
+  return nombre !== editRoleInitialValues.nombre || desc !== editRoleInitialValues.descripcion;
+}
+
+export async function handleSaveCreateRole(event) {
+  if (event) event.preventDefault();
+  const nombre = (document.getElementById('newRoleNombre')?.value || '').trim();
+  const descripcion = (document.getElementById('newRoleDesc')?.value || '').trim();
+  if (!nombre) return;
+
+  try {
+    const res = await apiFetch('/api/roles', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, descripcion, permisosIds: [] })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Error al crear el rol.');
+    }
+    await loadRbacRolesList();
+    await loadRbacMatrix();
+    await loadRbacUsers();
+    getPrixmaSwal().fire({ icon: 'success', title: 'Rol Creado', text: `El rol "${nombre}" ha sido registrado.`, timer: 2000, showConfirmButton: false });
+    if (window.navigateTo) window.navigateTo('/rbac');
+  } catch (err) {
+    getPrixmaSwal().fire({ icon: 'error', title: 'Error al Crear Rol', text: err.message });
+  }
+}
+
+export async function handleSaveEditRole(event) {
+  if (event) event.preventDefault();
+  const id = document.getElementById('editRoleId')?.value;
+  const nombre = (document.getElementById('editRoleNombre')?.value || '').trim();
+  const descripcion = (document.getElementById('editRoleDesc')?.value || '').trim();
+  if (!id || !nombre) return;
+
+  const hasChanged = hasRoleEditChanged();
+  const confirmResult = await getPrixmaSwal().fire({
+    title: '¿Guardar cambios?',
+    text: hasChanged
+      ? `¿Deseas guardar las modificaciones realizadas en el rol "${nombre}"?`
+      : `¿Deseas guardar la información del rol "${nombre}"?`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#2563eb',
+    cancelButtonColor: '#64748b',
+    confirmButtonText: '<i class="fa-solid fa-floppy-disk"></i> Sí, guardar',
+    cancelButtonText: 'Cancelar'
+  });
+
+  if (!confirmResult.isConfirmed) return;
+
+  try {
+    const res = await apiFetch(`/api/roles/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, descripcion })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Error al actualizar el rol.');
+    }
+    await loadRbacRolesList();
+    await loadRbacMatrix();
+    await loadRbacUsers();
+    getPrixmaSwal().fire({ icon: 'success', title: 'Rol Actualizado', text: 'Los cambios fueron guardados correctamente.', timer: 1800, showConfirmButton: false });
+    if (window.navigateTo) window.navigateTo('/rbac');
+  } catch (err) {
+    getPrixmaSwal().fire({ icon: 'error', title: 'Error', text: err.message });
+  }
+}
+
+export async function handleCancelEditRole(event) {
+  if (event) event.preventDefault();
+  if (hasRoleEditChanged()) {
+    const confirmResult = await getPrixmaSwal().fire({
+      title: '¿Descartar cambios?',
+      text: 'Has realizado modificaciones en este rol. ¿Estás seguro de que deseas salir sin guardar?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#e11d48',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: '<i class="fa-solid fa-arrow-left"></i> Sí, descartar',
+      cancelButtonText: 'Continuar editando'
+    });
+    if (!confirmResult.isConfirmed) return;
+  }
+  if (window.navigateTo) window.navigateTo('/rbac');
+}
+
+export async function handleDeleteRoleFromForm() {
+  const id = document.getElementById('editRoleId')?.value;
+  const nombre = document.getElementById('editRoleNombre')?.value || 'este rol';
+  if (id) {
+    const success = await handleDeleteRole(id, nombre);
+    if (success && window.navigateTo) window.navigateTo('/rbac');
+  }
+}
+

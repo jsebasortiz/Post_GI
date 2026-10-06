@@ -12,12 +12,14 @@
     <div class="modal-body">
       <form id="createAreaForm" onsubmit="handleCreateArea(event)">
         <div class="form-group">
-          <label class="form-label" for="areaNombre"><i class="fa-solid fa-tag"></i> Nombre del Área (Categoría Principal)</label>
-          <input type="text" id="areaNombre" class="form-control" placeholder="Ej: Telecomunicaciones, Finanzas..." required>
+          <label class="form-label" for="areaNombre"><i class="fa-solid fa-tag"></i> Nombre del Área (Categoría
+            Principal)</label>
+          <input type="text" id="areaNombre" class="form-control" placeholder="Ej: Telecomunicaciones, Finanzas..."
+            required>
         </div>
         <div class="form-group">
           <label class="form-label" for="areaDesc"><i class="fa-solid fa-align-left"></i> Descripción (Opcional)</label>
-          <textarea id="areaDesc" rows="3" class="form-control" placeholder="Breve descripción del área corporativa..."></textarea>
+          <textarea id="areaDesc" rows="3" class="form-control" placeholder="Breve descripción del área..."></textarea>
         </div>
         <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:1.5rem;">
           <a href="/areas" class="btn btn-secondary" onclick="navigateTo('/areas'); return false;">Cancelar</a>

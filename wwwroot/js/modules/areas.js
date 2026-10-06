@@ -1,7 +1,7 @@
 import { state } from '../core/state.js';
 import { apiFetch } from '../core/api.js';
 import { escapeHtml } from '../core/utils.js';
-import { getPrixmaSwal, getTableSkeletonHtml } from '../core/ui-helpers.js';
+import { getPrixmaSwal, getTableSkeletonHtml, setFormReadOnlyMode, setFormSkeletonState } from '../core/ui-helpers.js';
 import { hasPermission } from './auth.js';
 
 const DEFAULT_AREAS = [
@@ -412,5 +412,140 @@ export async function handleInactivarArea(id) {
       text: err.message
     });
     return false;
+  }
+}
+
+// Dedicated View Functions for Area Detail / Edit View
+export let editAreaInitialValues = { nombre: '', descripcion: '' };
+
+export async function loadAreaForShow(id) {
+  if (window.switchAppView) window.switchAppView('viewAreaEdit');
+  await loadAreaForEdit(id);
+  setFormReadOnlyMode('editAreaForm', true, 'Detalles del Área', 'fa-eye');
+}
+
+export async function loadAreaForEdit(id) {
+  setFormReadOnlyMode('editAreaForm', false);
+  setFormSkeletonState('editAreaForm', true);
+  try {
+    let area = null;
+    const res = await apiFetch(`/api/areas/${id}`);
+    if (res.ok) {
+      area = await res.json();
+    } else {
+      const areas = getAllAreas();
+      area = areas.find(a => a.id === parseInt(id, 10));
+    }
+
+    if (area) {
+      const idEl = document.getElementById('editAreaId');
+      const nombreEl = document.getElementById('editAreaNombre');
+      const descEl = document.getElementById('editAreaDesc');
+
+      const nameVal = area.nombre || area.name || '';
+      const descVal = area.descripcion || area.desc || '';
+
+      if (idEl) idEl.value = area.id;
+      if (nombreEl) nombreEl.value = nameVal;
+      if (descEl) descEl.value = descVal;
+
+      editAreaInitialValues = {
+        nombre: nameVal.trim(),
+        descripcion: descVal.trim()
+      };
+    }
+  } catch (e) {
+    console.error('Error cargando área para edición:', e);
+  } finally {
+    setTimeout(() => setFormSkeletonState('editAreaForm', false), 250);
+  }
+}
+
+export function hasAreaEditChanged() {
+  if (document.getElementById('editAreaForm')?.dataset.readOnly === 'true') return false;
+  const currentNombre = (document.getElementById('editAreaNombre')?.value || '').trim();
+  const currentDesc = (document.getElementById('editAreaDesc')?.value || '').trim();
+  return currentNombre !== editAreaInitialValues.nombre || currentDesc !== editAreaInitialValues.descripcion;
+}
+
+export async function handleSaveEditArea(event) {
+  if (event) event.preventDefault();
+
+  const id = document.getElementById('editAreaId').value;
+  const nombre = document.getElementById('editAreaNombre').value.trim();
+  const descripcion = document.getElementById('editAreaDesc').value.trim();
+  if (!id || !nombre) return;
+
+  const hasChanged = hasAreaEditChanged();
+
+  const confirmResult = await getPrixmaSwal().fire({
+    title: '¿Guardar cambios?',
+    text: hasChanged
+      ? `¿Deseas guardar las modificaciones realizadas en el área "${nombre}"?`
+      : `¿Deseas guardar la información del área "${nombre}"?`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#2563eb',
+    cancelButtonColor: '#64748b',
+    confirmButtonText: '<i class="fa-solid fa-floppy-disk"></i> Sí, guardar',
+    cancelButtonText: 'Cancelar'
+  });
+
+  if (!confirmResult.isConfirmed) return;
+
+  try {
+    const res = await apiFetch(`/api/areas/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, descripcion })
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'Error al actualizar el área.');
+    }
+
+    await loadAreas();
+    getPrixmaSwal().fire({
+      icon: 'success',
+      title: 'Área Actualizada',
+      text: 'Los cambios fueron guardados correctamente.',
+      timer: 1800,
+      showConfirmButton: false
+    });
+    if (window.navigateTo) window.navigateTo('/areas');
+  } catch (err) {
+    getPrixmaSwal().fire({ icon: 'error', title: 'Error', text: err.message });
+  }
+}
+
+export async function handleCancelEditArea(event) {
+  if (event) event.preventDefault();
+
+  if (hasAreaEditChanged()) {
+    const confirmResult = await getPrixmaSwal().fire({
+      title: '¿Descartar cambios?',
+      text: 'Has realizado modificaciones en esta área. ¿Estás seguro de que deseas salir sin guardar?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#e11d48',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: '<i class="fa-solid fa-arrow-left"></i> Sí, descartar',
+      cancelButtonText: 'Continuar editando'
+    });
+
+    if (!confirmResult.isConfirmed) return;
+  }
+
+  if (window.navigateTo) window.navigateTo('/areas');
+}
+
+export async function handleDeleteAreaFromForm() {
+  const id = document.getElementById('editAreaId').value;
+  if (id) {
+    const success = await handleInactivarArea(id);
+    if (success) {
+      if (window.navigateTo) window.navigateTo('/areas');
+    }
   }
 }

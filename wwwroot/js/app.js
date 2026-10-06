@@ -26,24 +26,35 @@ import {
 import {
   loadAreas, getAllAreas, getAreaIcon, renderAreaTabs, populateAreaSelects,
   loadAreasList, changeAreasPage, handleCreateArea, handleEditAreaInline,
-  openEditAreaModal, handleUpdateArea, handleInactivarArea
+  openEditAreaModal, handleUpdateArea, handleInactivarArea,
+  loadAreaForShow, loadAreaForEdit, hasAreaEditChanged,
+  handleSaveEditArea, handleCancelEditArea, handleDeleteAreaFromForm
 } from './modules/areas.js';
 import {
   loadModulos, updateModulePillActiveState, filterByModule, onPostCategoriaChange,
   updatePostSubmoduloSelect, populateModuloAreaSelect, loadModulesList, changeModulesPage,
-  handleCreateModule, openEditModuleModal, handleUpdateModule, handleInactivarModulo, handleEditModuloInline
+  handleCreateModule, openEditModuleModal, handleUpdateModule, handleInactivarModulo, handleEditModuloInline,
+  loadModuleForShow, loadModuleForEdit, hasModuleEditChanged,
+  handleSaveEditModule, handleCancelEditModule, handleDeleteModuleFromForm
 } from './modules/modulos.js';
 import {
   loadPostTipos, loadTiposConocimiento, loadPostTiposList, changePostTiposPage,
   handleCreatePostTipo, handleEditPostTipo, handleDeletePostTipo, switchTiposSubTab,
   changeTiposConocimientoPage, loadTiposConocimientoList, handleCreateTipoConocimientoInline,
-  handleEditTipoConocimientoInline, handleDeleteTipoConocimiento, loadEditPostTipos
+  handleEditTipoConocimientoInline, handleDeleteTipoConocimiento, loadEditPostTipos,
+  prepareCreatePostTipoForm, loadPostTipoForShow, loadPostTipoForEdit, hasPostTipoEditChanged,
+  handleSaveCreatePostTipo, handleSaveEditPostTipo, handleCancelEditPostTipo, handleDeleteTipoFromForm,
+  loadTipoConocimientoForShow, loadTipoConocimientoForEdit, hasTipoConocimientoEditChanged,
+  handleSaveCreateTipoConocimiento, handleSaveEditTipoConocimiento, handleCancelEditTipoConocimiento,
+  handleDeleteTipoConocimientoFromForm
 } from './modules/tipos.js';
 import {
   loadRbacUsers, onRbacUserSearchInput, renderRbacUsersTable, changeRbacUsersPage,
   handleAssignUserRole, loadRbacMatrix, handleSaveRolePermisos, toggleNewRoleForm,
   handleCreateRole, loadRbacRolesList, renderRbacRolesTable, changeRbacRolesPage,
-  switchRbacSubTab, openRbacModal, handleDeleteRole
+  switchRbacSubTab, openRbacModal, handleDeleteRole,
+  loadRoleForShow, loadRoleForEdit, hasRoleEditChanged,
+  handleSaveCreateRole, handleSaveEditRole, handleCancelEditRole, handleDeleteRoleFromForm
 } from './modules/rbac.js';
 import {
   isImageUrl, getPostCoverUrl, renderPostCard, loadPosts, renderPaginationControls,
@@ -158,6 +169,12 @@ Object.assign(window, {
   openEditAreaModal,
   handleUpdateArea,
   handleInactivarArea,
+  loadAreaForShow,
+  loadAreaForEdit,
+  hasAreaEditChanged,
+  handleSaveEditArea,
+  handleCancelEditArea,
+  handleDeleteAreaFromForm,
 
   // Modulos
   loadModulos,
@@ -173,6 +190,12 @@ Object.assign(window, {
   handleUpdateModule,
   handleInactivarModulo,
   handleEditModuloInline,
+  loadModuleForShow,
+  loadModuleForEdit,
+  hasModuleEditChanged,
+  handleSaveEditModule,
+  handleCancelEditModule,
+  handleDeleteModuleFromForm,
 
   // Tipos
   loadPostTipos,
@@ -189,6 +212,21 @@ Object.assign(window, {
   handleEditTipoConocimientoInline,
   handleDeleteTipoConocimiento,
   loadEditPostTipos,
+  prepareCreatePostTipoForm,
+  loadPostTipoForShow,
+  loadPostTipoForEdit,
+  hasPostTipoEditChanged,
+  handleSaveCreatePostTipo,
+  handleSaveEditPostTipo,
+  handleCancelEditPostTipo,
+  handleDeleteTipoFromForm,
+  loadTipoConocimientoForShow,
+  loadTipoConocimientoForEdit,
+  hasTipoConocimientoEditChanged,
+  handleSaveCreateTipoConocimiento,
+  handleSaveEditTipoConocimiento,
+  handleCancelEditTipoConocimiento,
+  handleDeleteTipoConocimientoFromForm,
 
   // RBAC
   loadRbacUsers,
@@ -206,6 +244,13 @@ Object.assign(window, {
   switchRbacSubTab,
   openRbacModal,
   handleDeleteRole,
+  loadRoleForShow,
+  loadRoleForEdit,
+  hasRoleEditChanged,
+  handleSaveCreateRole,
+  handleSaveEditRole,
+  handleCancelEditRole,
+  handleDeleteRoleFromForm,
 
   // Posts
   isImageUrl,
