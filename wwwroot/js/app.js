@@ -142,15 +142,8 @@ function setFormSkeletonState(formIdOrElement, isLoading) {
   inputs.forEach(input => {
     if (isLoading) {
       input.classList.add('skeleton-input');
-      if (input.tagName === 'INPUT' || input.tagName === 'TEXTAREA') {
-        input.dataset.oldVal = input.value || '';
-        input.value = 'Cargando...';
-      }
     } else {
       input.classList.remove('skeleton-input');
-      if (input.dataset.oldVal !== undefined) {
-        delete input.dataset.oldVal;
-      }
     }
   });
 
@@ -403,9 +396,13 @@ function navigateTo(path) {
   if (path.startsWith('#')) path = path.substring(1);
   if (!path.startsWith('/')) path = '/' + path;
 
-  if (window.location.pathname !== path) {
-    window.history.pushState({}, '', path);
+  // Clean trailing hash fragments from URL
+  const cleanPath = path.split('#')[0];
+
+  if (window.location.pathname !== cleanPath || window.location.hash) {
+    window.history.pushState({}, '', cleanPath);
   }
+  isHandlingRoute = false;
   handleRoute();
 }
 
@@ -443,12 +440,14 @@ async function handleRoute() {
     let rawPath = window.location.pathname;
     if (window.location.hash) {
       const hashPath = window.location.hash.replace(/^#/, '');
-      if (hashPath) rawPath = hashPath.startsWith('/') ? hashPath : '/' + hashPath;
+      if (hashPath && !hashPath.startsWith('http')) {
+        rawPath = hashPath.startsWith('/') ? hashPath : '/' + hashPath;
+      }
     }
     if (!rawPath || rawPath === '/' || rawPath === '/index.html') {
       rawPath = '/dashboard';
     }
-    const cleanHash = rawPath.split('?')[0];
+    const cleanHash = rawPath.split('?')[0].split('#')[0];
 
     // 1. Ruta de Login
     if (cleanHash === '/login') {
@@ -621,16 +620,18 @@ async function handleRoute() {
         navigateTo('/dashboard');
         return;
       }
-      const postId = cleanHash.replace('/posts/edit/', '');
-      if (postId) {
+      const rawId = cleanHash.replace('/posts/edit/', '').split('#')[0].split('/')[0];
+      const postId = parseInt(rawId, 10);
+      if (!isNaN(postId) && postId > 0) {
         switchAppView('viewEditPost');
         await openEditView(postId);
       } else {
         navigateTo('/dashboard');
       }
     } else if (cleanHash.startsWith('/post/')) {
-      const postId = cleanHash.replace('/post/', '');
-      if (postId) {
+      const rawId = cleanHash.replace('/post/', '').split('#')[0].split('/')[0];
+      const postId = parseInt(rawId, 10);
+      if (!isNaN(postId) && postId > 0) {
         switchAppView('viewPostDetail');
         await openDetailView(postId);
       } else {
@@ -1235,9 +1236,8 @@ function goToPage(page) {
 function isImageUrl(url) {
   if (!url) return false;
   const cleanUrl = url.split('?')[0].toLowerCase();
-  const nonImgExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.zip', '.rar', '.7z', '.tar', '.gz'];
-  if (nonImgExtensions.some(ext => cleanUrl.endsWith(ext))) return false;
-  return cleanUrl.endsWith('.jpg') || cleanUrl.endsWith('.jpeg') || cleanUrl.endsWith('.png') || cleanUrl.endsWith('.webp') || cleanUrl.endsWith('.gif') || cleanUrl.endsWith('.svg') || cleanUrl.includes('/uploads/') || cleanUrl.includes('image');
+  const validExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg', '.bmp', '.ico', '.avif'];
+  return validExtensions.some(ext => cleanUrl.endsWith(ext)) || cleanUrl.startsWith('data:image/');
 }
 
 function getPostCoverUrl(post) {
@@ -1248,13 +1248,13 @@ function getPostCoverUrl(post) {
     const imgAdj = post.adjuntos.find(a => isImageUrl(a.archivoUrl));
     if (imgAdj) return imgAdj.archivoUrl;
   }
-  // Si no hay foto de portada o solo se subieron archivos PDF/documentos, usar la imagen de portada corporativa por defecto
-  return 'images/portada.jpg';
+  // Si no hay foto de portada o solo se subieron archivos no-imagen (PDF, SQL, Word, etc.), usar la imagen de portada corporativa por defecto
+  return '/images/portada.jpg';
 }
 
 function renderPostCard(post) {
   const coverUrl = getPostCoverUrl(post);
-  const coverHtml = `<img src="${coverUrl}" alt="${escapeHtml(post.titulo)}" loading="lazy" onerror="this.onerror=null; this.src='images/portada.jpg';">`;
+  const coverHtml = `<img src="${coverUrl}" alt="${escapeHtml(post.titulo)}" loading="lazy" onerror="this.onerror=null; this.src='/images/portada.jpg';">`;
 
   const dateStr = formatDate(post.creadoEn);
   const attachCount = post.adjuntos ? post.adjuntos.length : 0;
@@ -2938,33 +2938,49 @@ async function openEditView(postId) {
     const post = await res.json();
     currentEditingPost = post;
 
-    document.getElementById('editPostId').value = post.id;
-    document.getElementById('editPostTitulo').value = post.titulo;
-    document.getElementById('editPostResumen').value = post.resumen || '';
-    document.getElementById('editPostContenido').value = post.contenido;
-
+    // 1. Cargar datos de referencia (Módulos, Áreas, Tipos) antes de asignar valores
     if (!allModulosCache || allModulosCache.length === 0) {
       await loadModulos();
     }
     populateAreaSelects();
 
+    await loadEditPostTipos(post.tipoId);
+    await loadTiposConocimiento();
+
+    // 2. Asignar los campos de texto
+    const idEl = document.getElementById('editPostId');
+    const tituloEl = document.getElementById('editPostTitulo');
+    const resumenEl = document.getElementById('editPostResumen');
+    const contenidoEl = document.getElementById('editPostContenido');
+
+    if (idEl) idEl.value = post.id;
+    if (tituloEl) tituloEl.value = post.titulo || '';
+    if (resumenEl) resumenEl.value = post.resumen || '';
+    if (contenidoEl) contenidoEl.value = post.contenido || '';
+
+    // 3. Asignar Selects
     const catSelect = document.getElementById('editSelectCategoriaPadre');
     if (catSelect) {
       catSelect.value = post.moduloCategoriaPadre || 'apps';
       updateEditPostSubmoduloSelect(catSelect.value, post.moduloId);
     }
 
-    await loadEditPostTipos(post.tipoId);
+    const tipoSelect = document.getElementById('editSelectTipo');
+    if (tipoSelect) {
+      tipoSelect.value = post.tipoId || '';
+    }
 
     const tcSelect = document.getElementById('editSelectTipoConocimiento');
     if (tcSelect) {
       tcSelect.value = post.tipoConocimientoId || '';
     }
+
     const tagsInput = document.getElementById('editPostPalabrasClave');
     if (tagsInput) {
       tagsInput.value = post.palabrasClave || '';
     }
 
+    // 4. Adjuntos existentes
     const existingContainer = document.getElementById('editExistingAdjuntos');
     if (existingContainer) {
       if (post.adjuntos && post.adjuntos.length > 0) {
@@ -3018,7 +3034,7 @@ async function openEditView(postId) {
     });
     navigateTo('/dashboard');
   } finally {
-    setTimeout(() => setFormSkeletonState('editPostForm', false), 250);
+    setFormSkeletonState('editPostForm', false);
   }
 }
 
@@ -3696,20 +3712,53 @@ function removeEditFile(index) {
 }
 
 async function handleSaveEditPost(event) {
-  event.preventDefault();
-  const postId = document.getElementById('editPostId').value;
+  if (event) event.preventDefault();
+  const postIdVal = document.getElementById('editPostId')?.value;
+  const postId = parseInt(postIdVal, 10);
   const btn = document.getElementById('btnSubmitEditPost');
 
+  if (!postId || isNaN(postId)) {
+    getPrixmaSwal().fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'No se pudo obtener el identificador de la publicación.'
+    });
+    return;
+  }
+
+  const moduloId = parseInt(document.getElementById('editSelectModulo')?.value, 10);
+  const tipoId = parseInt(document.getElementById('editSelectTipo')?.value, 10);
+  const tcIdVal = document.getElementById('editSelectTipoConocimiento')?.value;
+  const tipoConocimientoId = tcIdVal ? parseInt(tcIdVal, 10) : null;
+
+  if (!moduloId || !tipoId) {
+    getPrixmaSwal().fire({
+      icon: 'warning',
+      title: 'Campos Incompletos',
+      text: 'Por favor selecciona el Módulo y el Tipo de Publicación.'
+    });
+    return;
+  }
+
   const updateDto = {
-    moduloId: parseInt(document.getElementById('editSelectModulo').value),
-    tipoId: parseInt(document.getElementById('editSelectTipo').value),
-    tipoConocimientoId: parseInt(document.getElementById('editSelectTipoConocimiento').value) || null,
-    palabrasClave: document.getElementById('editPostPalabrasClave').value.trim(),
-    titulo: document.getElementById('editPostTitulo').value.trim(),
-    resumen: document.getElementById('editPostResumen').value.trim(),
-    contenido: document.getElementById('editPostContenido').value.trim(),
+    moduloId: moduloId,
+    tipoId: tipoId,
+    tipoConocimientoId: tipoConocimientoId,
+    palabrasClave: (document.getElementById('editPostPalabrasClave')?.value || '').trim(),
+    titulo: (document.getElementById('editPostTitulo')?.value || '').trim(),
+    resumen: (document.getElementById('editPostResumen')?.value || '').trim(),
+    contenido: (document.getElementById('editPostContenido')?.value || '').trim(),
     estado: 'publicado'
   };
+
+  if (!updateDto.titulo || !updateDto.contenido) {
+    getPrixmaSwal().fire({
+      icon: 'warning',
+      title: 'Campos Requeridos',
+      text: 'Por favor completa el Título y el Contenido de la publicación.'
+    });
+    return;
+  }
 
   const confirmResult = await getPrixmaSwal().fire({
     title: '¿Guardar cambios?',
@@ -3724,8 +3773,10 @@ async function handleSaveEditPost(event) {
 
   if (!confirmResult.isConfirmed) return;
 
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
+  }
 
   try {
     const res = await apiFetch(`/api/posts/${postId}`, {
@@ -3734,10 +3785,13 @@ async function handleSaveEditPost(event) {
       body: JSON.stringify(updateDto)
     });
 
-    if (!res.ok) throw new Error('Error al actualizar la publicación.');
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'Error al actualizar la publicación.');
+    }
 
     // Subir nuevos adjuntos si los hay
-    if (selectedEditFiles.length > 0) {
+    if (selectedEditFiles && selectedEditFiles.length > 0) {
       for (const file of selectedEditFiles) {
         const formData = new FormData();
         formData.append('file', file);
@@ -3748,17 +3802,19 @@ async function handleSaveEditPost(event) {
       }
     }
 
-    closeModal('editModal');
-    navigateTo('/dashboard');
-    await loadPosts(1);
+    selectedEditFiles = [];
+    renderEditFilePreviews();
 
     getPrixmaSwal().fire({
       icon: 'success',
       title: 'Publicación Actualizada',
       text: 'Los cambios han sido guardados correctamente.',
-      timer: 2000,
+      timer: 1800,
       showConfirmButton: false
     });
+
+    navigateTo('/dashboard');
+    await loadPosts(1);
   } catch (err) {
     getPrixmaSwal().fire({
       icon: 'error',
@@ -3766,8 +3822,10 @@ async function handleSaveEditPost(event) {
       text: err.message
     });
   } finally {
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Guardar Cambios';
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Guardar Cambios';
+    }
   }
 }
 
