@@ -128,7 +128,7 @@ export async function loadAreasList() {
       <table class="rbac-table" style="width:100%; border-collapse:collapse;">
         <thead>
           <tr style="text-align:left; border-bottom:1px solid var(--bg-card-border); color:var(--text-muted); font-size:0.85rem;">
-            <th style="padding:0.75rem;">Área Corporativa</th>
+            <th style="padding:0.75rem;">Área</th>
             <th style="padding:0.75rem;">Código</th>
             <th style="padding:0.75rem;">Descripción</th>
             <th style="padding:0.75rem; text-align:right;">Acciones</th>
@@ -237,7 +237,7 @@ export async function handleCreateArea(event) {
 
 export async function handleEditAreaInline(id, currentName, currentDesc) {
   const { value: formValues } = await getPrixmaSwal().fire({
-    title: 'Editar Área Corporativa',
+    title: 'Editar Área',
     html: `
       <div style="text-align:left; display:flex; flex-direction:column; gap:0.75rem;">
         <div>
@@ -371,7 +371,7 @@ export async function handleInactivarArea(id) {
   const nombre = area ? area.name : 'esta área';
 
   const result = await getPrixmaSwal().fire({
-    title: '¿Eliminar área corporativa?',
+    title: '¿Eliminar área?',
     text: `El área "${nombre}" se eliminará y dejará de mostrarse en el portal.`,
     icon: 'warning',
     showCancelButton: true,
