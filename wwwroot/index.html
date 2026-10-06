@@ -111,13 +111,13 @@
             <p class="login-main-subtitle">Ingresa tus credenciales de Directorio Activo para acceder a la plataforma.</p>
           </div>
 
-          <form id="gateLoginForm" onsubmit="handleLogin(event)" novalidate>
+          <form id="gateLoginForm" onsubmit="if (window.handleLogin) { window.handleLogin(event); } else if (event) { event.preventDefault(); } return false;" novalidate>
             <div class="login-form-group">
               <label class="login-form-label" for="loginUser">Usuario de Red / Correo</label>
               <div class="input-with-icon-wrapper">
                 <i class="fa-regular fa-user input-icon-left" aria-hidden="true"></i>
                 <input type="text" id="loginUser" class="form-control" placeholder="Ej: jdperez o jdperez@centroaguas.com"
-                  required autocomplete="username" aria-required="true" oninput="clearInputError(this)">
+                  required autocomplete="username" aria-required="true" oninput="if(window.clearInputError) window.clearInputError(this)">
               </div>
             </div>
 
@@ -126,7 +126,7 @@
               <div class="input-with-icon-wrapper">
                 <i class="fa-solid fa-key input-icon-left" aria-hidden="true"></i>
                 <input type="password" id="loginPass" class="form-control" placeholder="Tu contraseña de Directorio Activo"
-                  required autocomplete="current-password" aria-required="true" oninput="clearInputError(this)">
+                  required autocomplete="current-password" aria-required="true" oninput="if(window.clearInputError) window.clearInputError(this)">
                 <button type="button" class="btn-toggle-password" onclick="toggleLoginPassword()" title="Mostrar u ocultar contraseña">
                   <i id="loginPassEyeIcon" class="fa-regular fa-eye"></i>
                 </button>
@@ -520,7 +520,7 @@
             <h2><i class="fa-solid fa-folder-plus" style="color:var(--accent-cyan);"></i> Crear Nueva Área</h2>
           </div>
           <div class="modal-body">
-            <form id="createAreaForm" onsubmit="handleCreateArea(event)">
+            <form id="createAreaForm" onsubmit="handleCreateArea(event); return false;">
               <div class="form-group">
                 <label class="form-label" for="areaNombre"><i class="fa-solid fa-tag"></i> Nombre del Área (Categoría
                   Principal)</label>
@@ -556,7 +556,7 @@
             <h2><i class="fa-solid fa-pen-to-square" style="color:var(--accent-cyan);"></i> Editar Área</h2>
           </div>
           <div class="modal-body">
-            <form id="editAreaForm" onsubmit="handleSaveEditArea(event)">
+            <form id="editAreaForm" onsubmit="handleSaveEditArea(event); return false;">
               <input type="hidden" id="editAreaId">
               <div class="form-group">
                 <label class="form-label" for="editAreaNombre"><i class="fa-solid fa-tag"></i> Nombre del Área</label>
@@ -621,7 +621,7 @@
             <h2><i class="fa-solid fa-folder-plus" style="color:var(--accent-cyan);"></i> Crear Nuevo Módulo</h2>
           </div>
           <div class="modal-body">
-            <form id="createModuleForm" onsubmit="handleCreateModule(event)">
+            <form id="createModuleForm" onsubmit="handleCreateModule(event); return false;">
               <div class="form-row">
                 <div class="form-group">
                   <label class="form-label" for="moduloCategoriaPadre"><i class="fa-solid fa-sitemap"></i> Área
@@ -664,7 +664,7 @@
             <h2><i class="fa-solid fa-pen-to-square" style="color:var(--accent-cyan);"></i> Editar Módulo Temático</h2>
           </div>
           <div class="modal-body">
-            <form id="editModuleForm" onsubmit="handleSaveEditModule(event)">
+            <form id="editModuleForm" onsubmit="handleSaveEditModule(event); return false;">
               <input type="hidden" id="editModuleId">
               <div class="form-row">
                 <div class="form-group">
@@ -1054,7 +1054,7 @@
             <h2><i class="fa-solid fa-user-plus" style="color:var(--accent-purple);"></i> Crear Nuevo Rol</h2>
           </div>
           <div class="modal-body">
-            <form id="createRoleForm" onsubmit="handleSaveCreateRole(event)">
+            <form id="createRoleForm" onsubmit="handleSaveCreateRole(event); return false;">
               <div class="form-group">
                 <label class="form-label" for="newRoleNombre"><i class="fa-solid fa-user-gear"></i> Nombre del
                   Rol</label>
@@ -1089,7 +1089,7 @@
             <h2><i class="fa-solid fa-user-pen" style="color:var(--accent-purple);"></i> Editar Rol</h2>
           </div>
           <div class="modal-body">
-            <form id="editRoleForm" onsubmit="handleSaveEditRole(event)">
+            <form id="editRoleForm" onsubmit="handleSaveEditRole(event); return false;">
               <input type="hidden" id="editRoleId">
               <div class="form-group">
                 <label class="form-label" for="editRoleNombre"><i class="fa-solid fa-user-gear"></i> Nombre del
@@ -1122,7 +1122,7 @@
     </main>
   </div>
 
-  <script src="js/app.js"></script>
+  <script type="module" src="js/app.js"></script>
 </body>
 
 </html>
