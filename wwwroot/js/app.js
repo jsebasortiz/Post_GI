@@ -2919,6 +2919,72 @@ async function handleDeleteRole(rolId, rolNombre) {
 
 let selectedEditFiles = [];
 let currentEditingPost = null;
+let editPostInitialValues = {
+  categoriaPadre: '',
+  moduloId: '',
+  tipoId: '',
+  tipoConocimientoId: '',
+  palabrasClave: '',
+  titulo: '',
+  resumen: '',
+  contenido: ''
+};
+
+function hasPostEditChanged() {
+  if (!currentEditingPost) return false;
+  const catVal = (document.getElementById('editSelectCategoriaPadre')?.value || '').trim();
+  const modVal = String(document.getElementById('editSelectModulo')?.value || '').trim();
+  const tipoVal = String(document.getElementById('editSelectTipo')?.value || '').trim();
+  const tcVal = String(document.getElementById('editSelectTipoConocimiento')?.value || '').trim();
+  const kwVal = (document.getElementById('editPostPalabrasClave')?.value || '').trim();
+  const titVal = (document.getElementById('editPostTitulo')?.value || '').trim();
+  const resVal = (document.getElementById('editPostResumen')?.value || '').trim();
+  const contVal = (document.getElementById('editPostContenido')?.value || '').trim();
+  const filesCount = selectedEditFiles ? selectedEditFiles.length : 0;
+
+  return catVal !== editPostInitialValues.categoriaPadre ||
+         modVal !== editPostInitialValues.moduloId ||
+         tipoVal !== editPostInitialValues.tipoId ||
+         tcVal !== editPostInitialValues.tipoConocimientoId ||
+         kwVal !== editPostInitialValues.palabrasClave ||
+         titVal !== editPostInitialValues.titulo ||
+         resVal !== editPostInitialValues.resumen ||
+         contVal !== editPostInitialValues.contenido ||
+         filesCount > 0;
+}
+
+async function handleCancelEditPost(event) {
+  if (event) event.preventDefault();
+
+  if (hasPostEditChanged()) {
+    const confirmResult = await getPrixmaSwal().fire({
+      title: '¿Descartar cambios?',
+      text: 'Has realizado modificaciones en esta publicación. ¿Estás seguro de que deseas salir sin guardar?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#e11d48',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: '<i class="fa-solid fa-arrow-left"></i> Sí, descartar',
+      cancelButtonText: 'Continuar editando'
+    });
+
+    if (!confirmResult.isConfirmed) return;
+  }
+
+  navigateTo('/dashboard');
+}
+
+async function handleDeletePostFromModal() {
+  const postIdVal = document.getElementById('editPostId')?.value;
+  const postId = parseInt(postIdVal, 10);
+  if (!postId || isNaN(postId)) return;
+
+  const deleted = await handleDeletePost(postId);
+  if (deleted) {
+    navigateTo('/dashboard');
+    await loadPosts(1);
+  }
+}
 
 async function openEditView(postId) {
   setFormSkeletonState('editPostForm', true);
@@ -3022,6 +3088,18 @@ async function openEditView(postId) {
 
     selectedEditFiles = [];
     renderEditFilePreviews();
+
+    // Guardar estado inicial para detectar cambios
+    editPostInitialValues = {
+      categoriaPadre: (catSelect ? catSelect.value : '').trim(),
+      moduloId: String(post.moduloId || ''),
+      tipoId: String(post.tipoId || ''),
+      tipoConocimientoId: String(post.tipoConocimientoId || ''),
+      palabrasClave: (post.palabrasClave || '').trim(),
+      titulo: (post.titulo || '').trim(),
+      resumen: (post.resumen || '').trim(),
+      contenido: (post.contenido || '').trim()
+    };
 
     const btnDelete = document.getElementById('btnDeletePostInEdit');
     if (btnDelete) btnDelete.style.display = hasPermission('posts.delete') ? 'inline-flex' : 'none';
@@ -3760,9 +3838,13 @@ async function handleSaveEditPost(event) {
     return;
   }
 
+  const hasChanged = hasPostEditChanged();
+
   const confirmResult = await getPrixmaSwal().fire({
     title: '¿Guardar cambios?',
-    text: `¿Deseas guardar los cambios realizados en la publicación "${updateDto.titulo}"?`,
+    text: hasChanged
+      ? `¿Deseas guardar las modificaciones realizadas en la publicación "${updateDto.titulo}"?`
+      : `¿Deseas confirmar la información de la publicación "${updateDto.titulo}"?`,
     icon: 'question',
     showCancelButton: true,
     confirmButtonColor: '#3b82f6',
