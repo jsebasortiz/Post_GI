@@ -28,45 +28,132 @@
 
   <!-- Mandatory Active Directory Login Gate View -->
   <section id="authGateScreen" class="auth-gate-screen">
-    <div class="auth-gate-card">
-      <div class="auth-gate-header">
-        <div class="brand" style="justify-content: center; margin-bottom: 1.25rem;">
-          <img src="images/logo.png" alt="Prixma Logo" class="brand-logo-img-lg">
-          <span style="font-size:1.75rem; letter-spacing:0.5px;">Prixma</span>
+    <div class="login-interface-container">
+      
+      <!-- Left Hero Showcase Panel -->
+      <div class="login-hero-panel">
+        <div>
+          <div class="login-hero-brand">
+            <img src="images/logo.png" alt="Prixma Logo" class="login-hero-logo">
+            <div>
+              <span class="login-hero-brand-name">Prixma</span>
+              <span class="login-hero-brand-tag">Portal Corporativo</span>
+            </div>
+          </div>
+
+          <div class="login-hero-content">
+            <div class="login-hero-badge">
+              <i class="fa-solid fa-shield-halved"></i> CentroAguas SA ESP
+            </div>
+            <h1 class="login-hero-title">El Portal del Conocimiento Corporativo</h1>
+            <p class="login-hero-desc">
+              Plataforma unificada para la difusión de novedades, manuales, normativas y blogs especializados de CentroAguas SA ESP.
+            </p>
+
+            <div class="login-feature-list">
+              <div class="login-feature-item">
+                <div class="login-feature-icon">
+                  <i class="fa-solid fa-lock"></i>
+                </div>
+                <div class="login-feature-text">
+                  <h4>Autenticación Única de Red (Active Directory)</h4>
+                  <p>Ingresa con tus credenciales institucionales corporativas sin recordar nuevas claves.</p>
+                </div>
+              </div>
+
+              <div class="login-feature-item">
+                <div class="login-feature-icon">
+                  <i class="fa-solid fa-book-open"></i>
+                </div>
+                <div class="login-feature-text">
+                  <h4>Publicaciones y Blogs Organizacionales</h4>
+                  <p>Accede a contenido categorizado por áreas operativas, administrativas y de gestión.</p>
+                </div>
+              </div>
+
+              <div class="login-feature-item">
+                <div class="login-feature-icon">
+                  <i class="fa-solid fa-user-shield"></i>
+                </div>
+                <div class="login-feature-text">
+                  <h4>Seguridad & Control RBAC</h4>
+                  <p>Gestión transparente de roles y permisos para creadores, editores y lectores.</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="auth-gate-badge">
-          <i class="fa-solid fa-shield-halved"></i> CentroAguas SA ESP
+
+        <div class="login-hero-footer">
+          <div class="login-hero-status">
+            <span class="status-dot-green"></span>
+            <span>Servicios de Red Activos</span>
+          </div>
+          <div>© 2026 CentroAguas SA ESP</div>
         </div>
-        <h2 class="auth-gate-title">Iniciar Sesión</h2>
-        <p class="auth-gate-subtitle">Acceso restringido corporativo. Autentícate con tus credenciales de red para
-          visualizar el portal y sus publicaciones.</p>
       </div>
 
-      <form id="gateLoginForm" onsubmit="handleLogin(event)" novalidate>
-        <div class="form-group">
-          <label class="form-label" for="loginUser"><i class="fa-regular fa-user" aria-hidden="true"></i> Usuario de Red
-            / Correo</label>
-          <input type="text" id="loginUser" class="form-control" placeholder="Ej: jdperez o jdperez@centroaguas.com"
-            required autocomplete="username" aria-required="true" oninput="clearInputError(this)">
+      <!-- Right Interactive Form Panel -->
+      <div class="login-form-panel">
+        <div class="login-top-bar">
+          <div class="login-sec-badge">
+            <i class="fa-solid fa-shield-halved"></i> Conexión Cifrada SSL / AD
+          </div>
+          <button class="btn btn-secondary btn-icon-only" id="btnLoginToggleTheme" onclick="toggleTheme()" title="Cambiar Tema">
+            <i class="fa-solid fa-moon"></i>
+          </button>
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="loginPass"><i class="fa-solid fa-key" aria-hidden="true"></i> Contraseña de
-            Red</label>
-          <input type="password" id="loginPass" class="form-control" placeholder="Tu contraseña de Directorio Activo"
-            required autocomplete="current-password" aria-required="true" oninput="clearInputError(this)">
+        <div class="login-form-wrapper">
+          <div class="login-header-box">
+            <span class="login-welcome-tag">Acceso Institucional</span>
+            <h2 class="login-main-title">Iniciar Sesión</h2>
+            <p class="login-main-subtitle">Ingresa tus credenciales de Directorio Activo para acceder a la plataforma.</p>
+          </div>
+
+          <form id="gateLoginForm" onsubmit="handleLogin(event)" novalidate>
+            <div class="login-form-group">
+              <label class="login-form-label" for="loginUser">Usuario de Red / Correo</label>
+              <div class="input-with-icon-wrapper">
+                <i class="fa-regular fa-user input-icon-left" aria-hidden="true"></i>
+                <input type="text" id="loginUser" class="form-control" placeholder="Ej: jdperez o jdperez@centroaguas.com"
+                  required autocomplete="username" aria-required="true" oninput="clearInputError(this)">
+              </div>
+            </div>
+
+            <div class="login-form-group">
+              <label class="login-form-label" for="loginPass">Contraseña de Red</label>
+              <div class="input-with-icon-wrapper">
+                <i class="fa-solid fa-key input-icon-left" aria-hidden="true"></i>
+                <input type="password" id="loginPass" class="form-control" placeholder="Tu contraseña de Directorio Activo"
+                  required autocomplete="current-password" aria-required="true" oninput="clearInputError(this)">
+                <button type="button" class="btn-toggle-password" onclick="toggleLoginPassword()" title="Mostrar u ocultar contraseña">
+                  <i id="loginPassEyeIcon" class="fa-regular fa-eye"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="login-ad-hint">
+              <i class="fa-solid fa-circle-info"></i>
+              <span>Usa el mismo usuario y contraseña con el que ingresas a tu equipo de trabajo corporativo.</span>
+            </div>
+
+            <div id="loginErrorMsg" class="alert-error-banner" role="alert" aria-live="assertive" style="display:none; margin-bottom: 1.25rem;">
+              <i class="fa-solid fa-circle-exclamation alert-icon" aria-hidden="true"></i>
+              <span id="loginErrorText"></span>
+            </div>
+
+            <button type="submit" class="btn btn-primary login-submit-btn" id="btnLoginSubmit">
+              <i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i> Autenticar y Entrar
+            </button>
+          </form>
         </div>
 
-        <div id="loginErrorMsg" class="alert-error-banner" role="alert" aria-live="assertive" style="display:none;">
-          <i class="fa-solid fa-circle-exclamation alert-icon" aria-hidden="true"></i>
-          <span id="loginErrorText"></span>
+        <div class="login-form-footer">
+          <i class="fa-solid fa-headset" style="margin-right:0.3rem;"></i> ¿Requieres asistencia? Soporte de TI CentroAguas SA ESP
         </div>
+      </div>
 
-        <button type="submit" class="btn btn-primary" id="btnLoginSubmit"
-          style="width:100%; justify-content:center; padding:0.85rem; font-size:1rem; margin-top:0.5rem;">
-          <i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i> Autenticar y Entrar
-        </button>
-      </form>
     </div>
   </section>
 

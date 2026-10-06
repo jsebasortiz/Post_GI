@@ -266,6 +266,13 @@ function setTheme(theme) {
   if (themeText) {
     themeText.textContent = theme === 'dark' ? 'Claro' : 'Oscuro';
   }
+
+  const loginThemeBtn = document.getElementById('btnLoginToggleTheme');
+  if (loginThemeBtn) {
+    const icon = loginThemeBtn.querySelector('i');
+    if (icon) icon.className = theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+    loginThemeBtn.setAttribute('title', theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
+  }
 }
 
 // SweetAlert2 Prixma Custom Light/Dark Helper
@@ -933,6 +940,19 @@ function clearInputError(inputEl) {
   // Ocultar banner si ambos campos ya no están en estado is-invalid
   if (errorBanner && (!userInput || !userInput.classList.contains('is-invalid')) && (!passInput || !passInput.classList.contains('is-invalid'))) {
     errorBanner.style.display = 'none';
+  }
+}
+
+function toggleLoginPassword() {
+  const passInput = document.getElementById('loginPass');
+  const eyeIcon = document.getElementById('loginPassEyeIcon');
+  if (!passInput) return;
+  if (passInput.type === 'password') {
+    passInput.type = 'text';
+    if (eyeIcon) eyeIcon.className = 'fa-regular fa-eye-slash';
+  } else {
+    passInput.type = 'password';
+    if (eyeIcon) eyeIcon.className = 'fa-regular fa-eye';
   }
 }
 
