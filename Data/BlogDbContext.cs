@@ -11,8 +11,6 @@ public class BlogDbContext : DbContext
 
     public DbSet<Usuario> Usuarios => Set<Usuario>();
     public DbSet<PostTipo> PostTipos => Set<PostTipo>();
-    public DbSet<PostEstado> PostEstados => Set<PostEstado>();
-    public DbSet<ModuloEstado> ModuloEstados => Set<ModuloEstado>();
     public DbSet<Estado> Estados => Set<Estado>();
     public DbSet<Modulo> Modulos => Set<Modulo>();
     public DbSet<Post> Posts => Set<Post>();
@@ -85,12 +83,6 @@ public class BlogDbContext : DbContext
             entity.Property(pt => pt.CreadoEn).HasDefaultValueSql("CURRENT_TIMESTAMP");
         });
 
-        // Tabla post_estado
-        modelBuilder.Entity<PostEstado>(entity =>
-        {
-            entity.HasIndex(pe => pe.Nombre).IsUnique();
-        });
-
         // Tabla area
         modelBuilder.Entity<Area>(entity =>
         {
@@ -103,12 +95,6 @@ public class BlogDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(a => a.EstadoId)
                 .OnDelete(DeleteBehavior.Restrict);
-        });
-
-        // Tabla modulo_estado
-        modelBuilder.Entity<ModuloEstado>(entity =>
-        {
-            entity.HasIndex(me => me.Nombre).IsUnique();
         });
 
         // Tabla modulo
@@ -177,7 +163,7 @@ public class BlogDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(p => p.EstadoEntidad)
-                .WithMany(pe => pe.Posts)
+                .WithMany()
                 .HasForeignKey(p => p.EstadoId)
                 .OnDelete(DeleteBehavior.Restrict);
         });

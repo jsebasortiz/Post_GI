@@ -99,23 +99,7 @@ public static class DbInitializer
                 Console.WriteLine($"[DbInitializer] Verificación de columna estado_id: {ex.Message}");
             }
 
-            // Asegurar creación de tabla modulo_estado en MySQL si no existe
-            try
-            {
-                var createModuloEstadoSql = @"
-                CREATE TABLE IF NOT EXISTS `modulo_estado` (
-                  `id` tinyint unsigned NOT NULL AUTO_INCREMENT,
-                  `nombre` varchar(50) NOT NULL,
-                  `descripcion` varchar(255) DEFAULT NULL,
-                  PRIMARY KEY (`id`)
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
 
-                await context.Database.ExecuteSqlRawAsync(createModuloEstadoSql);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[DbInitializer] Verificación de tabla modulo_estado: {ex.Message}");
-            }
 
             // Asegurar creación de tabla area en MySQL si no existe
             try
@@ -233,13 +217,7 @@ public static class DbInitializer
                 await context.SaveChangesAsync();
             }
 
-            // Seed ModuloEstado (1 = Activo, 2 = Inactivo)
-            if (!await context.ModuloEstados.AnyAsync())
-            {
-                context.ModuloEstados.Add(new ModuloEstado { Id = 1, Nombre = "Activo", Descripcion = "Módulo activo visible en el portal" });
-                context.ModuloEstados.Add(new ModuloEstado { Id = 2, Nombre = "Inactivo", Descripcion = "Módulo inactivo o borrado lógicamente" });
-                await context.SaveChangesAsync();
-            }
+
 
             // Seed Modulo con AreaId (1 = Apps, 2 = Infraestructura)
             if (!await context.Modulos.AnyAsync())

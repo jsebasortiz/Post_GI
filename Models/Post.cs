@@ -69,7 +69,7 @@ public class Post
     public TipoConocimiento? TipoConocimiento { get; set; }
 
     [ForeignKey(nameof(EstadoId))]
-    public PostEstado? EstadoEntidad { get; set; }
+    public Estado? EstadoEntidad { get; set; }
 
     public ICollection<AdjuntoPost> Adjuntos { get; set; } = new List<AdjuntoPost>();
 }
