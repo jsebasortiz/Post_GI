@@ -1561,44 +1561,160 @@ textarea {
   background: var(--bg-input);
 }
 
+.roles-matrix-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 1.25rem;
+  align-items: start;
+}
+
 .role-card {
   background: var(--bg-card);
   border: 1px solid var(--bg-card-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg, 12px);
   padding: 1.25rem;
-  margin-bottom: 1.25rem;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.role-card:hover {
+  border-color: rgba(99, 102, 241, 0.35);
+  box-shadow: var(--shadow-md);
 }
 
 .role-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  gap: 0.75rem;
   margin-bottom: 1rem;
   border-bottom: 1px solid var(--bg-card-border);
-  padding-bottom: 0.75rem;
+  padding-bottom: 0.85rem;
+}
+
+.role-title-box {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.role-icon-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(99, 102, 241, 0.15);
+  color: var(--primary, #818cf8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.role-header-actions {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .perm-checkbox-group {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 0.65rem;
 }
 
-.perm-label {
+.perm-chip {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
-  color: var(--text-main);
+  gap: 0.6rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  background: var(--bg-input, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--bg-card-border, rgba(255, 255, 255, 0.1));
   cursor: pointer;
   user-select: none;
+  transition: all 0.2s ease;
 }
 
-.perm-label input[type="checkbox"] {
+.perm-chip:hover {
+  border-color: var(--primary);
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.perm-chip.is-active,
+.perm-chip:has(input:checked) {
+  background: rgba(99, 102, 241, 0.12);
+  border-color: rgba(99, 102, 241, 0.5);
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.15);
+}
+
+.perm-chip input[type="checkbox"] {
   accent-color: var(--primary);
   width: 16px;
   height: 16px;
+  margin-top: 0;
   cursor: pointer;
+  flex-shrink: 0;
+}
+
+.perm-chip-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.perm-chip-name {
+  font-weight: 600;
+  font-size: 0.83rem;
+  color: var(--text-main);
+  line-height: 1.25;
+}
+
+.perm-chip-code {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-family: monospace;
+  word-break: break-all;
+}
+
+/* Matrix Table View Styles */
+.rbac-matrix-table-container {
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--bg-card-border);
+  background: var(--bg-card);
+}
+
+.rbac-matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.rbac-matrix-table th,
+.rbac-matrix-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--bg-card-border);
+  vertical-align: middle;
+}
+
+.rbac-matrix-table th {
+  background: var(--bg-input);
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-main);
+}
+
+.rbac-matrix-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.rbac-matrix-table .cell-center {
+  text-align: center;
 }
 
 /* WCAG AA Form Validation & Alert Banner Styles */

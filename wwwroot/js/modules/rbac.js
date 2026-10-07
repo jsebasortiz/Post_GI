@@ -67,7 +67,7 @@ export function renderRbacUsersTable() {
   if (rbacUsersCurrentPage < 1) rbacUsersCurrentPage = 1;
 
   if (totalItems === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:1.5rem; color:var(--text-muted);">No se encontraron usuarios que coincidan con la búsqueda.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:1.5rem; color:var(--text-muted);">No se encontraron usuarios que coincidan con la búsqueda.</td></tr>';
     if (paginationContainer) paginationContainer.innerHTML = '';
     return;
   }
@@ -78,19 +78,28 @@ export function renderRbacUsersTable() {
   tbody.innerHTML = pageUsers.map(u => {
     let roleOptions = rbacAllRolesCache.map(r => `<option value="${r.id}" ${r.id === u.rolId ? 'selected' : ''}>${escapeHtml(r.nombre)}</option>`).join('');
 
+    const initial = (u.nombre && u.nombre.trim().length > 0) ? u.nombre.trim().charAt(0).toUpperCase() : 'U';
+
     return `
       <tr>
-        <td style="font-weight:600; color:var(--text-main);">${escapeHtml(u.nombre)}</td>
-        <td style="color:var(--text-muted); font-size:0.85rem;">${escapeHtml(u.correo)}</td>
-        <td><span class="badge badge-type" style="position:static;">${escapeHtml(u.rolNombre)}</span></td>
-        <td style="text-align:right;">
-          <div style="display:flex; gap:0.5rem; justify-content:flex-end; align-items:center;">
-            <select id="userRoleSelect_${u.id}" class="form-control" style="width:auto; padding:0.35rem 0.6rem; font-size:0.85rem;">
+        <td style="padding:0.75rem; font-weight:600; color:var(--text-main);">
+          <div style="display:flex; align-items:center; gap:0.65rem;">
+            <div style="width:34px; height:34px; border-radius:50%; background:rgba(99,102,241,0.15); color:var(--primary); font-weight:700; font-size:0.85rem; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+              ${escapeHtml(initial)}
+            </div>
+            <span>${escapeHtml(u.nombre)}</span>
+          </div>
+        </td>
+        <td style="padding:0.75rem; color:var(--text-muted); font-size:0.85rem;">${escapeHtml(u.correo)}</td>
+        <td style="padding:0.75rem; text-align:right;">
+          <div style="display:inline-flex; gap:0.5rem; align-items:center; justify-content:flex-end;">
+            <select id="userRoleSelect_${u.id}" class="form-control" onchange="handleAssignUserRole(${u.id}, this.value)" style="width:auto; min-width:150px; padding:0.35rem 0.65rem; font-size:0.85rem; font-weight:600; cursor:pointer;" title="Cambiar rol (Se guarda automáticamente)">
               ${roleOptions}
             </select>
-            <button class="btn btn-primary" onclick="handleAssignUserRole(${u.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem; display:inline-flex; align-items:center; gap:0.35rem;" title="Guardar cambios de rol">
-              <i class="fa-solid fa-floppy-disk"></i> Guardar
-            </button>
+            <span id="userRoleSaveIndicator_${u.id}" style="font-size:0.75rem; color:var(--text-muted); min-width:85px; text-align:left; display:inline-flex; align-items:center; gap:3px;">
+              <i class="fa-solid fa-bolt" style="color:var(--primary); font-size:0.7rem;" title="Guardado automático al cambiar"></i>
+              <span style="font-size:0.72rem;">Auto-guardar</span>
+            </span>
           </div>
         </td>
       </tr>
@@ -133,6 +142,16 @@ export async function handleAssignUserRole(usuarioId, explicitRolId = null) {
   }
   if (!rolId) return;
 
+  const targetUser = rbacAllUsersCache.find(u => u.id === parseInt(usuarioId));
+  if (targetUser && targetUser.rolId === parseInt(rolId)) {
+    return;
+  }
+
+  const indicator = document.getElementById(`userRoleSaveIndicator_${usuarioId}`);
+  if (indicator) {
+    indicator.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="color:var(--primary);"></i> <span style="font-size:0.72rem; color:var(--text-muted);">Guardando...</span>';
+  }
+
   try {
     const res = await apiFetch('/api/roles/asignar-usuario', {
       method: 'POST',
@@ -142,23 +161,30 @@ export async function handleAssignUserRole(usuarioId, explicitRolId = null) {
 
     if (!res.ok) throw new Error('Error al asignar el rol.');
 
-    const targetUser = rbacAllUsersCache.find(u => u.id === parseInt(usuarioId));
     const targetRole = rbacAllRolesCache.find(r => r.id === parseInt(rolId));
     if (targetUser && targetRole) {
       targetUser.rolId = targetRole.id;
       targetUser.rolNombre = targetRole.nombre;
     }
 
-    renderRbacUsersTable();
+    if (indicator) {
+      indicator.innerHTML = '<i class="fa-solid fa-check" style="color:#10b981;"></i> <span style="font-size:0.72rem; color:#10b981; font-weight:600;">Guardado</span>';
+      setTimeout(() => {
+        if (indicator) indicator.innerHTML = '<i class="fa-solid fa-bolt" style="color:var(--primary); font-size:0.7rem;" title="Guardado automático al cambiar"></i> <span style="font-size:0.72rem; color:var(--text-muted);">Auto-guardar</span>';
+      }, 2500);
+    }
 
     getPrixmaSwal().fire({
       icon: 'success',
-      title: 'Rol Asignado',
-      text: `El rol de "${targetUser ? targetUser.nombre : 'usuario'}" ha sido actualizado a "${targetRole ? targetRole.nombre : ''}".`,
-      timer: 1800,
+      title: 'Rol Actualizado',
+      text: `El rol de "${targetUser ? targetUser.nombre : 'usuario'}" se ha cambiado a "${targetRole ? targetRole.nombre : ''}".`,
+      timer: 1500,
       showConfirmButton: false
     });
   } catch (err) {
+    if (indicator) {
+      indicator.innerHTML = '<i class="fa-solid fa-xmark" style="color:var(--accent-rose);"></i> <span style="font-size:0.72rem; color:var(--accent-rose);">Error</span>';
+    }
     getPrixmaSwal().fire({
       icon: 'error',
       title: 'Error de Asignación',
@@ -167,10 +193,165 @@ export async function handleAssignUserRole(usuarioId, explicitRolId = null) {
   }
 }
 
+let rbacMatrixViewMode = 'cards';
+let rbacCachedRoles = [];
+let rbacCachedPermisos = [];
+
+export function switchRbacMatrixView(mode) {
+  rbacMatrixViewMode = mode;
+  ['btnRbacViewCards', 'btnRbacViewCardsIndex'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.style.background = mode === 'cards' ? 'var(--primary)' : 'transparent';
+      el.style.color = mode === 'cards' ? 'white' : 'var(--text-muted)';
+    }
+  });
+  ['btnRbacViewTable', 'btnRbacViewTableIndex'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.style.background = mode === 'table' ? 'var(--primary)' : 'transparent';
+      el.style.color = mode === 'table' ? 'white' : 'var(--text-muted)';
+    }
+  });
+
+  renderRbacMatrix();
+}
+
+function getRoleIcon(roleName) {
+  const name = (roleName || '').toLowerCase();
+  if (name.includes('admin')) return 'fa-user-shield';
+  if (name.includes('edit')) return 'fa-user-pen';
+  if (name.includes('lect') || name.includes('read')) return 'fa-user-check';
+  return 'fa-user-gear';
+}
+
+export function renderRbacMatrix() {
+  const container = document.getElementById('rolesMatrixContainer');
+  if (!container) return;
+
+  const roles = rbacCachedRoles || [];
+  const permisos = (rbacCachedPermisos || []).filter(p => p.codigo !== 'tipos_conocimiento.manage');
+
+  if (roles.length === 0) {
+    container.innerHTML = '<div style="text-align:center; padding:2rem; color:var(--text-muted);">No hay roles registrados.</div>';
+    return;
+  }
+
+  if (rbacMatrixViewMode === 'cards') {
+    container.className = 'roles-matrix-grid';
+    container.innerHTML = roles.map(r => {
+      const activePermIds = new Set((r.permisos || []).map(p => p.id));
+      const roleIcon = getRoleIcon(r.nombre);
+
+      const chipsHtml = permisos.map(p => {
+        const isChecked = activePermIds.has(p.id);
+        return `
+          <label class="perm-chip ${isChecked ? 'is-active' : ''}">
+            <input type="checkbox" class="role-perm-cb-${r.id}" value="${p.id}" ${isChecked ? 'checked' : ''} onchange="this.closest('.perm-chip').classList.toggle('is-active', this.checked)">
+            <div class="perm-chip-content">
+              <span class="perm-chip-name">${escapeHtml(p.nombre)}</span>
+            </div>
+          </label>
+        `;
+      }).join('');
+
+      return `
+        <div class="role-card">
+          <div class="role-header">
+            <div class="role-title-box">
+              <div class="role-icon-avatar">
+                <i class="fa-solid ${roleIcon}"></i>
+              </div>
+              <div>
+                <strong style="font-size:1.05rem; color:var(--text-main); display:block; line-height:1.2;">${escapeHtml(r.nombre)}</strong>
+                <span style="font-size:0.78rem; color:var(--text-muted); line-height:1.2;">${escapeHtml(r.descripcion || 'Sin descripción')}</span>
+              </div>
+            </div>
+            <div class="role-header-actions">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="handleCheckAllRolePermisos(${r.id})" title="Marcar todos los permisos" style="padding:0.35rem 0.6rem; font-size:0.75rem;">
+                <i class="fa-solid fa-square-check"></i> Marcar
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="handleUncheckAllRolePermisos(${r.id})" title="Desmarcar todos los permisos" style="padding:0.35rem 0.6rem; font-size:0.75rem;">
+                <i class="fa-solid fa-square-minus"></i> Desmarcar
+              </button>
+              <button type="button" class="btn btn-primary btn-sm" onclick="handleSaveRolePermisos(${r.id})" style="padding:0.35rem 0.75rem; font-size:0.75rem;">
+                <i class="fa-solid fa-floppy-disk"></i> Guardar
+              </button>
+            </div>
+          </div>
+          <div class="perm-checkbox-group">
+            ${chipsHtml}
+          </div>
+        </div>
+      `;
+    }).join('');
+  } else {
+    // Comparative Table View
+    container.className = 'rbac-matrix-table-container';
+
+    const roleHeadersHtml = roles.map(r => `
+      <th class="cell-center" style="min-width: 130px;">
+        <div style="font-size:0.9rem; font-weight:700; color:var(--text-main); margin-bottom:0.3rem;">
+          <i class="fa-solid ${getRoleIcon(r.nombre)}" style="color:var(--primary); margin-right:4px;"></i>
+          ${escapeHtml(r.nombre)}
+        </div>
+        <div style="display:flex; gap:0.25rem; justify-content:center; flex-wrap:wrap; margin-top:0.25rem;">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="handleCheckAllRolePermisos(${r.id})" title="Marcar todos" style="padding:0.2rem 0.4rem; font-size:0.7rem;">
+            <i class="fa-solid fa-square-check"></i>
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="handleUncheckAllRolePermisos(${r.id})" title="Desmarcar todos" style="padding:0.2rem 0.4rem; font-size:0.7rem;">
+            <i class="fa-solid fa-square-minus"></i>
+          </button>
+          <button type="button" class="btn btn-primary btn-sm" onclick="handleSaveRolePermisos(${r.id})" title="Guardar" style="padding:0.2rem 0.5rem; font-size:0.7rem;">
+            <i class="fa-solid fa-floppy-disk"></i>
+          </button>
+        </div>
+      </th>
+    `).join('');
+
+    const rowsHtml = permisos.map(p => {
+      const roleCellsHtml = roles.map(r => {
+        const activePermIds = new Set((r.permisos || []).map(item => item.id));
+        const isChecked = activePermIds.has(p.id);
+        return `
+          <td class="cell-center">
+            <input type="checkbox" class="role-perm-cb-${r.id}" value="${p.id}" ${isChecked ? 'checked' : ''} style="width:18px; height:18px; accent-color:var(--primary); cursor:pointer;">
+          </td>
+        `;
+      }).join('');
+
+      return `
+        <tr>
+          <td>
+            <strong style="font-size:0.88rem; color:var(--text-main); display:block;">${escapeHtml(p.nombre)}</strong>
+            ${p.descripcion ? `<p style="font-size:0.75rem; color:var(--text-muted); margin:2px 0 0 0;">${escapeHtml(p.descripcion)}</p>` : ''}
+          </td>
+          ${roleCellsHtml}
+        </tr>
+      `;
+    }).join('');
+
+    container.innerHTML = `
+      <table class="rbac-matrix-table">
+        <thead>
+          <tr>
+            <th style="min-width: 240px;">Permiso</th>
+            ${roleHeadersHtml}
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+        </tbody>
+      </table>
+    `;
+  }
+}
+
 export async function loadRbacMatrix() {
   const container = document.getElementById('rolesMatrixContainer');
   if (!container) return;
 
+  container.className = '';
   container.innerHTML = '<div style="text-align:center; padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando matriz de permisos...</div>';
 
   try {
@@ -181,52 +362,31 @@ export async function loadRbacMatrix() {
 
     if (!resRoles.ok || !resPermisos.ok) throw new Error('Error al cargar permisos.');
 
-    const roles = await resRoles.json();
-    const permisos = await resPermisos.json();
+    rbacCachedRoles = await resRoles.json();
+    rbacCachedPermisos = await resPermisos.json();
 
-    container.innerHTML = roles.map(r => {
-      const activePermIds = new Set((r.permisos || []).map(p => p.id));
-      const isSystemRole = (r.id === 1 || r.nombre === 'Administrador');
-
-      const checkboxesHtml = permisos.map(p => {
-        const isChecked = activePermIds.has(p.id);
-        return `
-          <label class="perm-label">
-            <input type="checkbox" class="role-perm-cb-${r.id}" value="${p.id}" ${isChecked ? 'checked' : ''}>
-            <span><strong>${escapeHtml(p.nombre)}</strong> <small style="color:var(--text-muted); display:block; font-size:0.75rem;">${escapeHtml(p.codigo)}</small></span>
-          </label>
-        `;
-      }).join('');
-
-      const deleteBtnHtml = isSystemRole ? '' : `
-        <button class="btn btn-secondary" onclick="handleDeleteRole(${r.id}, '${escapeHtml(r.nombre)}')" style="padding:0.4rem 0.8rem; font-size:0.8rem; color:var(--accent-rose); border-color:rgba(244,63,94,0.3);" title="Eliminar Rol">
-          <i class="fa-solid fa-trash"></i> Eliminar
-        </button>
-      `;
-
-      return `
-        <div class="role-card">
-          <div class="role-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
-            <div>
-              <strong style="font-size:1.1rem; color:var(--text-main);">${escapeHtml(r.nombre)}</strong>
-              <p style="font-size:0.8rem; color:var(--text-muted); margin-top:2px;">${escapeHtml(r.descripcion || '')}</p>
-            </div>
-            <div style="display:flex; gap:0.5rem;">
-              <button class="btn btn-secondary" onclick="handleSaveRolePermisos(${r.id})" style="padding:0.4rem 0.8rem; font-size:0.8rem;">
-                <i class="fa-solid fa-floppy-disk"></i> Guardar Permisos
-              </button>
-              ${deleteBtnHtml}
-            </div>
-          </div>
-          <div class="perm-checkbox-group">
-            ${checkboxesHtml}
-          </div>
-        </div>
-      `;
-    }).join('');
+    renderRbacMatrix();
   } catch (err) {
     container.innerHTML = `<div style="color:var(--accent-rose); text-align:center;">${escapeHtml(err.message)}</div>`;
   }
+}
+
+export function handleCheckAllRolePermisos(rolId) {
+  const checkboxes = document.querySelectorAll(`.role-perm-cb-${rolId}`);
+  checkboxes.forEach(cb => { 
+    cb.checked = true; 
+    const chip = cb.closest('.perm-chip');
+    if (chip) chip.classList.add('is-active');
+  });
+}
+
+export function handleUncheckAllRolePermisos(rolId) {
+  const checkboxes = document.querySelectorAll(`.role-perm-cb-${rolId}`);
+  checkboxes.forEach(cb => { 
+    cb.checked = false; 
+    const chip = cb.closest('.perm-chip');
+    if (chip) chip.classList.remove('is-active');
+  });
 }
 
 export async function handleSaveRolePermisos(rolId) {

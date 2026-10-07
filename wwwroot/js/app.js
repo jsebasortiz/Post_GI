@@ -50,7 +50,8 @@ import {
 } from './modules/tipos.js';
 import {
   loadRbacUsers, onRbacUserSearchInput, renderRbacUsersTable, changeRbacUsersPage,
-  handleAssignUserRole, loadRbacMatrix, handleSaveRolePermisos, toggleNewRoleForm,
+  handleAssignUserRole, loadRbacMatrix, handleSaveRolePermisos, handleCheckAllRolePermisos, handleUncheckAllRolePermisos,
+  switchRbacMatrixView, renderRbacMatrix, toggleNewRoleForm,
   handleCreateRole, loadRbacRolesList, renderRbacRolesTable, changeRbacRolesPage,
   switchRbacSubTab, openRbacModal, handleDeleteRole,
   loadRoleForShow, loadRoleForEdit, hasRoleEditChanged,
@@ -237,6 +238,10 @@ Object.assign(window, {
   handleAssignUserRole,
   loadRbacMatrix,
   handleSaveRolePermisos,
+  handleCheckAllRolePermisos,
+  handleUncheckAllRolePermisos,
+  switchRbacMatrixView,
+  renderRbacMatrix,
   toggleNewRoleForm,
   handleCreateRole,
   loadRbacRolesList,

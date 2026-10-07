@@ -994,8 +994,7 @@
                       style="text-align:left; border-bottom:1px solid var(--bg-card-border); color:var(--text-muted); font-size:0.85rem;">
                       <th style="padding:0.75rem;">Usuario</th>
                       <th style="padding:0.75rem;">Correo / AD</th>
-                      <th style="padding:0.75rem;">Rol Actual</th>
-                      <th style="padding:0.75rem; text-align:right;">Acciones</th>
+                      <th style="padding:0.75rem; text-align:right;">Rol Asignado</th>
                     </tr>
                   </thead>
                   <tbody id="usersRolesTableBody"></tbody>
@@ -1044,8 +1043,21 @@
 
             <!-- Tab 3: Permission Matrix -->
             <div id="rbacTabMatrix" class="view-hidden">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-                <h3 style="font-size:1.1rem; color:var(--text-main);">Configurar Permisos por Rol</h3>
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem;">
+                <div>
+                  <h3 style="font-size:1.1rem; color:var(--text-main); margin-bottom:0.25rem;">Configurar Permisos por Rol</h3>
+                  <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">Asigna o revoca accesos específicos para cada rol del sistema.</p>
+                </div>
+                <div style="display:flex; gap:0.5rem; align-items:center;">
+                  <div style="display:flex; background:var(--bg-input); padding:3px; border-radius:8px; border:1px solid var(--bg-card-border);">
+                    <button class="btn btn-sm" id="btnRbacViewCardsIndex" onclick="switchRbacMatrixView('cards')" style="border:none; padding:0.35rem 0.75rem; font-size:0.8rem; border-radius:6px; background:var(--primary); color:white;">
+                      <i class="fa-solid fa-border-all"></i> Tarjetas Lado a Lado
+                    </button>
+                    <button class="btn btn-sm" id="btnRbacViewTableIndex" onclick="switchRbacMatrixView('table')" style="border:none; padding:0.35rem 0.75rem; font-size:0.8rem; border-radius:6px; background:transparent; color:var(--text-muted);">
+                      <i class="fa-solid fa-table-cells"></i> Matriz Comparativa
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <div id="rolesMatrixContainer"></div>
