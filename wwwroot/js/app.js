@@ -46,7 +46,7 @@ import {
   handleSaveCreatePostTipo, handleSaveEditPostTipo, handleCancelEditPostTipo, handleDeleteTipoFromForm,
   loadTipoConocimientoForShow, loadTipoConocimientoForEdit, hasTipoConocimientoEditChanged,
   handleSaveCreateTipoConocimiento, handleSaveEditTipoConocimiento, handleCancelEditTipoConocimiento,
-  handleDeleteTipoConocimientoFromForm
+  handleDeleteTipoConocimientoFromForm, populatePostTipoRoleSelects
 } from './modules/tipos.js';
 import {
   loadRbacUsers, onRbacUserSearchInput, renderRbacUsersTable, changeRbacUsersPage,
@@ -227,6 +227,7 @@ Object.assign(window, {
   handleSaveEditTipoConocimiento,
   handleCancelEditTipoConocimiento,
   handleDeleteTipoConocimientoFromForm,
+  populatePostTipoRoleSelects,
 
   // RBAC
   loadRbacUsers,

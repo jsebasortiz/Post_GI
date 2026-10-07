@@ -602,12 +602,39 @@ export async function loadEditPostTipos(selectedTipoId = null) {
 }
 
 // Initial values for dirty tracking
-export let editPostTipoInitialValues = { nombre: '', descripcion: '' };
+export let editPostTipoInitialValues = { nombre: '', descripcion: '', rolId: '' };
 export let editTipoConocimientoInitialValues = { nombre: '', descripcion: '' };
+
+export async function populatePostTipoRoleSelects(selectedRolId = null) {
+  try {
+    const res = await apiFetch('/api/roles');
+    if (!res.ok) return;
+    const roles = await res.json();
+
+    const editSelect = document.getElementById('editPostTipoRolId');
+    const newSelect = document.getElementById('newPostTipoRolId');
+
+    let options = '<option value="">-- Todos los Roles / Ninguno --</option>';
+    roles.forEach(r => {
+      options += `<option value="${r.id}">${escapeHtml(r.nombre)}</option>`;
+    });
+
+    if (editSelect) {
+      editSelect.innerHTML = options;
+      editSelect.value = selectedRolId !== null && selectedRolId !== undefined ? String(selectedRolId) : '';
+    }
+    if (newSelect) {
+      newSelect.innerHTML = options;
+    }
+  } catch (err) {
+    console.error('Error cargando roles para tipo de publicación:', err);
+  }
+}
 
 export async function prepareCreatePostTipoForm() {
   const form = document.getElementById('createPostTipoForm');
   if (form) form.reset();
+  await populatePostTipoRoleSelects();
 }
 
 export async function loadPostTipoForShow(id) {
@@ -631,9 +658,12 @@ export async function loadPostTipoForEdit(id) {
       if (nombreEl) nombreEl.value = tipo.nombre || '';
       if (descEl) descEl.value = tipo.descripcion || '';
 
+      await populatePostTipoRoleSelects(tipo.rolId);
+
       editPostTipoInitialValues = {
         nombre: (tipo.nombre || '').trim(),
-        descripcion: (tipo.descripcion || '').trim()
+        descripcion: (tipo.descripcion || '').trim(),
+        rolId: tipo.rolId !== null && tipo.rolId !== undefined ? String(tipo.rolId) : ''
       };
     }
   } catch (e) {
@@ -647,20 +677,25 @@ export function hasPostTipoEditChanged() {
   if (document.getElementById('editPostTipoForm')?.dataset.readOnly === 'true') return false;
   const nombre = (document.getElementById('editPostTipoNombre')?.value || '').trim();
   const desc = (document.getElementById('editPostTipoDesc')?.value || '').trim();
-  return nombre !== editPostTipoInitialValues.nombre || desc !== editPostTipoInitialValues.descripcion;
+  const rolId = (document.getElementById('editPostTipoRolId')?.value || '').trim();
+  return nombre !== editPostTipoInitialValues.nombre ||
+         desc !== editPostTipoInitialValues.descripcion ||
+         rolId !== editPostTipoInitialValues.rolId;
 }
 
 export async function handleSaveCreatePostTipo(event) {
   if (event) event.preventDefault();
   const nombre = (document.getElementById('newPostTipoNombre')?.value || '').trim();
   const descripcion = (document.getElementById('newPostTipoDesc')?.value || '').trim();
+  const rolIdVal = document.getElementById('newPostTipoRolId')?.value;
+  const rolId = rolIdVal ? parseInt(rolIdVal, 10) : null;
   if (!nombre) return;
 
   try {
     const res = await apiFetch('/api/modulos/tipos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nombre, descripcion })
+      body: JSON.stringify({ nombre, descripcion, rolId })
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -680,6 +715,8 @@ export async function handleSaveEditPostTipo(event) {
   const id = document.getElementById('editPostTipoId')?.value;
   const nombre = (document.getElementById('editPostTipoNombre')?.value || '').trim();
   const descripcion = (document.getElementById('editPostTipoDesc')?.value || '').trim();
+  const rolIdVal = document.getElementById('editPostTipoRolId')?.value;
+  const rolId = rolIdVal ? parseInt(rolIdVal, 10) : null;
   if (!id || !nombre) return;
 
   const hasChanged = hasPostTipoEditChanged();
@@ -702,7 +739,7 @@ export async function handleSaveEditPostTipo(event) {
     const res = await apiFetch(`/api/modulos/tipos/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nombre, descripcion })
+      body: JSON.stringify({ nombre, descripcion, rolId })
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));

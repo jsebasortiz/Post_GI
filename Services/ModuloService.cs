@@ -14,10 +14,12 @@ public interface IModuloService
     Task<Modulo> UpdateModuloAsync(ushort id, UpdateModuloDto dto);
     Task<bool> InactivarModuloAsync(ushort id);
     Task<List<PostTipo>> GetPostTiposAsync(bool soloActivos = true);
+    Task<PostTipo?> GetPostTipoByIdAsync(byte id);
     Task<PostTipo> CreatePostTipoAsync(CreatePostTipoDto dto);
     Task<PostTipo> UpdatePostTipoAsync(byte id, CreatePostTipoDto dto);
     Task<bool> InactivarPostTipoAsync(byte id);
     Task<List<TipoConocimiento>> GetTiposConocimientoAsync(bool soloActivos = true);
+    Task<TipoConocimiento?> GetTipoConocimientoByIdAsync(byte id);
     Task<TipoConocimiento> CreateTipoConocimientoAsync(CreateTipoConocimientoDto dto);
     Task<TipoConocimiento> UpdateTipoConocimientoAsync(byte id, CreateTipoConocimientoDto dto);
     Task<bool> InactivarTipoConocimientoAsync(byte id);
@@ -121,6 +123,11 @@ public class ModuloService : IModuloService
         return await query.OrderBy(pt => pt.Nombre).ToListAsync();
     }
 
+    public async Task<PostTipo?> GetPostTipoByIdAsync(byte id)
+    {
+        return await _context.PostTipos.Include(pt => pt.Rol).FirstOrDefaultAsync(pt => pt.Id == id);
+    }
+
     public async Task<PostTipo> CreatePostTipoAsync(CreatePostTipoDto dto)
     {
         var tipo = new PostTipo
@@ -184,6 +191,11 @@ public class ModuloService : IModuloService
             query = query.Where(tc => tc.EstadoId == 1);
         }
         return await query.OrderBy(tc => tc.Nombre).ToListAsync();
+    }
+
+    public async Task<TipoConocimiento?> GetTipoConocimientoByIdAsync(byte id)
+    {
+        return await _context.TiposConocimiento.FirstOrDefaultAsync(tc => tc.Id == id);
     }
 
     public async Task<TipoConocimiento> CreateTipoConocimientoAsync(CreateTipoConocimientoDto dto)

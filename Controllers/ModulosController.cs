@@ -81,6 +81,14 @@ public class ModulosController : ControllerBase
         return Ok(tipos);
     }
 
+    [HttpGet("tipos/{id:int}")]
+    public async Task<IActionResult> GetPostTipo(byte id)
+    {
+        var tipo = await _moduloService.GetPostTipoByIdAsync(id);
+        if (tipo == null) return NotFound(new { message = "Tipo de publicación no encontrado." });
+        return Ok(tipo);
+    }
+
     [HttpPost("tipos")]
     [Authorize(Roles = "Administrador,Editor")]
     public async Task<IActionResult> CreatePostTipo([FromBody] CreatePostTipoDto dto)
@@ -123,6 +131,14 @@ public class ModulosController : ControllerBase
     {
         var tipos = await _moduloService.GetTiposConocimientoAsync();
         return Ok(tipos);
+    }
+
+    [HttpGet("tipos-conocimiento/{id:int}")]
+    public async Task<IActionResult> GetTipoConocimiento(byte id)
+    {
+        var tc = await _moduloService.GetTipoConocimientoByIdAsync(id);
+        if (tc == null) return NotFound(new { message = "Tipo de conocimiento no encontrado." });
+        return Ok(tc);
     }
 
     [HttpPost("tipos-conocimiento")]
