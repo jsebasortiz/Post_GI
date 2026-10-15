@@ -1,4 +1,5 @@
 import { state } from '../core/state.js';
+import { getAppBasePath } from '../core/utils.js';
 import { startTopProgressBar, finishTopProgressBar } from '../core/ui-helpers.js';
 import { showAuthGate, hasPermission, renderUserNavArea } from '../modules/auth.js';
 import { loadPosts, openDetailView, openEditView } from '../modules/posts.js';
@@ -13,9 +14,11 @@ export function navigateTo(path) {
   if (!path.startsWith('/')) path = '/' + path;
 
   const cleanPath = path.split('#')[0];
+  const basePath = getAppBasePath();
+  const targetPath = (basePath ? basePath : '') + cleanPath;
 
-  if (window.location.pathname !== cleanPath || window.location.hash) {
-    window.history.pushState({}, '', cleanPath);
+  if (window.location.pathname !== targetPath || window.location.hash) {
+    window.history.pushState({}, '', targetPath);
   }
   state.isHandlingRoute = false;
   handleRoute();
@@ -76,6 +79,10 @@ export async function handleRoute() {
 
   try {
     let rawPath = window.location.pathname;
+    const basePath = getAppBasePath();
+    if (basePath && rawPath.startsWith(basePath)) {
+      rawPath = rawPath.substring(basePath.length);
+    }
     if (window.location.hash) {
       const hashPath = window.location.hash.replace(/^#/, '');
       if (hashPath && !hashPath.startsWith('http')) {

@@ -5,11 +5,25 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Prixma - Portal de Publicaciones & Blogs Corporativos</title>
-  <link rel="icon" type="image/png" href="/images/logo.png">
+  <script>
+    (function () {
+      var p = window.location.pathname;
+      var segments = p.split('/').filter(Boolean);
+      var baseDir = '/';
+      if (segments.length > 0 && !segments[0].includes('.')) {
+        baseDir = '/' + segments[0] + '/';
+      }
+      var baseTag = document.querySelector('base') || document.createElement('base');
+      baseTag.href = baseDir;
+      if (!baseTag.parentNode) {
+        document.head.prepend(baseTag);
+      }
+    })();
+  </script>
+  <link rel="icon" type="image/png" href="images/logo.png">
   <meta name="description"
     content="Base de conocimiento corporativa. Consulta guías técnicas, estándares y documentación interna centralizada por módulos.">
-  <base href="/">
-  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
@@ -36,7 +50,7 @@
       <div class="login-hero-panel">
         <div>
           <div class="login-hero-brand">
-            <img src="/images/logo.png" alt="Prixma Logo" class="login-hero-logo">
+            <img src="images/logo.png" alt="Prixma Logo" class="login-hero-logo">
             <div>
               <span class="login-hero-brand-name">Prixma</span>
               <span class="login-hero-brand-tag">Portal Corporativo</span>
@@ -175,7 +189,7 @@
     <header class="navbar">
       <div class="container nav-container">
         <a href="#/dashboard" class="brand" onclick="navigateTo('#/dashboard'); return false;">
-          <img src="/images/logo.png" alt="Prixma Logo" class="brand-logo-img">
+          <img src="images/logo.png" alt="Prixma Logo" class="brand-logo-img">
           <span>Prixma <small style="font-size:0.65rem; color:var(--accent-cyan); font-weight:normal;">
               CentroAguas</small></span>
         </a>
@@ -1146,7 +1160,7 @@
     </main>
   </div>
 
-  <script type="module" src="/js/app.js"></script>
+  <script type="module" src="js/app.js"></script>
 </body>
 
 </html>

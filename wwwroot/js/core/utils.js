@@ -29,3 +29,20 @@ export function formatBytes(bytes, decimals = 1) {
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
+
+export function getAppBasePath() {
+  const baseEl = document.querySelector('base');
+  if (baseEl && baseEl.getAttribute('href')) {
+    const href = baseEl.getAttribute('href');
+    if (href.startsWith('http')) {
+      return new URL(href).pathname.replace(/\/$/, '');
+    }
+    return href.replace(/\/$/, '');
+  }
+  const pathname = window.location.pathname;
+  const segments = pathname.split('/').filter(Boolean);
+  if (segments.length > 0 && !segments[0].includes('.')) {
+    return '/' + segments[0];
+  }
+  return '';
+}

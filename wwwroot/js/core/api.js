@@ -1,6 +1,17 @@
 // Centralized REST API Transport Client
 
 import { state } from './state.js';
+import { getAppBasePath } from './utils.js';
+
+export function resolveApiUrl(url) {
+  if (typeof url === 'string' && url.startsWith('/api/')) {
+    const basePath = getAppBasePath();
+    if (basePath) {
+      return basePath + url;
+    }
+  }
+  return url;
+}
 
 export async function apiFetch(url, options = {}) {
   options.headers = options.headers || {};
@@ -14,7 +25,8 @@ export async function apiFetch(url, options = {}) {
     }
   }
 
-  const response = await fetch(url, options);
+  const targetUrl = resolveApiUrl(url);
+  const response = await fetch(targetUrl, options);
 
   if ((response.status === 401 || response.status === 403) && !url.includes('/api/usuarios/login')) {
     console.warn('Sesión no autorizada o token expirado. Redirigiendo a Login.');
