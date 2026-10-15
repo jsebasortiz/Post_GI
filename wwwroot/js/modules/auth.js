@@ -64,6 +64,41 @@ export async function getAuthConfig() {
   return { clientId: '', tenantId: 'common', allowedDomain: 'centroaguas.com', isConfigured: false };
 }
 
+export async function processMicrosoftToken(loginResult) {
+  if (!loginResult || (!loginResult.idToken && !loginResult.accessToken)) {
+    throw new Error("No se recibió credencial válida desde Microsoft 365.");
+  }
+
+  setMicrosoftLoginLoadingState(true);
+  try {
+    const res = await apiFetch('/api/usuarios/microsoft-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        idToken: loginResult.idToken || '',
+        accessToken: loginResult.accessToken || ''
+      })
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || "Error al autenticar en el servidor con Microsoft 365.");
+    }
+
+    const data = await res.json();
+    const token = data.token || data.Token;
+    const user = data.usuario || data.Usuario || data;
+
+    state.saveSession(user, token);
+
+    if (window.navigateTo) {
+      window.navigateTo('/dashboard');
+    }
+  } finally {
+    setMicrosoftLoginLoadingState(false);
+  }
+}
+
 export async function initMsal() {
   if (msalInstance) return msalInstance;
 
@@ -95,10 +130,20 @@ export async function initMsal() {
 
   try {
     msalInstance = new window.msal.PublicClientApplication(msalConfig);
-    // Procesar redirect callback en caso de que se haya usado redirect
-    await msalInstance.handleRedirectPromise().catch(err => {
-      console.warn("Error procesando handleRedirectPromise:", err);
+    // Procesar redirect callback (tanto para redirect flow como para popup response)
+    const redirectResponse = await msalInstance.handleRedirectPromise().catch(err => {
+      console.warn("Aviso procesando handleRedirectPromise:", err);
+      return null;
     });
+
+    // Si venimos de un redirect exitoso con token en la ventana principal
+    if (redirectResponse && (redirectResponse.idToken || redirectResponse.accessToken)) {
+      await processMicrosoftToken(redirectResponse).catch(err => {
+        console.error("Error al procesar token tras redirect:", err);
+        showLoginError(err.message || "Error al completar inicio de sesión con Microsoft 365.");
+      });
+    }
+
     return msalInstance;
   } catch (err) {
     console.error("Error al inicializar PublicClientApplication de MSAL:", err);
@@ -107,6 +152,12 @@ export async function initMsal() {
 }
 
 export async function handleMicrosoftLogin() {
+  // Si esta función se invoca por error dentro de un popup de MSAL, cancelarla inmediatamente
+  if (window.opener && window.name && window.name.indexOf('msal.') === 0) {
+    console.warn("handleMicrosoftLogin cancelado: ejecutándose dentro de una ventana emergente.");
+    return;
+  }
+
   clearLoginErrors();
 
   const config = await getAuthConfig();
@@ -147,34 +198,7 @@ export async function handleMicrosoftLogin() {
       throw popupErr;
     }
 
-    if (!loginResult || (!loginResult.idToken && !loginResult.accessToken)) {
-      throw new Error("No se recibió credencial válida desde Microsoft 365.");
-    }
-
-    // Enviar el token validado al backend de Prixma
-    const res = await apiFetch('/api/usuarios/microsoft-login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        idToken: loginResult.idToken || '',
-        accessToken: loginResult.accessToken || ''
-      })
-    });
-
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.message || "Error al autenticar en el servidor con Microsoft 365.");
-    }
-
-    const data = await res.json();
-    const token = data.token || data.Token;
-    const user = data.usuario || data.Usuario || data;
-
-    state.saveSession(user, token);
-
-    if (window.navigateTo) {
-      window.navigateTo('/dashboard');
-    }
+    await processMicrosoftToken(loginResult);
   } catch (err) {
     console.error("Fallo durante el inicio de sesión con Microsoft 365:", err);
     if (err.errorCode === 'user_cancelled') {

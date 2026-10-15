@@ -18,7 +18,7 @@ import {
   hasPermission, updateNavButtonsPermissions, renderUserNavArea, handleLogin,
   setLoginLoadingState, showLoginError, clearLoginErrors, markInputInvalid,
   clearInputError, toggleLoginPassword, handleLogout, showAuthGate,
-  handleMicrosoftLogin, toggleLocalLoginForm, setMicrosoftLoginLoadingState, getAuthConfig
+  handleMicrosoftLogin, toggleLocalLoginForm, setMicrosoftLoginLoadingState, getAuthConfig, initMsal
 } from './modules/auth.js';
 import {
   getFileMeta, autoSelectDefaultImageCover, renderFilePreviews, handleFileSelect,
@@ -68,7 +68,36 @@ import {
 } from './modules/posts.js';
 
 // Init User Session
-function initUserSession() {
+async function initUserSession() {
+  // 1. Si estamos dentro de una ventana emergente de MSAL (popup)
+  const isMsalPopup = window.opener && (
+    (window.name && window.name.indexOf('msal.') === 0) ||
+    window.location.hash.includes('code=') ||
+    window.location.search.includes('code=') ||
+    window.location.hash.includes('error=') ||
+    window.location.search.includes('error=')
+  );
+
+  if (isMsalPopup) {
+    console.log("Ventana emergente de MSAL detectada. Procesando respuesta y cerrando popup...");
+    try {
+      await initMsal();
+    } catch (e) {
+      console.warn("Aviso en retorno de popup MSAL:", e);
+    }
+    // IMPORTANTE: Detener ejecución aquí dentro del popup para no alterar la URL ni ejecutar router
+    return;
+  }
+
+  // 2. Si venimos de un redirect de Microsoft en la ventana principal
+  if (window.location.hash.includes('code=') || window.location.search.includes('code=')) {
+    try {
+      await initMsal();
+    } catch (e) {
+      console.warn("Aviso procesando código de retorno:", e);
+    }
+  }
+
   const savedUser = localStorage.getItem('currentUser');
   const savedToken = localStorage.getItem('jwtToken');
 
