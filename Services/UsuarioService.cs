@@ -12,21 +12,29 @@ public interface IUsuarioService
     Task<List<UsuarioResponseDto>> GetUsuariosAsync();
     Task<UsuarioResponseDto?> RegisterAsync(CreateUsuarioDto dto);
     Task<LoginResponseDto?> LoginAsync(LoginDto dto);
+    Task<LoginResponseDto?> LoginWithMicrosoftAsync(MicrosoftLoginDto dto);
     Task<Usuario?> GetUsuarioByIdAsync(ulong id);
 }
 
 public class UsuarioService : IUsuarioService
 {
     private readonly BlogDbContext _context;
-    private readonly IActiveDirectoryService _adService;
+    private readonly IMicrosoftAuthService _microsoftAuthService;
     private readonly IJwtService _jwtService;
+    private readonly IConfiguration _configuration;
     private readonly ILogger<UsuarioService> _logger;
 
-    public UsuarioService(BlogDbContext context, IActiveDirectoryService adService, IJwtService jwtService, ILogger<UsuarioService> logger)
+    public UsuarioService(
+        BlogDbContext context,
+        IMicrosoftAuthService microsoftAuthService,
+        IJwtService jwtService,
+        IConfiguration configuration,
+        ILogger<UsuarioService> logger)
     {
         _context = context;
-        _adService = adService;
+        _microsoftAuthService = microsoftAuthService;
         _jwtService = jwtService;
+        _configuration = configuration;
         _logger = logger;
     }
 
@@ -78,32 +86,94 @@ public class UsuarioService : IUsuarioService
             return null;
         }
 
-        // 1. Validar existencia y credenciales en el Directorio Activo (LDAP)
-        var adUser = await _adService.AuthenticateAsync(dto.Correo, dto.Password);
-        if (!adUser.IsAuthenticated)
-        {
-            _logger.LogWarning("Intento de inicio de sesión fallido en Directorio Activo para: {Correo}", dto.Correo);
-            return null;
-        }
+        string searchEmail = dto.Correo.ToLower().Trim();
 
-        // 2. Si existe en el Directorio Activo, verificar existencia en la BD MySQL local
-        string searchEmail = string.IsNullOrWhiteSpace(adUser.Email) ? dto.Correo.ToLower() : adUser.Email.ToLower();
         var usuario = await _context.Usuarios
             .Include(u => u.Rol)
             .ThenInclude(r => r!.RolPermisos)
             .ThenInclude(rp => rp.Permiso)
-            .FirstOrDefaultAsync(u => u.Correo.ToLower() == searchEmail || u.Nombre.ToLower() == adUser.Username.ToLower());
+            .FirstOrDefaultAsync(u => u.Correo.ToLower() == searchEmail || u.Nombre.ToLower() == searchEmail);
 
         if (usuario == null)
         {
-            // 3. Si no existe en la base de datos, crearlo automáticamente
-            _logger.LogInformation("Usuario autenticado en AD no existía en BD. Creando automáticamente registro para: {Email}", searchEmail);
+            _logger.LogWarning("Intento de inicio de sesión fallido para: {Correo} (Usuario no encontrado)", dto.Correo);
+            return null;
+        }
+
+        // Si el usuario está registrado mediante Microsoft 365
+        if (usuario.Password == "[M365_SSO]" || usuario.Password == "[AD_AUTHENTICATED]")
+        {
+            throw new InvalidOperationException("Esta cuenta institucional se autentica mediante Microsoft 365. Por favor haz clic en 'Iniciar Sesión con Microsoft 365'.");
+        }
+
+        // Validar contraseña con hash
+        if (usuario.Password != HashPassword(dto.Password))
+        {
+            _logger.LogWarning("Contraseña incorrecta para usuario: {Correo}", dto.Correo);
+            return null;
+        }
+
+        if (usuario.Estado.ToLower() != "activo")
+        {
+            throw new InvalidOperationException("Tu cuenta se encuentra inactiva o deshabilitada.");
+        }
+
+        usuario.ActualizadoEn = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        var usuarioDto = MapToUsuarioDto(usuario);
+        var token = _jwtService.GenerateToken(usuarioDto);
+
+        return new LoginResponseDto
+        {
+            Token = token,
+            Usuario = usuarioDto
+        };
+    }
+
+    public async Task<LoginResponseDto?> LoginWithMicrosoftAsync(MicrosoftLoginDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.IdToken) && string.IsNullOrWhiteSpace(dto.AccessToken))
+        {
+            throw new ArgumentException("El token de Microsoft es requerido.");
+        }
+
+        var msUser = await _microsoftAuthService.AuthenticateAsync(dto.IdToken, dto.AccessToken);
+        if (!msUser.IsAuthenticated)
+        {
+            _logger.LogWarning("Autenticación con Microsoft 365 fallida: {Error}", msUser.ErrorMessage);
+            throw new InvalidOperationException(msUser.ErrorMessage ?? "Autenticación con Microsoft 365 fallida.");
+        }
+
+        // Validar restricción opcional de dominio institucional si está configurada (ej: centroaguas.com)
+        var allowedDomain = _configuration["Microsoft365:AllowedDomain"];
+        if (!string.IsNullOrWhiteSpace(allowedDomain))
+        {
+            var domainPart = msUser.Email.Contains('@') ? msUser.Email.Split('@')[1].ToLower() : "";
+            if (!domainPart.Equals(allowedDomain.ToLower().Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogWarning("Acceso rechazado por dominio institucional: {Email} no coincide con @{Domain}", msUser.Email, allowedDomain);
+                throw new InvalidOperationException($"Solo se permite el acceso a usuarios con correo institucional (@{allowedDomain}).");
+            }
+        }
+
+        string searchEmail = msUser.Email.ToLower().Trim();
+
+        var usuario = await _context.Usuarios
+            .Include(u => u.Rol)
+            .ThenInclude(r => r!.RolPermisos)
+            .ThenInclude(rp => rp.Permiso)
+            .FirstOrDefaultAsync(u => u.Correo.ToLower() == searchEmail);
+
+        if (usuario == null)
+        {
+            _logger.LogInformation("Usuario autenticado en Microsoft 365 no existía en BD. Creando automáticamente registro para: {Email}", searchEmail);
 
             usuario = new Usuario
             {
-                Nombre = string.IsNullOrWhiteSpace(adUser.DisplayName) ? adUser.Username : adUser.DisplayName,
+                Nombre = string.IsNullOrWhiteSpace(msUser.DisplayName) ? searchEmail.Split('@')[0] : msUser.DisplayName,
                 Correo = searchEmail,
-                Password = "[AD_AUTHENTICATED]",
+                Password = "[M365_SSO]",
                 Estado = "activo",
                 RolId = 3, // Rol Lector por defecto
                 CreadoEn = DateTime.UtcNow,
@@ -121,6 +191,16 @@ public class UsuarioService : IUsuarioService
         }
         else
         {
+            if (usuario.Estado.ToLower() != "activo")
+            {
+                throw new InvalidOperationException("Tu cuenta de usuario se encuentra inactiva o deshabilitada en Prixma.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(msUser.DisplayName) && usuario.Nombre != msUser.DisplayName)
+            {
+                usuario.Nombre = msUser.DisplayName;
+            }
+
             usuario.ActualizadoEn = DateTime.UtcNow;
             await _context.SaveChangesAsync();
         }

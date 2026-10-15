@@ -229,7 +229,7 @@ export async function handleCreatePost(event) {
     getPrixmaSwal().fire({
       icon: 'info',
       title: 'Autenticación Requerida',
-      text: 'Por favor inicia sesión con tu usuario de Directorio Activo antes de publicar.'
+      text: 'Por favor inicia sesión con tu cuenta de Microsoft 365 antes de publicar.'
     });
     showAuthGate();
     return;

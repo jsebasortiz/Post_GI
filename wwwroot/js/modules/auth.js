@@ -46,6 +46,184 @@ export function renderUserNavArea() {
   }
 }
 
+// Cache de instancia MSAL y configuración de Microsoft 365
+let msalInstance = null;
+let cachedAuthConfig = null;
+
+export async function getAuthConfig() {
+  if (cachedAuthConfig) return cachedAuthConfig;
+  try {
+    const res = await apiFetch('/api/usuarios/auth-config');
+    if (res.ok) {
+      cachedAuthConfig = await res.json();
+      return cachedAuthConfig;
+    }
+  } catch (err) {
+    console.warn("No fue posible cargar la configuración de Microsoft 365:", err);
+  }
+  return { clientId: '', tenantId: 'common', allowedDomain: 'centroaguas.com', isConfigured: false };
+}
+
+export async function initMsal() {
+  if (msalInstance) return msalInstance;
+
+  const config = await getAuthConfig();
+  if (!config || !config.isConfigured) {
+    return null;
+  }
+
+  if (!window.msal) {
+    console.error("La librería @azure/msal-browser no está disponible en window.msal.");
+    return null;
+  }
+
+  // Determinar la URL base limpia para el redirectUri de MSAL
+  const basePath = window.location.pathname.toLowerCase().startsWith('/prixma') ? '/prixma' : '';
+  const appRedirectUri = window.location.origin + basePath;
+
+  const msalConfig = {
+    auth: {
+      clientId: config.clientId,
+      authority: `https://login.microsoftonline.com/${config.tenantId || 'common'}`,
+      redirectUri: appRedirectUri
+    },
+    cache: {
+      cacheLocation: 'sessionStorage',
+      storeAuthStateInCookie: false
+    }
+  };
+
+  try {
+    msalInstance = new window.msal.PublicClientApplication(msalConfig);
+    // Procesar redirect callback en caso de que se haya usado redirect
+    await msalInstance.handleRedirectPromise().catch(err => {
+      console.warn("Error procesando handleRedirectPromise:", err);
+    });
+    return msalInstance;
+  } catch (err) {
+    console.error("Error al inicializar PublicClientApplication de MSAL:", err);
+    return null;
+  }
+}
+
+export async function handleMicrosoftLogin() {
+  clearLoginErrors();
+
+  const config = await getAuthConfig();
+  if (!config || !config.isConfigured) {
+    const notice = document.getElementById('azureConfigNotice');
+    if (notice) notice.style.display = 'flex';
+    showLoginError("Microsoft 365 no ha sido configurado en el servidor. Configura el ClientId y TenantId en appsettings.json.");
+    return;
+  }
+
+  if (!window.msal) {
+    showLoginError("La librería de autenticación de Microsoft no cargó correctamente. Revisa tu conexión a internet.");
+    return;
+  }
+
+  setMicrosoftLoginLoadingState(true);
+
+  try {
+    const msalApp = await initMsal();
+    if (!msalApp) {
+      throw new Error("No se pudo inicializar el servicio de autenticación de Microsoft.");
+    }
+
+    const loginRequest = {
+      scopes: ["openid", "profile", "email"],
+      prompt: "select_account"
+    };
+
+    let loginResult = null;
+    try {
+      loginResult = await msalApp.loginPopup(loginRequest);
+    } catch (popupErr) {
+      console.warn("Popup bloqueado o con error, intentando flujo redirect:", popupErr);
+      if (popupErr.name === 'BrowserAuthError' && (popupErr.errorCode === 'popup_window_error' || popupErr.errorCode === 'empty_window_error')) {
+        await msalApp.loginRedirect(loginRequest);
+        return;
+      }
+      throw popupErr;
+    }
+
+    if (!loginResult || (!loginResult.idToken && !loginResult.accessToken)) {
+      throw new Error("No se recibió credencial válida desde Microsoft 365.");
+    }
+
+    // Enviar el token validado al backend de Prixma
+    const res = await apiFetch('/api/usuarios/microsoft-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        idToken: loginResult.idToken || '',
+        accessToken: loginResult.accessToken || ''
+      })
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || "Error al autenticar en el servidor con Microsoft 365.");
+    }
+
+    const data = await res.json();
+    const token = data.token || data.Token;
+    const user = data.usuario || data.Usuario || data;
+
+    state.saveSession(user, token);
+
+    if (window.navigateTo) {
+      window.navigateTo('/dashboard');
+    }
+  } catch (err) {
+    console.error("Fallo durante el inicio de sesión con Microsoft 365:", err);
+    if (err.errorCode === 'user_cancelled') {
+      showLoginError("El inicio de sesión con Microsoft fue cancelado por el usuario.");
+    } else {
+      showLoginError(err.message || "No fue posible iniciar sesión con Microsoft 365.");
+    }
+  } finally {
+    setMicrosoftLoginLoadingState(false);
+  }
+}
+
+export function setMicrosoftLoginLoadingState(isLoading) {
+  const btn = document.getElementById('btnMicrosoftLogin');
+  const btnText = document.getElementById('btnMicrosoftText');
+
+  if (isLoading) {
+    if (btn) {
+      btn.disabled = true;
+      btn.style.opacity = '0.75';
+      btn.style.cursor = 'wait';
+    }
+    if (btnText) {
+      btnText.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Conectando con Microsoft 365...';
+    }
+  } else {
+    if (btn) {
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.style.cursor = 'pointer';
+    }
+    if (btnText) {
+      btnText.textContent = 'Iniciar Sesión con Microsoft 365';
+    }
+  }
+}
+
+export function toggleLocalLoginForm() {
+  const container = document.getElementById('localLoginFormContainer');
+  const icon = document.getElementById('toggleLocalFormIcon');
+  if (!container) return;
+
+  const isHidden = container.style.display === 'none' || !container.style.display;
+  container.style.display = isHidden ? 'block' : 'none';
+  if (icon) {
+    icon.className = isHidden ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down';
+  }
+}
+
 export async function handleLogin(event) {
   if (event) event.preventDefault();
 
@@ -237,4 +415,16 @@ export function showAuthGate() {
   if (authGate) authGate.classList.remove('view-hidden');
 
   renderUserNavArea();
+
+  // Verificar configuración de Azure en segundo plano y precargar MSAL
+  getAuthConfig().then(config => {
+    const notice = document.getElementById('azureConfigNotice');
+    if (notice) {
+      notice.style.display = (config && config.isConfigured) ? 'none' : 'flex';
+    }
+    if (config && config.isConfigured) {
+      initMsal().catch(e => console.warn("Precarga de MSAL:", e));
+    }
+  }).catch(() => {});
 }
+

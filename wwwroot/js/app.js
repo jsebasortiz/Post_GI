@@ -17,7 +17,8 @@ import {
 import {
   hasPermission, updateNavButtonsPermissions, renderUserNavArea, handleLogin,
   setLoginLoadingState, showLoginError, clearLoginErrors, markInputInvalid,
-  clearInputError, toggleLoginPassword, handleLogout, showAuthGate
+  clearInputError, toggleLoginPassword, handleLogout, showAuthGate,
+  handleMicrosoftLogin, toggleLocalLoginForm, setMicrosoftLoginLoadingState, getAuthConfig
 } from './modules/auth.js';
 import {
   getFileMeta, autoSelectDefaultImageCover, renderFilePreviews, handleFileSelect,
@@ -139,6 +140,10 @@ Object.assign(window, {
   updateNavButtonsPermissions,
   renderUserNavArea,
   handleLogin,
+  handleMicrosoftLogin,
+  toggleLocalLoginForm,
+  setMicrosoftLoginLoadingState,
+  getAuthConfig,
   setLoginLoadingState,
   showLoginError,
   clearLoginErrors,

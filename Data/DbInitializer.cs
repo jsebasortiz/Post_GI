@@ -231,7 +231,7 @@ public static class DbInitializer
                 // Submódulos de Infraestructura (AreaId = 2)
                 context.Modulos.Add(new Modulo { Id = 5, Nombre = "Servidores & Cloud", Slug = "servidores-cloud", AreaId = 2, Descripcion = "Servidores virtuales, Azure, Docker y cloud computing", EstadoId = 1 });
                 context.Modulos.Add(new Modulo { Id = 6, Nombre = "Redes & Comunicaciones", Slug = "redes-comunicaciones", AreaId = 2, Descripcion = "Conectividad, switches, firewalls, VPN y enlaces", EstadoId = 1 });
-                context.Modulos.Add(new Modulo { Id = 7, Nombre = "Seguridad AD / LDAP", Slug = "seguridad-ad-ldap", AreaId = 2, Descripcion = "Directorio Activo, políticas de grupo, accesos e identidades", EstadoId = 1 });
+                context.Modulos.Add(new Modulo { Id = 7, Nombre = "Seguridad Cloud & M365", Slug = "seguridad-cloud-m365", AreaId = 2, Descripcion = "Microsoft 365, políticas de acceso, identidades y seguridad cloud", EstadoId = 1 });
                 context.Modulos.Add(new Modulo { Id = 8, Nombre = "Bases de Datos", Slug = "bases-de-datos", AreaId = 2, Descripcion = "Administración, respaldos y optimización de SQL Server / MySQL", EstadoId = 1 });
                 await context.SaveChangesAsync();
             }

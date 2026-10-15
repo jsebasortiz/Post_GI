@@ -40,8 +40,9 @@ else
 }
 
 // Registro de servicios de la aplicación
+builder.Services.AddHttpClient();
 builder.Services.AddScoped<IJwtService, JwtService>();
-builder.Services.AddScoped<IActiveDirectoryService, ActiveDirectoryService>();
+builder.Services.AddScoped<IMicrosoftAuthService, MicrosoftAuthService>();
 builder.Services.AddScoped<IFileStorageService, AzureBlobStorageService>();
 builder.Services.AddScoped<IPostService, PostService>();
 builder.Services.AddScoped<IModuloService, ModuloService>();
@@ -169,7 +170,7 @@ app.MapFallbackToFile("index.html");
 
 Console.WriteLine("=================================================");
 Console.WriteLine("  Prixma .NET 10 corriendo en http://localhost:5000");
-Console.WriteLine("  Autenticación JWT + Directorio Activo (LDAP)");
+Console.WriteLine("  Autenticación JWT + Microsoft 365 (Entra ID)");
 Console.WriteLine("=================================================");
 
 app.Run();

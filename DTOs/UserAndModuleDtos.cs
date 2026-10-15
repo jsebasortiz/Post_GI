@@ -71,3 +71,18 @@ public class LoginResponseDto
     public UsuarioResponseDto Usuario { get; set; } = new();
 }
 
+public class MicrosoftLoginDto
+{
+    public string IdToken { get; set; } = string.Empty;
+    public string? AccessToken { get; set; }
+}
+
+public class AuthConfigDto
+{
+    public string ClientId { get; set; } = string.Empty;
+    public string TenantId { get; set; } = string.Empty;
+    public string AllowedDomain { get; set; } = string.Empty;
+    public bool IsConfigured { get; set; }
+}
+
+

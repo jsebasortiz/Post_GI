@@ -7,11 +7,10 @@
   <title>Prixma - Portal de Publicaciones & Blogs Corporativos</title>
   <script>
     (function () {
-      var p = window.location.pathname;
-      var segments = p.split('/').filter(Boolean);
+      var p = window.location.pathname.toLowerCase();
       var baseDir = '/';
-      if (segments.length > 0 && !segments[0].includes('.')) {
-        baseDir = '/' + segments[0] + '/';
+      if (p.startsWith('/prixma')) {
+        baseDir = '/prixma/';
       }
       var baseTag = document.querySelector('base') || document.createElement('base');
       baseTag.href = baseDir;
@@ -26,6 +25,13 @@
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- Microsoft Authentication Library (MSAL Browser) para Microsoft 365 / Entra ID (Local + CDN Fallback) -->
+  <script src="js/libs/msal-browser.min.js"></script>
+  <script>
+    if (!window.msal) {
+      document.write('<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"><\/script>');
+    }
+  </script>
 </head>
 
 <body>
@@ -42,7 +48,7 @@
     </div>
   </div>
 
-  <!-- Mandatory Active Directory Login Gate View -->
+  <!-- Mandatory Microsoft 365 / Corporate Authentication Gate View -->
   <section id="authGateScreen" class="auth-gate-screen">
     <div class="login-interface-container">
 
@@ -59,22 +65,22 @@
 
           <div class="login-hero-content">
             <div class="login-hero-badge">
-              <i class="fa-solid fa-shield-halved"></i> CentroAguas SA ESP
+              <i class="fa-brands fa-microsoft"></i> CentroAguas SA ESP · Cloud
             </div>
             <h1 class="login-hero-title">El Portal del Conocimiento Corporativo</h1>
             <p class="login-hero-desc">
-              Plataforma unificada para la difusión de novedades, manuales, normativas y blogs especializados de
-              CentroAguas SA ESP.
+              Plataforma unificada para la gestión y difusión de artículos, manuales, normativas y blogs organizacionales
+              con inicio de sesión único de Microsoft 365.
             </p>
 
             <div class="login-feature-list">
               <div class="login-feature-item">
-                <div class="login-feature-icon">
-                  <i class="fa-solid fa-lock"></i>
+                <div class="login-feature-icon" style="background: rgba(0, 164, 239, 0.15); color: #00a4ef;">
+                  <i class="fa-brands fa-microsoft"></i>
                 </div>
                 <div class="login-feature-text">
-                  <h4>Autenticación Única de Red (Active Directory)</h4>
-                  <p>Ingresa con tus credenciales institucionales corporativas sin recordar nuevas claves.</p>
+                  <h4>Autenticación Única Microsoft 365 (SSO)</h4>
+                  <p>Inicia sesión con un solo clic con tu cuenta corporativa institucional sin recordar nuevas claves.</p>
                 </div>
               </div>
 
@@ -89,12 +95,12 @@
               </div>
 
               <div class="login-feature-item">
-                <div class="login-feature-icon">
-                  <i class="fa-solid fa-user-shield"></i>
+                <div class="login-feature-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
+                  <i class="fa-solid fa-shield-halved"></i>
                 </div>
                 <div class="login-feature-text">
-                  <h4>Seguridad & Control RBAC</h4>
-                  <p>Gestión transparente de roles y permisos para creadores, editores y lectores.</p>
+                  <h4>Seguridad & Control Microsoft Entra ID</h4>
+                  <p>Cifrado empresarial de alta seguridad y gestión granular de permisos con roles RBAC.</p>
                 </div>
               </div>
             </div>
@@ -104,7 +110,7 @@
         <div class="login-hero-footer">
           <div class="login-hero-status">
             <span class="status-dot-green"></span>
-            <span>Servicios de Red Activos</span>
+            <span>Servicios Cloud Microsoft 365</span>
           </div>
           <div>© 2026 CentroAguas SA ESP</div>
         </div>
@@ -114,7 +120,7 @@
       <div class="login-form-panel">
         <div class="login-top-bar">
           <div class="login-sec-badge">
-            <i class="fa-solid fa-shield-halved"></i> Conexión Cifrada SSL / AD
+            <i class="fa-brands fa-microsoft"></i> Microsoft Entra ID · SSL
           </div>
           <button class="btn btn-secondary btn-icon-only" id="btnLoginToggleTheme" onclick="toggleTheme()"
             title="Cambiar Tema">
@@ -126,52 +132,42 @@
           <div class="login-header-box">
             <span class="login-welcome-tag">Acceso Institucional</span>
             <h2 class="login-main-title">Iniciar Sesión</h2>
-            <p class="login-main-subtitle">Ingresa tus credenciales de Directorio Activo para acceder a la plataforma.
-            </p>
+            <p class="login-main-subtitle">Ingresa con tu cuenta corporativa de <strong>Microsoft 365</strong>.</p>
           </div>
 
-          <form id="gateLoginForm"
-            onsubmit="if (window.handleLogin) { window.handleLogin(event); } else if (event) { event.preventDefault(); } return false;"
-            novalidate>
-            <div class="login-form-group">
-              <label class="login-form-label" for="loginUser">Usuario de Red / Correo</label>
-              <div class="input-with-icon-wrapper">
-                <i class="fa-regular fa-user input-icon-left" aria-hidden="true"></i>
-                <input type="text" id="loginUser" class="form-control"
-                  placeholder="Ej: jdperez o jdperez@centroaguas.com" required autocomplete="username"
-                  aria-required="true" oninput="if(window.clearInputError) window.clearInputError(this)">
-              </div>
-            </div>
-
-            <div class="login-form-group">
-              <label class="login-form-label" for="loginPass">Contraseña de Red</label>
-              <div class="input-with-icon-wrapper">
-                <i class="fa-solid fa-key input-icon-left" aria-hidden="true"></i>
-                <input type="password" id="loginPass" class="form-control"
-                  placeholder="Tu contraseña de Directorio Activo" required autocomplete="current-password"
-                  aria-required="true" oninput="if(window.clearInputError) window.clearInputError(this)">
-                <button type="button" class="btn-toggle-password" onclick="toggleLoginPassword()"
-                  title="Mostrar u ocultar contraseña">
-                  <i id="loginPassEyeIcon" class="fa-regular fa-eye"></i>
-                </button>
-              </div>
-            </div>
-
-            <div class="login-ad-hint">
-              <i class="fa-solid fa-circle-info"></i>
-              <span>Usa el mismo usuario y contraseña con el que ingresas a tu equipo de trabajo corporativo.</span>
-            </div>
-
-            <div id="loginErrorMsg" class="alert-error-banner" role="alert" aria-live="assertive"
-              style="display:none; margin-bottom: 1.25rem;">
-              <i class="fa-solid fa-circle-exclamation alert-icon" aria-hidden="true"></i>
-              <span id="loginErrorText"></span>
-            </div>
-
-            <button type="submit" class="btn btn-primary login-submit-btn" id="btnLoginSubmit">
-              <i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i> Autenticar y Entrar
+          <!-- Primary Microsoft 365 SSO Action -->
+          <div class="m365-login-container">
+            <button type="button" class="btn btn-microsoft-sso" id="btnMicrosoftLogin" onclick="handleMicrosoftLogin()">
+              <svg class="ms-logo-svg" viewBox="0 0 21 21" width="22" height="22" aria-hidden="true">
+                <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+                <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+                <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+                <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+              </svg>
+              <span id="btnMicrosoftText">Iniciar Sesión con Microsoft 365</span>
             </button>
-          </form>
+
+            <div class="login-m365-hint">
+              <i class="fa-solid fa-circle-check"></i>
+              <span>Acceso oficial con tu cuenta institucional <strong>@centroaguas.com</strong></span>
+            </div>
+          </div>
+
+          <!-- Notice banner when Azure is not yet configured -->
+          <div id="azureConfigNotice" class="azure-setup-notice" style="display:none;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <div>
+              <strong>Configuración de Azure requerida:</strong>
+              <p>El <code>ClientId</code> de Microsoft 365 aún no ha sido configurado en <code>appsettings.json</code>. Consulta la guía de configuración para vincular el registro de Azure Entra ID.</p>
+            </div>
+          </div>
+
+          <!-- Error Alert Banner -->
+          <div id="loginErrorMsg" class="alert-error-banner" role="alert" aria-live="assertive"
+            style="display:none; margin-top: 1.25rem; margin-bottom: 1.25rem;">
+            <i class="fa-solid fa-circle-exclamation alert-icon" aria-hidden="true"></i>
+            <span id="loginErrorText"></span>
+          </div>
         </div>
 
         <div class="login-form-footer">
@@ -987,7 +983,7 @@
                 style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem;">
                 <div>
                   <h3 style="font-size:1.1rem; color:var(--text-main); margin-bottom:0.25rem;">Asignar Roles a Usuarios
-                    de Directorio Activo</h3>
+                    de Microsoft 365</h3>
                   <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">Cambia los permisos de los usuarios
                     autenticados seleccionando el rol correspondiente.</p>
                 </div>
