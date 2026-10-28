@@ -2,6 +2,7 @@
 bin/
 obj/
 out/
+publish/
 .vs/
 .vscode/
 .idea/
