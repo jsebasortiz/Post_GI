@@ -1,0 +1,37 @@
+<!-- VISTA CREAR MÓDULO -->
+<div id="viewModuleCreate" class="app-view view-hidden">
+  <div style="margin-bottom: 1.5rem;">
+    <a href="/modulos" class="btn btn-secondary" onclick="navigateTo('/modulos'); return false;">
+      <i class="fa-solid fa-arrow-left"></i> Volver a Gestión de Módulos
+    </a>
+  </div>
+  <div class="modal-card" style="max-width: 750px; margin: 0 auto; box-shadow: var(--shadow-md);">
+    <div class="modal-header">
+      <h2><i class="fa-solid fa-folder-plus" style="color:var(--accent-cyan);"></i> Crear Nuevo Módulo</h2>
+    </div>
+    <div class="modal-body">
+      <form id="createModuleForm" onsubmit="handleCreateModule(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="moduloCategoriaPadre"><i class="fa-solid fa-sitemap"></i> Área Principal</label>
+            <select id="moduloCategoriaPadre" class="form-control" required></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="moduloNombre"><i class="fa-solid fa-folder"></i> Nombre del Módulo</label>
+            <input type="text" id="moduloNombre" class="form-control" placeholder="Ej: Gestión de Operaciones" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="moduloDesc"><i class="fa-solid fa-align-left"></i> Descripción del Módulo</label>
+          <textarea id="moduloDesc" rows="3" class="form-control" placeholder="Descripción temática del módulo..."></textarea>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:1.5rem;">
+          <a href="/modulos" class="btn btn-secondary" onclick="navigateTo('/modulos'); return false;">Cancelar</a>
+          <button type="submit" class="btn btn-primary" id="btnSaveModule">
+            <i class="fa-solid fa-floppy-disk"></i> Guardar Módulo
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

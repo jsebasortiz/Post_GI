@@ -1,0 +1,43 @@
+<!-- VISTA EDITAR MÓDULO -->
+<div id="viewModuleEdit" class="app-view view-hidden">
+  <div style="margin-bottom: 1.5rem;">
+    <a href="/modulos" class="btn btn-secondary" onclick="handleCancelEditModule(event); return false;">
+      <i class="fa-solid fa-arrow-left"></i> Volver a Gestión de Módulos
+    </a>
+  </div>
+  <div class="modal-card" style="max-width: 750px; margin: 0 auto; box-shadow: var(--shadow-md);">
+    <div class="modal-header">
+      <h2><i class="fa-solid fa-pen-to-square" style="color:var(--accent-cyan);"></i> Editar Módulo Temático</h2>
+    </div>
+    <div class="modal-body">
+      <form id="editModuleForm" onsubmit="handleSaveEditModule(event)">
+        <input type="hidden" id="editModuleId">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="editModuloCategoriaPadre"><i class="fa-solid fa-sitemap"></i> Área Principal</label>
+            <select id="editModuloCategoriaPadre" class="form-control" required></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="editModuloNombre"><i class="fa-solid fa-folder"></i> Nombre del Módulo</label>
+            <input type="text" id="editModuloNombre" class="form-control" placeholder="Nombre del módulo..." required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="editModuloDesc"><i class="fa-solid fa-align-left"></i> Descripción</label>
+          <textarea id="editModuloDesc" rows="3" class="form-control" placeholder="Descripción..."></textarea>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem;">
+          <button type="button" class="btn btn-danger" onclick="handleDeleteModuleFromForm()">
+            <i class="fa-solid fa-trash-can"></i> Eliminar
+          </button>
+          <div style="display:flex; gap:1rem;">
+            <button type="button" class="btn btn-secondary" onclick="handleCancelEditModule(event)">Cancelar</button>
+            <button type="submit" class="btn btn-primary" id="btnSubmitEditModule">
+              <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

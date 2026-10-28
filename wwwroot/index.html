@@ -5,56 +5,283 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Prixma - Portal de Publicaciones & Blogs Corporativos</title>
+  <script>
+    (function () {
+      var p = window.location.pathname.toLowerCase();
+      var baseDir = '/';
+      if (p.startsWith('/prixma')) {
+        baseDir = '/prixma/';
+      }
+      var baseTag = document.querySelector('base') || document.createElement('base');
+      baseTag.href = baseDir;
+      if (!baseTag.parentNode) {
+        document.head.prepend(baseTag);
+      }
+    })();
+  </script>
+  <link rel="icon" type="image/png" href="images/logo.png">
   <meta name="description"
     content="Base de conocimiento corporativa. Consulta guías técnicas, estándares y documentación interna centralizada por módulos.">
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/styles.css?v=20261015-m365">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Polyfill de Web Crypto API (crypto.subtle.digest SHA-256) para entornos HTTP sin SSL -->
+  <script>
+    (function () {
+      if (typeof window === 'undefined') return;
+      if (!window.crypto) window.crypto = {};
+
+      if (!window.crypto.subtle || !window.crypto.subtle.digest) {
+        function sha256_buffer(data) {
+          var bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
+          var mathPow = Math.pow;
+          var maxWord = mathPow(2, 32);
+          var lengthProperty = 'length';
+          var i, j;
+          var words = [];
+          var asciiBitLength = bytes[lengthProperty] * 8;
+          var hash = [];
+          var k = [];
+          var primeCounter = 0;
+          var isComposite = {};
+          for (var candidate = 2; primeCounter < 64; candidate++) {
+            if (!isComposite[candidate]) {
+              for (i = 0; i < 313; i += candidate) {
+                isComposite[i] = candidate;
+              }
+              hash[primeCounter] = (mathPow(candidate, .5) * maxWord) | 0;
+              k[primeCounter++] = (mathPow(candidate, 1/3) * maxWord) | 0;
+            }
+          }
+          for (i = 0; i < bytes[lengthProperty]; i++) {
+            words[i >> 2] |= bytes[i] << ((3 - (i % 4)) * 8);
+          }
+          words[asciiBitLength >> 5] |= 0x80 << (24 - (asciiBitLength % 32));
+          words[(((asciiBitLength + 64) >> 9) << 4) + 15] = asciiBitLength;
+
+          var w = [];
+          for (i = 0; i < words[lengthProperty]; i += 16) {
+            var oldHash = hash.slice(0);
+            for (j = 0; j < 64; j++) {
+              var w_j;
+              if (j < 16) {
+                w_j = words[j + i] || 0;
+              } else {
+                var gamma0 = ((w[j - 15] >>> 7) | (w[j - 15] << 25)) ^
+                             ((w[j - 15] >>> 18) | (w[j - 15] << 14)) ^
+                             (w[j - 15] >>> 3);
+                var gamma1 = ((w[j - 2] >>> 17) | (w[j - 2] << 15)) ^
+                             ((w[j - 2] >>> 19) | (w[j - 2] << 13)) ^
+                             (w[j - 2] >>> 10);
+                w_j = (w[j - 16] + gamma0 + w[j - 7] + gamma1) | 0;
+              }
+              w[j] = w_j;
+
+              var s1 = ((hash[4] >>> 6) | (hash[4] << 26)) ^
+                       ((hash[4] >>> 11) | (hash[4] << 21)) ^
+                       ((hash[4] >>> 25) | (hash[4] << 7));
+              var ch = (hash[4] & hash[5]) ^ (~hash[4] & hash[6]);
+              var temp1 = (hash[7] + s1 + ch + k[j] + w[j]) | 0;
+
+              var s0 = ((hash[0] >>> 2) | (hash[0] << 30)) ^
+                       ((hash[0] >>> 13) | (hash[0] << 19)) ^
+                       ((hash[0] >>> 22) | (hash[0] << 10));
+              var maj = (hash[0] & hash[1]) ^ (hash[0] & hash[2]) ^ (hash[1] & hash[2]);
+              var temp2 = (s0 + maj) | 0;
+
+              hash[7] = hash[6];
+              hash[6] = hash[5];
+              hash[5] = hash[4];
+              hash[4] = (hash[3] + temp1) | 0;
+              hash[3] = hash[2];
+              hash[2] = hash[1];
+              hash[1] = hash[0];
+              hash[0] = (temp1 + temp2) | 0;
+            }
+            for (j = 0; j < 8; j++) {
+              hash[j] = (hash[j] + oldHash[j]) | 0;
+            }
+          }
+
+          var buffer = new ArrayBuffer(32);
+          var view = new DataView(buffer);
+          for (i = 0; i < 8; i++) {
+            view.setUint32(i * 4, hash[i], false);
+          }
+          return buffer;
+        }
+
+        var subtlePolyfill = {
+          digest: function (algorithm, data) {
+            return Promise.resolve(sha256_buffer(data));
+          }
+        };
+
+        try {
+          window.crypto.subtle = subtlePolyfill;
+        } catch (e) {
+          try {
+            Object.defineProperty(window.crypto, 'subtle', {
+              value: subtlePolyfill,
+              configurable: true,
+              writable: true
+            });
+          } catch (err) {}
+        }
+      }
+    })();
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- Microsoft Authentication Library (MSAL Browser) para Microsoft 365 / Entra ID (Local + CDN Fallback) -->
+  <script src="js/libs/msal-browser.min.js"></script>
+  <script>
+    if (!window.msal) {
+      document.write('<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"><\/script>');
+    }
+  </script>
 </head>
 
 <body>
 
-  <!-- Mandatory Active Directory Login Gate View -->
+  <!-- Top Progress Bar -->
+  <div id="topProgressBar" role="progressbar" aria-label="Cargando contenido"></div>
+
+  <!-- Global Route & Action Loader Overlay Spinner -->
+  <div id="globalRouteSpinner" class="route-spinner-overlay" aria-live="polite" aria-busy="true">
+    <div class="spinner-content">
+      <div class="spinner-ring"></div>
+      <div id="globalSpinnerTitle" class="spinner-text">Cargando Prixma...</div>
+      <div id="globalSpinnerSubtext" class="spinner-subtext">Por favor espera un momento</div>
+    </div>
+  </div>
+
+  <!-- Mandatory Microsoft 365 / Corporate Authentication Gate View -->
   <section id="authGateScreen" class="auth-gate-screen">
-    <div class="auth-gate-card">
-      <div class="auth-gate-header">
-        <div class="brand" style="justify-content: center; margin-bottom: 1.25rem;">
-          <img src="images/logo.png" alt="Prixma Logo" class="brand-logo-img-lg">
-          <span style="font-size:1.75rem; letter-spacing:0.5px;">Prixma</span>
+    <div class="login-interface-container">
+
+      <!-- Left Hero Showcase Panel -->
+      <div class="login-hero-panel">
+        <div>
+          <div class="login-hero-brand">
+            <img src="images/logo.png" alt="Prixma Logo" class="login-hero-logo">
+            <div>
+              <span class="login-hero-brand-name">Prixma</span>
+              <span class="login-hero-brand-tag">Portal Corporativo</span>
+            </div>
+          </div>
+
+          <div class="login-hero-content">
+            <div class="login-hero-badge">
+              <i class="fa-brands fa-microsoft"></i> CentroAguas SA ESP · Cloud
+            </div>
+            <h1 class="login-hero-title">El Portal del Conocimiento Corporativo</h1>
+            <p class="login-hero-desc">
+              Plataforma unificada para la gestión y difusión de artículos, manuales, normativas y blogs organizacionales
+              con inicio de sesión único de Microsoft 365.
+            </p>
+
+            <div class="login-feature-list">
+              <div class="login-feature-item">
+                <div class="login-feature-icon" style="background: rgba(0, 164, 239, 0.15); color: #00a4ef;">
+                  <i class="fa-brands fa-microsoft"></i>
+                </div>
+                <div class="login-feature-text">
+                  <h4>Autenticación Única Microsoft 365 (SSO)</h4>
+                  <p>Inicia sesión con un solo clic con tu cuenta corporativa institucional sin recordar nuevas claves.</p>
+                </div>
+              </div>
+
+              <div class="login-feature-item">
+                <div class="login-feature-icon">
+                  <i class="fa-solid fa-book-open"></i>
+                </div>
+                <div class="login-feature-text">
+                  <h4>Publicaciones y Blogs Organizacionales</h4>
+                  <p>Accede a contenido categorizado por áreas operativas, administrativas y de gestión.</p>
+                </div>
+              </div>
+
+              <div class="login-feature-item">
+                <div class="login-feature-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
+                  <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <div class="login-feature-text">
+                  <h4>Seguridad & Control Microsoft Entra ID</h4>
+                  <p>Cifrado empresarial de alta seguridad y gestión granular de permisos con roles RBAC.</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="auth-gate-badge">
-          <i class="fa-solid fa-shield-halved"></i> CentroAguas SA ESP
+
+        <div class="login-hero-footer">
+          <div class="login-hero-status">
+            <span class="status-dot-green"></span>
+            <span>Servicios Cloud Microsoft 365</span>
+          </div>
+          <div>© 2026 CentroAguas SA ESP</div>
         </div>
-        <h2 class="auth-gate-title">Iniciar Sesión</h2>
-        <p class="auth-gate-subtitle">Acceso restringido corporativo. Autentícate con tus credenciales de red para
-          visualizar el portal y sus publicaciones.</p>
       </div>
 
-      <form id="gateLoginForm" onsubmit="handleLogin(event)" novalidate>
-        <div class="form-group">
-          <label class="form-label" for="loginUser"><i class="fa-regular fa-user" aria-hidden="true"></i> Usuario de Red
-            / Correo</label>
-          <input type="text" id="loginUser" class="form-control" placeholder="Ej: jdperez o jdperez@centroaguas.com"
-            required autocomplete="username" aria-required="true" oninput="clearInputError(this)">
+      <!-- Right Interactive Form Panel -->
+      <div class="login-form-panel">
+        <div class="login-top-bar">
+          <div class="login-sec-badge">
+            <i class="fa-brands fa-microsoft"></i> Microsoft Entra ID · SSL
+          </div>
+          <button class="btn btn-secondary btn-icon-only" id="btnLoginToggleTheme" onclick="toggleTheme()"
+            title="Cambiar Tema">
+            <i class="fa-solid fa-moon"></i>
+          </button>
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="loginPass"><i class="fa-solid fa-key" aria-hidden="true"></i> Contraseña de
-            Red</label>
-          <input type="password" id="loginPass" class="form-control" placeholder="Tu contraseña de Directorio Activo"
-            required autocomplete="current-password" aria-required="true" oninput="clearInputError(this)">
+        <div class="login-form-wrapper">
+          <div class="login-header-box">
+            <span class="login-welcome-tag">Acceso Institucional</span>
+            <h2 class="login-main-title">Iniciar Sesión</h2>
+            <p class="login-main-subtitle">Ingresa con tu cuenta corporativa de <strong>Microsoft 365</strong>.</p>
+          </div>
+
+          <!-- Primary Microsoft 365 SSO Action -->
+          <div class="m365-login-container">
+            <button type="button" class="btn btn-microsoft-sso" id="btnMicrosoftLogin" onclick="handleMicrosoftLogin()">
+              <svg class="ms-logo-svg" viewBox="0 0 21 21" width="22" height="22" aria-hidden="true">
+                <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+                <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+                <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+                <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+              </svg>
+              <span id="btnMicrosoftText">Iniciar Sesión con Microsoft 365</span>
+            </button>
+
+            <div class="login-m365-hint">
+              <i class="fa-solid fa-circle-check"></i>
+              <span>Acceso oficial con tu cuenta institucional <strong>@centroaguas.com</strong></span>
+            </div>
+          </div>
+
+          <!-- Notice banner when Azure is not yet configured -->
+          <div id="azureConfigNotice" class="azure-setup-notice" style="display:none;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <div>
+              <strong>Configuración de Azure requerida:</strong>
+              <p>El <code>ClientId</code> de Microsoft 365 aún no ha sido configurado en <code>appsettings.json</code>. Consulta la guía de configuración para vincular el registro de Azure Entra ID.</p>
+            </div>
+          </div>
+
+          <!-- Error Alert Banner -->
+          <div id="loginErrorMsg" class="alert-error-banner" role="alert" aria-live="assertive"
+            style="display:none; margin-top: 1.25rem; margin-bottom: 1.25rem;">
+            <i class="fa-solid fa-circle-exclamation alert-icon" aria-hidden="true"></i>
+            <span id="loginErrorText"></span>
+          </div>
         </div>
 
-        <div id="loginErrorMsg" class="alert-error-banner" role="alert" aria-live="assertive" style="display:none;">
-          <i class="fa-solid fa-circle-exclamation alert-icon" aria-hidden="true"></i>
-          <span id="loginErrorText"></span>
+        <div class="login-form-footer">
+          <i class="fa-solid fa-headset" style="margin-right:0.3rem;"></i> ¿Requieres asistencia? Soporte de TI
+          CentroAguas SA ESP
         </div>
+      </div>
 
-        <button type="submit" class="btn btn-primary" id="btnLoginSubmit"
-          style="width:100%; justify-content:center; padding:0.85rem; font-size:1rem; margin-top:0.5rem;">
-          <i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i> Autenticar y Entrar
-        </button>
-      </form>
     </div>
   </section>
 
@@ -65,27 +292,35 @@
       <div class="container nav-container">
         <a href="#/dashboard" class="brand" onclick="navigateTo('#/dashboard'); return false;">
           <img src="images/logo.png" alt="Prixma Logo" class="brand-logo-img">
-          <span>Prixma <small style="font-size:0.65rem; color:var(--accent-cyan); font-weight:normal;">AD
+          <span>Prixma <small style="font-size:0.65rem; color:var(--accent-cyan); font-weight:normal;">
               CentroAguas</small></span>
         </a>
 
         <div class="nav-controls">
-          <button class="btn btn-secondary" id="btnOpenRbacModal" onclick="navigateTo('#/rbac')" style="display:none;"
-            title="Roles y Permisos">
+          <button class="btn btn-secondary" id="btnOpenRbacModal" onclick="navigateTo('#/rbac'); return false;"
+            style="display:none;" title="Roles y Permisos">
             <i class="fa-solid fa-user-shield" style="color:var(--accent-purple);"></i> <span class="btn-text">Roles &
               Permisos</span>
           </button>
-          <button class="btn btn-secondary" id="btnOpenCreateArea" onclick="openAreaModal()" title="Nueva Área">
-            <i class="fa-solid fa-sitemap" style="color:var(--accent-cyan);"></i> <span class="btn-text">Área</span>
+          <button class="btn btn-secondary" id="btnOpenCreateArea" onclick="navigateTo('#/areas'); return false;"
+            title="Gestión de Áreas">
+            <i class="fa-solid fa-sitemap" style="color:var(--accent-cyan);"></i> <span class="btn-text">Áreas</span>
           </button>
-          <button class="btn btn-secondary" id="btnOpenCreateModule" onclick="openModuleModal()" title="Nuevo Módulo">
-            <i class="fa-solid fa-folder-plus"></i> <span class="btn-text">Módulo</span>
+          <button class="btn btn-secondary" id="btnOpenCreateModule" onclick="navigateTo('#/modulos'); return false;"
+            title="Gestión de Módulos">
+            <i class="fa-solid fa-folder-plus"></i> <span class="btn-text">Módulos</span>
           </button>
-          <button class="btn btn-primary" id="btnOpenCreatePost" onclick="openCreateModal()" title="Crear Publicación">
-            <i class="fa-solid fa-pen-to-square"></i> <span class="btn-text">Crear Post</span>
+          <button class="btn btn-secondary" id="btnOpenPostTiposModal" onclick="navigateTo('#/tipos'); return false;"
+            style="display:none;" title="Tipos de Publicación">
+            <i class="fa-solid fa-tags" style="color:var(--accent-emerald);"></i> <span class="btn-text">Tipos</span>
           </button>
-          <button class="btn btn-secondary" id="btnToggleTheme" onclick="toggleTheme()" title="Cambiar Tema (Claro / Oscuro)">
-            <i id="themeIcon" class="fa-solid fa-moon"></i> <span class="btn-text" id="themeText">Oscuro</span>
+          <button class="btn btn-primary" id="btnOpenCreatePost" onclick="navigateTo('#/posts/create'); return false;"
+            title="Crear Publicación">
+            <i class="fa-solid fa-pen-to-square"></i>
+          </button>
+          <button class="btn btn-secondary btn-icon-only" id="btnToggleTheme" onclick="toggleTheme()"
+            title="Cambiar Tema (Claro / Oscuro)">
+            <i id="themeIcon" class="fa-solid fa-moon"></i>
           </button>
 
           <!-- Auth User Area -->
@@ -94,448 +329,941 @@
       </div>
     </header>
 
-    <main class="container">
-      <!-- Hero Section -->
-      <section class="hero">
-        <h1>Publicaciones</h1>
-        <p>Base de conocimiento corporativa. Consulta guías técnicas, estándares y documentación interna centralizada
-          por módulos.</p>
+    <main class="container" style="padding-top: 1rem; padding-bottom: 2rem;">
 
-        <!-- Main Content Search Box -->
-        <div class="hero-search-box">
-          <i class="fa-solid fa-magnifying-glass search-icon"></i>
-          <input type="text" id="searchInput"
-            placeholder="Buscar publicaciones por título, palabras clave o contenido..." oninput="debounceSearch()">
-        </div>
+      <!-- 1. DASHBOARD VIEW -->
+      <div id="viewDashboard" class="app-view">
+        <!-- Compact Hero & Integrated Filter Section -->
+        <section class="hero-compact">
+          <div class="hero-header-row">
+            <div class="hero-title-group">
+              <h1 class="hero-title"><i class="fa-solid fa-book-bookmark hero-title-icon"></i> Publicaciones</h1>
+              <p class="hero-subtitle">Base de conocimiento de CentroAguas SA ESP.</p>
+            </div>
 
-        <!-- Top Level Main Categories Tabs -->
-        <div class="main-categories-tabs" id="mainCategoriesTabs">
-          <button class="category-tab active" onclick="switchMainCategory(null, this)">
-            <i class="fa-solid fa-layer-group"></i> Todas las Áreas
-          </button>
-          <button class="category-tab cat-apps" onclick="switchMainCategory('apps', this)">
-            <i class="fa-solid fa-rocket"></i> Apps
-          </button>
-          <button class="category-tab cat-infra" onclick="switchMainCategory('infraestructura', this)">
-            <i class="fa-solid fa-server"></i> Infraestructura
-          </button>
-        </div>
+            <div class="hero-search-box">
+              <i class="fa-solid fa-magnifying-glass search-icon"></i>
+              <input type="text" id="searchInput"
+                placeholder="Buscar publicaciones por título, palabras clave o contenido..." oninput="debounceSearch()">
+            </div>
+          </div>
 
-        <!-- Submodules Filter Pills -->
-        <div class="modules-filter-header">
-          <span
-            style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-weight:600;"><i
-              class="fa-solid fa-filter"></i> Módulos Temáticos:</span>
-        </div>
-        <div class="modules-filter" id="modulesFilter">
-          <button class="module-pill active" onclick="filterByModule(null, this)">Todos</button>
-        </div>
-      </section>
+          <!-- Glassmorphic Toolbar Filter Bar -->
+          <div class="filter-toolbar-card">
+            <!-- Category Tabs Segment -->
+            <div class="filter-toolbar-segment">
+              <div class="main-categories-tabs" id="mainCategoriesTabs">
+                <button class="category-tab active" onclick="switchMainCategory(null, this)">
+                  <i class="fa-solid fa-layer-group"></i> Todas las Áreas
+                </button>
+                <button class="category-tab cat-apps" onclick="switchMainCategory('apps', this)">
+                  <i class="fa-solid fa-rocket"></i> Apps
+                </button>
+                <button class="category-tab cat-infra" onclick="switchMainCategory('infraestructura', this)">
+                  <i class="fa-solid fa-server"></i> Infraestructura
+                </button>
+              </div>
+            </div>
 
-      <!-- Posts Grid -->
-      <section class="posts-grid" id="postsGrid">
-        <div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 3rem;">
-          <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
-          <p style="margin-top: 1rem;">Cargando publicaciones...</p>
-        </div>
-      </section>
+            <div class="filter-toolbar-divider"></div>
 
-      <!-- Pagination Controls -->
-      <div id="paginationContainer" class="pagination-container"></div>
+            <!-- Submodules Filter Segment -->
+            <div class="filter-toolbar-segment modules-segment">
+              <span class="modules-filter-label">
+                <i class="fa-solid fa-filter"></i> Módulos:
+              </span>
+              <div class="modules-filter" id="modulesFilter">
+                <button class="module-pill active" onclick="filterByModule(null, this)">Todos</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Posts Grid -->
+        <section class="posts-grid" id="postsGrid">
+          <div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 3rem;">
+            <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+            <p style="margin-top: 1rem;">Cargando publicaciones...</p>
+          </div>
+        </section>
+
+        <!-- Pagination Controls -->
+        <div id="paginationContainer" class="pagination-container"></div>
+      </div>
+
+      <!-- 2. CREATE POST VIEW -->
+      <div id="viewCreatePost" class="app-view view-hidden">
+        <div style="margin-bottom: 1.5rem;">
+          <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('#/dashboard'); return false;">
+            <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
+          </a>
+        </div>
+        <div class="modal-card" style="max-width: 800px; margin: 0 auto; box-shadow: var(--shadow-md);">
+          <div class="modal-header">
+            <h2><i class="fa-solid fa-pen-to-square" style="color:var(--primary);"></i> Nueva Publicación</h2>
+          </div>
+          <div class="modal-body">
+            <form id="createPostForm" onsubmit="handleCreatePost(event)">
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="selectCategoriaPadre"><i class="fa-solid fa-sitemap"></i> Área /
+                    Categoría Principal</label>
+                  <select id="selectCategoriaPadre" onchange="onPostCategoriaChange(this.value)" required></select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="selectModulo"><i class="fa-solid fa-folder"></i> Módulo
+                    Temático</label>
+                  <select id="selectModulo" required></select>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="selectTipo"><i class="fa-solid fa-tag"></i> Tipo de Publicación</label>
+                  <select id="selectTipo" required></select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="selectTipoConocimiento"><i class="fa-solid fa-brain"></i> Tipo de
+                    Conocimiento</label>
+                  <select id="selectTipoConocimiento"></select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="postPalabrasClave"><i class="fa-solid fa-hashtag"></i> Palabras Clave /
+                  Etiquetas (separadas por comas)</label>
+                <input type="text" id="postPalabrasClave" class="form-control"
+                  placeholder="Ej: sql, azure, respaldo, procedimiento">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="postTitulo">Título de la Publicación</label>
+                <input type="text" id="postTitulo" class="form-control"
+                  placeholder="Ej: Guía de procedimientos y soporte corporativo" required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="postResumen">Resumen o Introducción (Opcional)</label>
+                <textarea id="postResumen" rows="2" class="form-control"
+                  placeholder="Breve descripción del contenido..."></textarea>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="postContenido">Contenido Completo del Blog</label>
+                <textarea id="postContenido" rows="6" class="form-control"
+                  placeholder="Escribe el cuerpo principal del artículo..." required></textarea>
+              </div>
+
+              <!-- Attachments Upload -->
+              <div class="form-group">
+                <label class="form-label">Subir Adjuntos / Fotos / Documentos</label>
+                <div class="file-upload-zone" onclick="document.getElementById('fileInput').click()">
+                  <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+                  <p>Arrastra archivos o haz clic para explorar en tu equipo</p>
+                  <span style="font-size:0.8rem; color:var(--text-muted);">Formatos admitidos: Fotos (JPG, PNG, WEBP,
+                    GIF), PDF, Word, Excel, PowerPoint, ZIP</span>
+                  <input type="file" id="fileInput" multiple
+                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.txt" style="display:none"
+                    onchange="handleFileSelect(event)">
+                </div>
+                <div class="file-previews" id="filePreviews"></div>
+              </div>
+
+              <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:1.5rem;">
+                <a href="#/dashboard" class="btn btn-secondary"
+                  onclick="navigateTo('#/dashboard'); return false;">Cancelar</a>
+                <button type="submit" class="btn btn-primary" id="btnSubmitPost">
+                  <i class="fa-solid fa-paper-plane"></i> Publicar Ahora
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. EDIT POST VIEW -->
+      <div id="viewEditPost" class="app-view view-hidden">
+        <div style="margin-bottom: 1.5rem;">
+          <a href="/dashboard" class="btn btn-secondary" onclick="handleCancelEditPost(event); return false;">
+            <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
+          </a>
+        </div>
+        <div class="modal-card" style="max-width: 800px; margin: 0 auto; box-shadow: var(--shadow-md);">
+          <div class="modal-header">
+            <h2><i class="fa-solid fa-pen-to-square" style="color:var(--primary);"></i> Editar Publicación</h2>
+          </div>
+          <div class="modal-body">
+            <form id="editPostForm" onsubmit="handleSaveEditPost(event)">
+              <input type="hidden" id="editPostId">
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="editSelectCategoriaPadre"><i class="fa-solid fa-sitemap"></i> Área /
+                    Categoría Principal</label>
+                  <select id="editSelectCategoriaPadre" onchange="onEditPostCategoriaChange(this.value)"
+                    required></select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="editSelectModulo"><i class="fa-solid fa-folder"></i> Módulo
+                    Temático</label>
+                  <select id="editSelectModulo" required></select>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="editSelectTipo"><i class="fa-solid fa-tag"></i> Tipo de
+                    Publicación</label>
+                  <select id="editSelectTipo" required></select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="editSelectTipoConocimiento"><i class="fa-solid fa-brain"></i> Tipo de
+                    Conocimiento</label>
+                  <select id="editSelectTipoConocimiento"></select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="editPostPalabrasClave"><i class="fa-solid fa-hashtag"></i> Palabras Clave
+                  / Etiquetas (separadas por comas)</label>
+                <input type="text" id="editPostPalabrasClave" class="form-control"
+                  placeholder="Ej: sql, azure, respaldo, procedimiento">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="editPostTitulo">Título de la Publicación</label>
+                <input type="text" id="editPostTitulo" class="form-control" placeholder="Título de la publicación..."
+                  required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="editPostResumen">Resumen o Introducción (Opcional)</label>
+                <textarea id="editPostResumen" rows="2" class="form-control"
+                  placeholder="Breve descripción..."></textarea>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="editPostContenido">Contenido Completo del Blog</label>
+                <textarea id="editPostContenido" rows="6" class="form-control" placeholder="Cuerpo del artículo..."
+                  required></textarea>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Adjuntos de la Publicación</label>
+                <div class="file-upload-zone" onclick="document.getElementById('editFileInput').click()"
+                  style="margin-bottom: 1rem;">
+                  <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+                  <p>Haz clic para agregar más fotos o archivos a esta publicación</p>
+                  <input type="file" id="editFileInput" multiple
+                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.txt" style="display:none"
+                    onchange="handleEditFileSelect(event)">
+                </div>
+
+                <div class="file-previews"
+                  style="display:grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap:1rem;">
+                  <div id="editExistingAdjuntos" style="display:contents;"></div>
+                  <div id="editFilePreviews" style="display:contents;"></div>
+                </div>
+              </div>
+
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem;">
+                <button type="button" class="btn btn-danger" id="btnDeletePostInEdit"
+                  onclick="handleDeletePostFromModal()">
+                  <i class="fa-solid fa-trash-can"></i> Eliminar
+                </button>
+                <div style="display:flex; gap:1rem;">
+                  <button type="button" class="btn btn-secondary"
+                    onclick="handleCancelEditPost(event)">Cancelar</button>
+                  <button type="submit" class="btn btn-primary" id="btnSubmitEditPost">
+                    <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. POST DETAIL VIEW -->
+      <div id="viewPostDetail" class="app-view view-hidden">
+        <div style="margin-bottom: 1.5rem;">
+          <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('#/dashboard'); return false;">
+            <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
+          </a>
+        </div>
+        <div class="modal-card" style="max-width: 860px; margin: 0 auto; box-shadow: var(--shadow-md);">
+          <div class="modal-header">
+            <div id="detailBadges"></div>
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+              <div id="detailHeaderActions"></div>
+            </div>
+          </div>
+          <div class="modal-body">
+            <h1 id="detailTitle"
+              style="font-family:var(--font-heading); font-size:2rem; margin-bottom:1rem; color:var(--text-main);"></h1>
+            <div id="detailMeta"
+              style="color:var(--text-muted); font-size:0.88rem; margin-bottom:1.5rem; display:flex; gap:1.5rem;"></div>
+            <div id="detailCoverContainer"></div>
+            <div id="detailContent"
+              style="white-space: pre-wrap; font-size:1.05rem; line-height:1.8; color:var(--text-main); margin-bottom:2rem;">
+            </div>
+            <div class="attachments-gallery" id="detailAttachments"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. AREAS VIEWS (Index, Create, Edit) -->
+      <div id="viewAreaIndex" class="app-view view-hidden">
+        <div class="modal-card" style="max-width: 900px; margin: 0 auto; box-shadow: var(--shadow-md);">
+          <div class="modal-header"
+            style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+            <div>
+              <h2 style="margin:0;"><i class="fa-solid fa-sitemap" style="color:var(--accent-cyan);"></i>Gestión de
+                Áreas </h2>
+              <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0.25rem; margin-bottom:0;">Categorías
+                principales del portal de publicaciones.</p>
+            </div>
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+              <a href="#/areas/create" class="btn btn-primary" onclick="navigateTo('#/areas/create'); return false;">
+                <i class="fa-solid fa-plus"></i> Nueva Área
+              </a>
+              <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('#/dashboard'); return false;">
+                <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
+              </a>
+            </div>
+          </div>
+          <div class="modal-body">
+            <div id="areasListContainer"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="viewAreaCreate" class="app-view view-hidden">
+        <div style="margin-bottom: 1.5rem;">
+          <a href="#/areas" class="btn btn-secondary" onclick="navigateTo('#/areas'); return false;">
+            <i class="fa-solid fa-arrow-left"></i> Volver a Gestión de Áreas
+          </a>
+        </div>
+        <div class="modal-card form-card" style="margin: 0 auto; box-shadow: var(--shadow-md);">
+          <div class="modal-header">
+            <h2><i class="fa-solid fa-folder-plus" style="color:var(--accent-cyan);"></i> Crear Nueva Área</h2>
+          </div>
+          <div class="modal-body">
+            <form id="createAreaForm" onsubmit="handleCreateArea(event); return false;">
+              <div class="form-group">
+                <label class="form-label" for="areaNombre"><i class="fa-solid fa-tag"></i> Nombre del Área (Categoría
+                  Principal)</label>
+                <input type="text" id="areaNombre" class="form-control"
+                  placeholder="Ej: Telecomunicaciones, Finanzas..." required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="areaDesc"><i class="fa-solid fa-align-left"></i> Descripción
+                  (Opcional)</label>
+                <textarea id="areaDesc" rows="3" class="form-control"
+                  placeholder="Breve descripción del área..."></textarea>
+              </div>
+              <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:1.5rem;">
+                <a href="#/areas" class="btn btn-secondary" onclick="navigateTo('#/areas'); return false;">Cancelar</a>
+                <button type="submit" class="btn btn-primary" id="btnSaveArea">
+                  <i class="fa-solid fa-floppy-disk"></i> Guardar Área
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- 8. EDIT AREA VIEW -->
+      <div id="viewAreaEdit" class="app-view view-hidden">
+        <div style="margin-bottom: 1.5rem;">
+          <a href="#/areas" class="btn btn-secondary" onclick="handleCancelEditArea(event); return false;">
+            <i class="fa-solid fa-arrow-left"></i> Volver a Gestión de Áreas
+          </a>
+        </div>
+        <div class="modal-card" style="max-width: 700px; margin: 0 auto; box-shadow: var(--shadow-md);">
+          <div class="modal-header">
+            <h2><i class="fa-solid fa-pen-to-square" style="color:var(--accent-cyan);"></i> Editar Área</h2>
+          </div>
+          <div class="modal-body">
+            <form id="editAreaForm" onsubmit="handleSaveEditArea(event); return false;">
+              <input type="hidden" id="editAreaId">
+              <div class="form-group">
+                <label class="form-label" for="editAreaNombre"><i class="fa-solid fa-tag"></i> Nombre del Área</label>
+                <input type="text" id="editAreaNombre" class="form-control" placeholder="Nombre del área..." required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="editAreaDesc"><i class="fa-solid fa-align-left"></i> Descripción</label>
+                <textarea id="editAreaDesc" rows="3" class="form-control" placeholder="Descripción..."></textarea>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem;">
+                <button type="button" class="btn btn-danger" onclick="handleDeleteAreaFromForm()">
+                  <i class="fa-solid fa-trash-can"></i> Eliminar
+                </button>
+                <div style="display:flex; gap:1rem;">
+                  <button type="button" class="btn btn-secondary"
+                    onclick="handleCancelEditArea(event)">Cancelar</button>
+                  <button type="submit" class="btn btn-primary" id="btnSubmitEditArea">
+                    <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. MODULES VIEWS (Index, Create, Edit) -->
+      <div id="viewModuleIndex" class="app-view view-hidden">
+        <div class="modal-card" style="max-width: 900px; margin: 0 auto; box-shadow: var(--shadow-md);">
+          <div class="modal-header"
+            style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+            <div>
+              <h2 style="margin:0;"><i class="fa-solid fa-folder-plus" style="color:var(--accent-cyan);"></i> Gestión de
+                Módulos Temáticos</h2>
+              <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0.25rem; margin-bottom:0;">Módulos
+                organizados por áreas principales.</p>
+            </div>
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+              <a href="#/modulos/create" class="btn btn-primary"
+                onclick="navigateTo('#/modulos/create'); return false;">
+                <i class="fa-solid fa-plus"></i> Nuevo Módulo
+              </a>
+              <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('#/dashboard'); return false;">
+                <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
+              </a>
+            </div>
+          </div>
+          <div class="modal-body">
+            <div id="modulesListContainer"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="viewModuleCreate" class="app-view view-hidden">
+        <div style="margin-bottom: 1.5rem;">
+          <a href="#/modulos" class="btn btn-secondary" onclick="navigateTo('#/modulos'); return false;">
+            <i class="fa-solid fa-arrow-left"></i> Volver a Gestión de Módulos
+          </a>
+        </div>
+        <div class="modal-card" style="max-width: 750px; margin: 0 auto; box-shadow: var(--shadow-md);">
+          <div class="modal-header">
+            <h2><i class="fa-solid fa-folder-plus" style="color:var(--accent-cyan);"></i> Crear Nuevo Módulo</h2>
+          </div>
+          <div class="modal-body">
+            <form id="createModuleForm" onsubmit="handleCreateModule(event); return false;">
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="moduloCategoriaPadre"><i class="fa-solid fa-sitemap"></i> Área
+                    Principal</label>
+                  <select id="moduloCategoriaPadre" class="form-control" required></select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="moduloNombre"><i class="fa-solid fa-folder"></i> Nombre del
+                    Módulo</label>
+                  <input type="text" id="moduloNombre" class="form-control" placeholder="Ej: Gestión de Operaciones"
+                    required>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="moduloDesc"><i class="fa-solid fa-align-left"></i> Descripción del
+                  Módulo</label>
+                <textarea id="moduloDesc" rows="3" class="form-control"
+                  placeholder="Descripción temática del módulo..."></textarea>
+              </div>
+              <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:1.5rem;">
+                <a href="#/modulos" class="btn btn-secondary"
+                  onclick="navigateTo('#/modulos'); return false;">Cancelar</a>
+                <button type="submit" class="btn btn-primary" id="btnSaveModule">
+                  <i class="fa-solid fa-floppy-disk"></i> Guardar Módulo
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div id="viewModuleEdit" class="app-view view-hidden">
+        <div style="margin-bottom: 1.5rem;">
+          <a href="#/modulos" class="btn btn-secondary" onclick="handleCancelEditModule(event); return false;">
+            <i class="fa-solid fa-arrow-left"></i> Volver a Gestión de Módulos
+          </a>
+        </div>
+        <div class="modal-card" style="max-width: 750px; margin: 0 auto; box-shadow: var(--shadow-md);">
+          <div class="modal-header">
+            <h2><i class="fa-solid fa-pen-to-square" style="color:var(--accent-cyan);"></i> Editar Módulo Temático</h2>
+          </div>
+          <div class="modal-body">
+            <form id="editModuleForm" onsubmit="handleSaveEditModule(event); return false;">
+              <input type="hidden" id="editModuleId">
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="editModuloCategoriaPadre"><i class="fa-solid fa-sitemap"></i> Área
+                    Principal</label>
+                  <select id="editModuloCategoriaPadre" class="form-control" required></select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="editModuloNombre"><i class="fa-solid fa-folder"></i> Nombre del
+                    Módulo</label>
+                  <input type="text" id="editModuloNombre" class="form-control" placeholder="Nombre del módulo..."
+                    required>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="editModuloDesc"><i class="fa-solid fa-align-left"></i>
+                  Descripción</label>
+                <textarea id="editModuloDesc" rows="3" class="form-control" placeholder="Descripción..."></textarea>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem;">
+                <button type="button" class="btn btn-danger" onclick="handleDeleteModuleFromForm()">
+                  <i class="fa-solid fa-trash-can"></i> Eliminar
+                </button>
+                <div style="display:flex; gap:1rem;">
+                  <button type="button" class="btn btn-secondary"
+                    onclick="handleCancelEditModule(event)">Cancelar</button>
+                  <button type="submit" class="btn btn-primary" id="btnSubmitEditModule">
+                    <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7. POST TIPOS VIEWS (Index, Create, Edit) -->
+      <div id="viewPostTiposIndex" class="app-view view-hidden">
+        <div class="modal-card" style="max-width: 900px; margin: 0 auto; box-shadow: var(--shadow-md);">
+          <div class="modal-header"
+            style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+            <div>
+              <h2 style="margin:0;"><i class="fa-solid fa-tags" style="color:var(--accent-emerald);"></i> Gestión de
+                Tipos</h2>
+              <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0.25rem; margin-bottom:0;">Administra los
+                tipos de publicación y tipos de conocimiento de la plataforma.</p>
+            </div>
+            <div>
+              <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('#/dashboard'); return false;">
+                <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
+              </a>
+            </div>
+          </div>
+          <div class="modal-body">
+            <!-- Sub-tabs -->
+            <div class="rbac-tabs"
+              style="display:flex; gap:1rem; margin-bottom:1.5rem; border-bottom:1px solid var(--bg-card-border); padding-bottom:0.75rem;">
+              <button class="btn btn-secondary active-rbac-tab" id="tabBtnTiposPublicacion"
+                onclick="switchTiposSubTab('publicacion')">
+                <i class="fa-solid fa-tags"></i> Tipos de Publicación
+              </button>
+              <button class="btn btn-secondary" id="tabBtnTiposConocimiento"
+                onclick="switchTiposSubTab('conocimiento')">
+                <i class="fa-solid fa-brain"></i> Tipos de Conocimiento
+              </button>
+            </div>
+
+            <!-- Tab 1: Tipos de Publicación -->
+            <div id="tiposTabPublicacion">
+              <div
+                style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem;">
+                <div>
+                  <h3 style="font-size:1.1rem; color:var(--text-main); margin-bottom:0.25rem;">Tipos de Publicación</h3>
+                  <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">Tipos de contenido para artículos
+                    (Guía, Incidencia, Manual, etc.).</p>
+                </div>
+                <a href="#/tipos/create" class="btn btn-primary" onclick="navigateTo('#/tipos/create'); return false;">
+                  <i class="fa-solid fa-plus"></i> Nuevo Tipo
+                </a>
+              </div>
+              <div id="postTiposListContainer"></div>
+            </div>
+
+            <!-- Tab 2: Tipos de Conocimiento -->
+            <div id="tiposTabConocimiento" class="view-hidden">
+              <div
+                style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem;">
+                <div>
+                  <h3 style="font-size:1.1rem; color:var(--text-main); margin-bottom:0.25rem;">Tipos de Conocimiento
+                  </h3>
+                  <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">Categorías de conocimiento para
+                    clasificar los artículos (Técnico, Funcional, etc.).</p>
+                </div>
+                <a href="#/tipos-conocimiento/create" class="btn btn-primary"
+                  onclick="navigateTo('#/tipos-conocimiento/create'); return false;">
+                  <i class="fa-solid fa-plus"></i> Nuevo Tipo de Conocimiento
+                </a>
+              </div>
+              <div id="tiposConocimientoListContainer"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="viewPostTiposCreate" class="app-view view-hidden">
+        <div style="margin-bottom: 1.5rem;">
+          <a href="#/tipos" class="btn btn-secondary" onclick="navigateTo('#/tipos'); return false;">
+            <i class="fa-solid fa-arrow-left"></i> Volver a Tipos de Publicación
+          </a>
+        </div>
+        <div class="modal-card" style="max-width: 700px; margin: 0 auto; box-shadow: var(--shadow-md);">
+          <div class="modal-header">
+            <h2><i class="fa-solid fa-tag" style="color:var(--accent-emerald);"></i> Crear Tipo de Publicación</h2>
+          </div>
+          <div class="modal-body">
+            <form id="createPostTipoForm" onsubmit="handleSaveCreatePostTipo(event)">
+              <div class="form-group">
+                <label class="form-label" for="newPostTipoNombre"><i class="fa-solid fa-heading"></i> Nombre del
+                  Tipo</label>
+                <input type="text" id="newPostTipoNombre" class="form-control"
+                  placeholder="Ej: Procedimiento, Guía Técnica, Estándar" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="newPostTipoDesc"><i class="fa-solid fa-align-left"></i> Descripción
+                  (Opcional)</label>
+                <textarea id="newPostTipoDesc" rows="3" class="form-control"
+                  placeholder="Breve descripción del propósito de este tipo..."></textarea>
+              </div>
+              <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:1.5rem;">
+                <a href="#/tipos" class="btn btn-secondary" onclick="navigateTo('#/tipos'); return false;">Cancelar</a>
+                <button type="submit" class="btn btn-primary" id="btnSavePostTipo">
+                  <i class="fa-solid fa-floppy-disk"></i> Guardar Tipo
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div id="viewPostTiposEdit" class="app-view view-hidden">
+        <div style="margin-bottom: 1.5rem;">
+          <a href="#/tipos" class="btn btn-secondary" onclick="handleCancelEditPostTipo(event); return false;">
+            <i class="fa-solid fa-arrow-left"></i> Volver a Tipos de Publicación
+          </a>
+        </div>
+        <div class="modal-card" style="max-width: 700px; margin: 0 auto; box-shadow: var(--shadow-md);">
+          <div class="modal-header">
+            <h2><i class="fa-solid fa-pen-to-square" style="color:var(--accent-emerald);"></i> Editar Tipo de
+              Publicación</h2>
+          </div>
+          <div class="modal-body">
+            <form id="editPostTipoForm" onsubmit="handleSaveEditPostTipo(event)">
+              <input type="hidden" id="editPostTipoId">
+              <div class="form-group">
+                <label class="form-label" for="editPostTipoNombre"><i class="fa-solid fa-pen"></i> Nombre del
+                  Tipo</label>
+                <input type="text" id="editPostTipoNombre" class="form-control" placeholder="Nombre..." required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="editPostTipoDesc"><i class="fa-solid fa-align-left"></i>
+                  Descripción</label>
+                <textarea id="editPostTipoDesc" rows="3" class="form-control" placeholder="Descripción..."></textarea>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem;">
+                <button type="button" class="btn btn-danger" onclick="handleDeleteTipoFromForm()">
+                  <i class="fa-solid fa-trash-can"></i> Eliminar
+                </button>
+                <div style="display:flex; gap:1rem;">
+                  <button type="button" class="btn btn-secondary"
+                    onclick="handleCancelEditPostTipo(event)">Cancelar</button>
+                  <button type="submit" class="btn btn-primary" id="btnSubmitEditPostTipo">
+                    <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- CREATE TIPO DE CONOCIMIENTO VIEW -->
+      <div id="viewTipoConocimientoCreate" class="app-view view-hidden">
+        <div style="margin-bottom: 1.5rem;">
+          <a href="#/tipos-conocimiento" class="btn btn-secondary"
+            onclick="navigateTo('#/tipos-conocimiento'); return false;">
+            <i class="fa-solid fa-arrow-left"></i> Volver a Tipos de Conocimiento
+          </a>
+        </div>
+        <div class="modal-card" style="max-width: 700px; margin: 0 auto; box-shadow: var(--shadow-md);">
+          <div class="modal-header">
+            <h2><i class="fa-solid fa-brain" style="color:var(--accent-emerald);"></i> Crear Tipo de Conocimiento</h2>
+          </div>
+          <div class="modal-body">
+            <form id="createTipoConocimientoForm" onsubmit="handleSaveCreateTipoConocimiento(event)">
+              <div class="form-group">
+                <label class="form-label" for="newTipoConocimientoNombre"><i class="fa-solid fa-heading"></i> Nombre del
+                  Tipo de Conocimiento</label>
+                <input type="text" id="newTipoConocimientoNombre" class="form-control"
+                  placeholder="Ej: General, Técnico, Operativo, Normativo" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="newTipoConocimientoDesc"><i class="fa-solid fa-align-left"></i>
+                  Descripción (Opcional)</label>
+                <textarea id="newTipoConocimientoDesc" rows="3" class="form-control"
+                  placeholder="Breve descripción del propósito de este tipo de conocimiento..."></textarea>
+              </div>
+              <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:1.5rem;">
+                <a href="#/tipos-conocimiento" class="btn btn-secondary"
+                  onclick="navigateTo('#/tipos-conocimiento'); return false;">Cancelar</a>
+                <button type="submit" class="btn btn-primary" id="btnSaveTipoConocimiento">
+                  <i class="fa-solid fa-floppy-disk"></i> Guardar Tipo
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- EDIT TIPO DE CONOCIMIENTO VIEW -->
+      <div id="viewTipoConocimientoEdit" class="app-view view-hidden">
+        <div style="margin-bottom: 1.5rem;">
+          <a href="#/tipos-conocimiento" class="btn btn-secondary"
+            onclick="handleCancelEditTipoConocimiento(event); return false;">
+            <i class="fa-solid fa-arrow-left"></i> Volver a Tipos de Conocimiento
+          </a>
+        </div>
+        <div class="modal-card" style="max-width: 700px; margin: 0 auto; box-shadow: var(--shadow-md);">
+          <div class="modal-header">
+            <h2><i class="fa-solid fa-pen-to-square" style="color:var(--accent-emerald);"></i> Editar Tipo de
+              Conocimiento</h2>
+          </div>
+          <div class="modal-body">
+            <form id="editTipoConocimientoForm" onsubmit="handleSaveEditTipoConocimiento(event)">
+              <input type="hidden" id="editTipoConocimientoId">
+              <div class="form-group">
+                <label class="form-label" for="editTipoConocimientoNombre"><i class="fa-solid fa-pen"></i> Nombre del
+                  Tipo de Conocimiento</label>
+                <input type="text" id="editTipoConocimientoNombre" class="form-control" placeholder="Nombre..."
+                  required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="editTipoConocimientoDesc"><i class="fa-solid fa-align-left"></i>
+                  Descripción</label>
+                <textarea id="editTipoConocimientoDesc" rows="3" class="form-control"
+                  placeholder="Descripción..."></textarea>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem;">
+                <button type="button" class="btn btn-danger" onclick="handleDeleteTipoConocimientoFromForm()">
+                  <i class="fa-solid fa-trash-can"></i> Eliminar
+                </button>
+                <div style="display:flex; gap:1rem;">
+                  <button type="button" class="btn btn-secondary"
+                    onclick="handleCancelEditTipoConocimiento(event)">Cancelar</button>
+                  <button type="submit" class="btn btn-primary" id="btnSubmitEditTipoConocimiento">
+                    <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- 8. RBAC & ROLES VIEWS (Index, Create, Edit) -->
+      <div id="viewRbacIndex" class="app-view view-hidden">
+        <div class="modal-card" style="max-width: 960px; margin: 0 auto; box-shadow: var(--shadow-md);">
+          <div class="modal-header"
+            style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+            <h2 style="margin:0;"><i class="fa-solid fa-user-shield" style="color:var(--accent-purple);"></i> Gestión de
+              Roles y Permisos (RBAC)</h2>
+            <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('#/dashboard'); return false;">
+              <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
+            </a>
+          </div>
+          <div class="modal-body">
+            <!-- Sub-tabs -->
+            <div class="rbac-tabs"
+              style="display:flex; gap:1rem; margin-bottom:1.5rem; border-bottom:1px solid var(--bg-card-border); padding-bottom:0.75rem;">
+              <button class="btn btn-secondary active-rbac-tab" id="tabBtnUsersRole"
+                onclick="switchRbacSubTab('users')">
+                <i class="fa-solid fa-users"></i> Asignación de Usuarios
+              </button>
+              <button class="btn btn-secondary" id="tabBtnRolesManage" onclick="switchRbacSubTab('roles')">
+                <i class="fa-solid fa-user-gear"></i> Gestión de Roles
+              </button>
+              <button class="btn btn-secondary" id="tabBtnRolesMatrix" onclick="switchRbacSubTab('matrix')">
+                <i class="fa-solid fa-key"></i> Matriz de Permisos
+              </button>
+            </div>
+
+            <!-- Tab 1: User Role Assignment -->
+            <div id="rbacTabUsers">
+              <div
+                style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem;">
+                <div>
+                  <h3 style="font-size:1.1rem; color:var(--text-main); margin-bottom:0.25rem;">Asignar Roles a Usuarios
+                    de Microsoft 365</h3>
+                  <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">Cambia los permisos de los usuarios
+                    autenticados seleccionando el rol correspondiente.</p>
+                </div>
+                <!-- Search bar for RBAC users -->
+                <div style="position:relative; width: 280px; flex-shrink: 0;">
+                  <i class="fa-solid fa-magnifying-glass"
+                    style="position:absolute; left:0.85rem; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:0.85rem;"
+                    aria-hidden="true"></i>
+                  <input type="text" id="rbacUserSearchInput" class="form-control"
+                    placeholder="Buscar usuario o correo..." oninput="onRbacUserSearchInput()"
+                    style="padding-left:2.3rem; font-size:0.85rem; height:38px;">
+                </div>
+              </div>
+
+              <div class="table-responsive">
+                <table class="rbac-table" style="width:100%; border-collapse:collapse;">
+                  <thead>
+                    <tr
+                      style="text-align:left; border-bottom:1px solid var(--bg-card-border); color:var(--text-muted); font-size:0.85rem;">
+                      <th style="padding:0.75rem;">Usuario</th>
+                      <th style="padding:0.75rem;">Correo / AD</th>
+                      <th style="padding:0.75rem; text-align:right;">Rol Asignado</th>
+                    </tr>
+                  </thead>
+                  <tbody id="usersRolesTableBody"></tbody>
+                </table>
+              </div>
+
+              <div id="rbacUsersPagination"
+                style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; padding-top:0.75rem; border-top:1px solid var(--bg-card-border); font-size:0.85rem; color:var(--text-muted);">
+              </div>
+            </div>
+
+            <!-- Tab 2: Role Management -->
+            <div id="rbacTabRoles" class="view-hidden">
+              <div
+                style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem;">
+                <div>
+                  <h3 style="font-size:1.1rem; color:var(--text-main); margin-bottom:0.25rem;">Gestión de Roles</h3>
+                  <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">Modifica el nombre, la descripción o
+                    elimina roles de forma directa.</p>
+                </div>
+                <a href="#/roles/create" class="btn btn-primary"
+                  onclick="navigateTo('#/roles/create'); return false;"><i class="fa-solid fa-plus"></i> Nuevo Rol</a>
+              </div>
+
+              <!-- Roles Management Table -->
+              <div class="table-responsive">
+                <table class="rbac-table" style="width:100%; border-collapse:collapse;">
+                  <thead>
+                    <tr
+                      style="text-align:left; border-bottom:1px solid var(--bg-card-border); color:var(--text-muted); font-size:0.85rem;">
+                      <th style="padding:0.75rem;">Rol</th>
+                      <th style="padding:0.75rem;">Descripción</th>
+                      <th style="padding:0.75rem;">Permisos</th>
+                      <th style="padding:0.75rem; text-align:right;">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody id="rolesManagementTableBody"></tbody>
+                </table>
+              </div>
+
+              <!-- Roles Pagination Container -->
+              <div id="rbacRolesPagination"
+                style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; padding-top:0.75rem; border-top:1px solid var(--bg-card-border); font-size:0.85rem; color:var(--text-muted);">
+              </div>
+            </div>
+
+            <!-- Tab 3: Permission Matrix -->
+            <div id="rbacTabMatrix" class="view-hidden">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem;">
+                <div>
+                  <h3 style="font-size:1.1rem; color:var(--text-main); margin-bottom:0.25rem;">Configurar Permisos por Rol</h3>
+                  <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">Asigna o revoca accesos específicos para cada rol del sistema.</p>
+                </div>
+                <div style="display:flex; gap:0.5rem; align-items:center;">
+                  <div style="display:flex; background:var(--bg-input); padding:3px; border-radius:8px; border:1px solid var(--bg-card-border);">
+                    <button class="btn btn-sm" id="btnRbacViewCardsIndex" onclick="switchRbacMatrixView('cards')" style="border:none; padding:0.35rem 0.75rem; font-size:0.8rem; border-radius:6px; background:var(--primary); color:white;">
+                      <i class="fa-solid fa-border-all"></i> Tarjetas Lado a Lado
+                    </button>
+                    <button class="btn btn-sm" id="btnRbacViewTableIndex" onclick="switchRbacMatrixView('table')" style="border:none; padding:0.35rem 0.75rem; font-size:0.8rem; border-radius:6px; background:transparent; color:var(--text-muted);">
+                      <i class="fa-solid fa-table-cells"></i> Matriz Comparativa
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div id="rolesMatrixContainer"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="viewRoleCreate" class="app-view view-hidden">
+        <div style="margin-bottom: 1.5rem;">
+          <a href="#/rbac" class="btn btn-secondary" onclick="navigateTo('#/rbac'); return false;">
+            <i class="fa-solid fa-arrow-left"></i> Volver a Roles y Permisos
+          </a>
+        </div>
+        <div class="modal-card" style="max-width: 700px; margin: 0 auto; box-shadow: var(--shadow-md);">
+          <div class="modal-header">
+            <h2><i class="fa-solid fa-user-plus" style="color:var(--accent-purple);"></i> Crear Nuevo Rol</h2>
+          </div>
+          <div class="modal-body">
+            <form id="createRoleForm" onsubmit="handleSaveCreateRole(event); return false;">
+              <div class="form-group">
+                <label class="form-label" for="newRoleNombre"><i class="fa-solid fa-user-gear"></i> Nombre del
+                  Rol</label>
+                <input type="text" id="newRoleNombre" class="form-control" placeholder="Ej: Supervisor, Editor Senior"
+                  required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="newRoleDesc"><i class="fa-solid fa-align-left"></i> Descripción del
+                  Rol</label>
+                <textarea id="newRoleDesc" rows="3" class="form-control"
+                  placeholder="Descripción de las responsabilidades y alcance del rol..."></textarea>
+              </div>
+              <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:1.5rem;">
+                <a href="#/rbac" class="btn btn-secondary" onclick="navigateTo('#/rbac'); return false;">Cancelar</a>
+                <button type="submit" class="btn btn-primary" id="btnSaveRole">
+                  <i class="fa-solid fa-floppy-disk"></i> Guardar Rol
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div id="viewRoleEdit" class="app-view view-hidden">
+        <div style="margin-bottom: 1.5rem;">
+          <a href="#/rbac" class="btn btn-secondary" onclick="handleCancelEditRole(event); return false;">
+            <i class="fa-solid fa-arrow-left"></i> Volver a Roles y Permisos
+          </a>
+        </div>
+        <div class="modal-card" style="max-width: 700px; margin: 0 auto; box-shadow: var(--shadow-md);">
+          <div class="modal-header">
+            <h2><i class="fa-solid fa-user-pen" style="color:var(--accent-purple);"></i> Editar Rol</h2>
+          </div>
+          <div class="modal-body">
+            <form id="editRoleForm" onsubmit="handleSaveEditRole(event); return false;">
+              <input type="hidden" id="editRoleId">
+              <div class="form-group">
+                <label class="form-label" for="editRoleNombre"><i class="fa-solid fa-user-gear"></i> Nombre del
+                  Rol</label>
+                <input type="text" id="editRoleNombre" class="form-control" placeholder="Nombre del rol..." required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="editRoleDesc"><i class="fa-solid fa-align-left"></i> Descripción del
+                  Rol</label>
+                <textarea id="editRoleDesc" rows="3" class="form-control"
+                  placeholder="Descripción del rol..."></textarea>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem;">
+                <button type="button" class="btn btn-danger" onclick="handleDeleteRoleFromForm()">
+                  <i class="fa-solid fa-trash-can"></i> Eliminar Rol
+                </button>
+                <div style="display:flex; gap:1rem;">
+                  <button type="button" class="btn btn-secondary"
+                    onclick="handleCancelEditRole(event)">Cancelar</button>
+                  <button type="submit" class="btn btn-primary" id="btnSubmitEditRole">
+                    <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
     </main>
   </div>
 
-  <!-- Create Post Modal -->
-  <div class="modal-overlay" id="createModal">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h2><i class="fa-solid fa-pen-to-square" style="color:var(--primary);"></i> Nueva Publicación</h2>
-        <button class="close-btn" onclick="closeModal('createModal')">&times;</button>
-      </div>
-      <div class="modal-body">
-        <form id="createPostForm" onsubmit="handleCreatePost(event)">
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label" for="selectCategoriaPadre"><i class="fa-solid fa-sitemap"></i> Área / Categoría
-                Principal</label>
-              <select id="selectCategoriaPadre" onchange="onPostCategoriaChange(this.value)" required>
-                <option value="apps">Apps (Aplicaciones)</option>
-                <option value="infraestructura">Infraestructura</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="selectModulo"><i class="fa-solid fa-folder"></i> Módulo Temático</label>
-              <select id="selectModulo" required></select>
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="selectTipo"><i class="fa-solid fa-tag"></i> Tipo de Publicación</label>
-            <select id="selectTipo" required></select>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="postTitulo">Título de la Publicación</label>
-            <input type="text" id="postTitulo" class="form-control"
-              placeholder="Ej: Guía de procedimientos y soporte corporativo" required>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="postResumen">Resumen o Introducción (Opcional)</label>
-            <textarea id="postResumen" rows="2" class="form-control"
-              placeholder="Breve descripción del contenido..."></textarea>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="postContenido">Contenido Completo del Blog</label>
-            <textarea id="postContenido" rows="6" class="form-control"
-              placeholder="Escribe el cuerpo principal del artículo..." required></textarea>
-          </div>
-
-          <!-- Attachments / Photo Upload -->
-          <div class="form-group">
-            <label class="form-label">Subir Adjuntos / Fotos / Documentos</label>
-            <div class="file-upload-zone" onclick="document.getElementById('fileInput').click()">
-              <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
-              <p>Arrastra archivos o haz clic para explorar en tu equipo</p>
-              <span style="font-size:0.8rem; color:var(--text-muted);">Formatos admitidos: Fotos (JPG, PNG, WEBP, GIF), PDF, Word, Excel, PowerPoint, ZIP</span>
-              <input type="file" id="fileInput" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.txt" style="display:none"
-                onchange="handleFileSelect(event)">
-            </div>
-            <div class="file-previews" id="filePreviews"></div>
-          </div>
-
-          <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:1.5rem;">
-            <button type="button" class="btn btn-secondary" onclick="closeModal('createModal')">Cancelar</button>
-            <button type="submit" class="btn btn-primary" id="btnSubmitPost">
-              <i class="fa-solid fa-paper-plane"></i> Publicar Ahora
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- Create Module Modal -->
-  <div class="modal-overlay" id="moduleModal">
-    <div class="modal-card" style="max-width: 480px;">
-      <div class="modal-header">
-        <h2><i class="fa-solid fa-folder-plus" style="color:var(--accent-cyan);"></i> Nuevo Módulo</h2>
-        <button class="close-btn" onclick="closeModal('moduleModal')">&times;</button>
-      </div>
-      <div class="modal-body">
-        <form id="createModuleForm" onsubmit="handleCreateModule(event)">
-          <div class="form-group">
-            <label class="form-label" for="moduloCategoriaPadre"><i class="fa-solid fa-sitemap"></i> Área / Categoría
-              Principal</label>
-            <select id="moduloCategoriaPadre" class="form-control" required>
-              <option value="apps">Apps (Aplicaciones)</option>
-              <option value="infraestructura">Infraestructura</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="moduloNombre">Nombre del Módulo Temático</label>
-            <input type="text" id="moduloNombre" class="form-control" placeholder="Ej: Gestión de Operaciones" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="moduloDesc">Descripción</label>
-            <textarea id="moduloDesc" rows="3" class="form-control"
-              placeholder="Descripción temática del módulo..."></textarea>
-          </div>
-          <div style="display:flex; justify-content:flex-end; gap:1rem;">
-            <button type="button" class="btn btn-secondary" onclick="closeModal('moduleModal')">Cancelar</button>
-            <button type="submit" class="btn btn-primary">Guardar Módulo</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- Edit Module Modal -->
-  <div class="modal-overlay" id="editModuleModal">
-    <div class="modal-card" style="max-width: 480px;">
-      <div class="modal-header">
-        <h2><i class="fa-solid fa-pen-to-square" style="color:var(--accent-cyan);"></i> Editar Módulo</h2>
-        <button class="close-btn" onclick="closeModal('editModuleModal')">&times;</button>
-      </div>
-      <div class="modal-body">
-        <form id="editModuleForm" onsubmit="handleUpdateModule(event)">
-          <input type="hidden" id="editModuloId">
-          <div class="form-group">
-            <label class="form-label" for="editModuloCategoriaPadre"><i class="fa-solid fa-sitemap"></i> Área / Categoría Principal</label>
-            <select id="editModuloCategoriaPadre" class="form-control" required>
-              <option value="apps">Apps (Aplicaciones)</option>
-              <option value="infraestructura">Infraestructura</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="editModuloNombre">Nombre del Módulo Temático</label>
-            <input type="text" id="editModuloNombre" class="form-control" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="editModuloDesc">Descripción</label>
-            <textarea id="editModuloDesc" rows="3" class="form-control" placeholder="Descripción temática del módulo..."></textarea>
-          </div>
-          <div style="display:flex; justify-content:flex-end; gap:1rem;">
-            <button type="button" class="btn btn-secondary" onclick="closeModal('editModuleModal')">Cancelar</button>
-            <button type="submit" class="btn btn-primary" id="btnSubmitEditModulo">Guardar Cambios</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- Create Area Modal -->
-  <div class="modal-overlay" id="areaModal">
-    <div class="modal-card" style="max-width: 480px;">
-      <div class="modal-header">
-        <h2><i class="fa-solid fa-sitemap" style="color:var(--accent-cyan);"></i> Nueva Área Principal</h2>
-        <button class="close-btn" onclick="closeModal('areaModal')">&times;</button>
-      </div>
-      <div class="modal-body">
-        <form id="createAreaForm" onsubmit="handleCreateArea(event)">
-          <div class="form-group">
-            <label class="form-label" for="areaNombre">Nombre del Área Corporativa (Categoría Padre)</label>
-            <input type="text" id="areaNombre" class="form-control" placeholder="Ej: Telecomunicaciones, Finanzas, Recursos Humanos..." required>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="areaDesc">Descripción (Opcional)</label>
-            <textarea id="areaDesc" rows="3" class="form-control" placeholder="Breve descripción del área corporativa..."></textarea>
-          </div>
-          <div style="display:flex; justify-content:flex-end; gap:1rem;">
-            <button type="button" class="btn btn-secondary" onclick="closeModal('areaModal')">Cancelar</button>
-            <button type="submit" class="btn btn-primary">Guardar Área</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- Edit Area Modal -->
-  <div class="modal-overlay" id="editAreaModal">
-    <div class="modal-card" style="max-width: 480px;">
-      <div class="modal-header">
-        <h2><i class="fa-solid fa-pen-to-square" style="color:var(--accent-cyan);"></i> Editar Área Corporativa</h2>
-        <button class="close-btn" onclick="closeModal('editAreaModal')">&times;</button>
-      </div>
-      <div class="modal-body">
-        <form id="editAreaForm" onsubmit="handleUpdateArea(event)">
-          <input type="hidden" id="editAreaId">
-          <div class="form-group">
-            <label class="form-label" for="editAreaNombre">Nombre del Área Corporativa</label>
-            <input type="text" id="editAreaNombre" class="form-control" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="editAreaDesc">Descripción (Opcional)</label>
-            <textarea id="editAreaDesc" rows="3" class="form-control"></textarea>
-          </div>
-          <div style="display:flex; justify-content:flex-end; gap:1rem;">
-            <button type="button" class="btn btn-secondary" onclick="closeModal('editAreaModal')">Cancelar</button>
-            <button type="submit" class="btn btn-primary" id="btnSubmitEditArea">Guardar Cambios</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- Edit Post Modal -->
-  <div class="modal-overlay" id="editModal">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h2><i class="fa-solid fa-pen-to-square" style="color:var(--primary);"></i> Editar Publicación</h2>
-        <button class="close-btn" onclick="closeModal('editModal')">&times;</button>
-      </div>
-      <div class="modal-body">
-        <form id="editPostForm" onsubmit="handleSaveEditPost(event)">
-          <input type="hidden" id="editPostId">
-
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label" for="editSelectCategoriaPadre"><i class="fa-solid fa-sitemap"></i> Área /
-                Categoría Principal</label>
-              <select id="editSelectCategoriaPadre" onchange="onEditPostCategoriaChange(this.value)" required>
-                <option value="apps">Apps (Aplicaciones)</option>
-                <option value="infraestructura">Infraestructura</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="editSelectModulo"><i class="fa-solid fa-folder"></i> Módulo
-                Temático</label>
-              <select id="editSelectModulo" required></select>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="editSelectTipo"><i class="fa-solid fa-tag"></i> Tipo de Publicación</label>
-            <select id="editSelectTipo" required></select>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="editPostTitulo">Título de la Publicación</label>
-            <input type="text" id="editPostTitulo" class="form-control" placeholder="Título de la publicación..."
-              required>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="editPostResumen">Resumen o Introducción (Opcional)</label>
-            <textarea id="editPostResumen" rows="2" class="form-control" placeholder="Breve descripción..."></textarea>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="editPostContenido">Contenido Completo del Blog</label>
-            <textarea id="editPostContenido" rows="6" class="form-control" placeholder="Cuerpo del artículo..."
-              required></textarea>
-          </div>
-
-          <!-- Attachments Section for Edit -->
-          <div class="form-group">
-            <label class="form-label">Adjuntos de la Publicación</label>
-            <div class="file-upload-zone" onclick="document.getElementById('editFileInput').click()" style="margin-bottom: 1rem;">
-              <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
-              <p>Haz clic para agregar más fotos o archivos a esta publicación</p>
-              <input type="file" id="editFileInput" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.txt" style="display:none"
-                onchange="handleEditFileSelect(event)">
-            </div>
-
-            <div class="file-previews" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap:1rem;">
-              <div id="editExistingAdjuntos" style="display:contents;"></div>
-              <div id="editFilePreviews" style="display:contents;"></div>
-            </div>
-          </div>
-
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem;">
-            <button type="button" class="btn btn-danger" id="btnDeletePostInEdit" onclick="handleDeletePostFromModal()">
-              <i class="fa-solid fa-trash-can"></i> Eliminar
-            </button>
-            <div style="display:flex; gap:1rem;">
-              <button type="button" class="btn btn-secondary" onclick="closeModal('editModal')">Cancelar</button>
-              <button type="submit" class="btn btn-primary" id="btnSubmitEditPost">
-                <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
-              </button>
-            </div>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- Post Detail Modal -->
-  <div class="modal-overlay" id="detailModal">
-    <div class="modal-card" style="max-width: 840px;">
-      <div class="modal-header">
-        <div id="detailBadges"></div>
-        <div style="display:flex; gap:0.5rem; align-items:center;">
-          <div id="detailHeaderActions"></div>
-          <button class="close-btn" onclick="closeModal('detailModal')">&times;</button>
-        </div>
-      </div>
-      <div class="modal-body">
-        <h1 id="detailTitle" style="font-family:var(--font-heading); font-size:2rem; margin-bottom:1rem; color:white;">
-        </h1>
-        <div id="detailMeta"
-          style="color:var(--text-muted); font-size:0.88rem; margin-bottom:1.5rem; display:flex; gap:1.5rem;"></div>
-
-        <div id="detailCoverContainer"></div>
-
-        <div id="detailContent"
-          style="white-space: pre-wrap; font-size:1.05rem; line-height:1.8; color:#e2e8f0; margin-bottom:2rem;"></div>
-
-        <div class="attachments-gallery" id="detailAttachments"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- RBAC Roles & Permissions Management Modal -->
-  <div class="modal-overlay" id="rbacModal">
-    <div class="modal-card" style="max-width: 900px;">
-      <div class="modal-header">
-        <h2><i class="fa-solid fa-user-shield" style="color:var(--accent-purple);"></i> Gestión de Roles y Permisos
-          (RBAC)</h2>
-        <button class="close-btn" onclick="closeModal('rbacModal')">&times;</button>
-      </div>
-      <div class="modal-body">
-        <!-- Sub-tabs -->
-        <div class="rbac-tabs"
-          style="display:flex; gap:1rem; margin-bottom:1.5rem; border-bottom:1px solid var(--bg-card-border); padding-bottom:0.75rem;">
-          <button class="btn btn-secondary active-rbac-tab" id="tabBtnUsersRole" onclick="switchRbacSubTab('users')">
-            <i class="fa-solid fa-users"></i> Asignación de Usuarios
-          </button>
-          <button class="btn btn-secondary" id="tabBtnRolesMatrix" onclick="switchRbacSubTab('matrix')">
-            <i class="fa-solid fa-key"></i> Matriz de Permisos
-          </button>
-        </div>
-
-        <!-- Tab 1: User Role Assignment -->
-        <div id="rbacTabUsers">
-          <div
-            style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem;">
-            <div>
-              <h3 style="font-size:1.1rem; color:white; margin-bottom:0.25rem;">Asignar Roles a Usuarios de Directorio
-                Activo</h3>
-              <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">Cambia los permisos de los usuarios
-                autenticados seleccionando el rol correspondiente.</p>
-            </div>
-            <!-- Search bar for RBAC users -->
-            <div style="position:relative; width: 280px; flex-shrink: 0;">
-              <i class="fa-solid fa-magnifying-glass"
-                style="position:absolute; left:0.85rem; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:0.85rem;"
-                aria-hidden="true"></i>
-              <input type="text" id="rbacUserSearchInput" class="form-control" placeholder="Buscar usuario o correo..."
-                oninput="onRbacUserSearchInput()" style="padding-left:2.3rem; font-size:0.85rem; height:38px;">
-            </div>
-          </div>
-
-          <div class="table-responsive">
-            <table class="rbac-table" style="width:100%; border-collapse:collapse;">
-              <thead>
-                <tr
-                  style="text-align:left; border-bottom:1px solid var(--bg-card-border); color:var(--text-muted); font-size:0.85rem;">
-                  <th style="padding:0.75rem;">Usuario</th>
-                  <th style="padding:0.75rem;">Correo / AD</th>
-                  <th style="padding:0.75rem;">Rol Actual</th>
-                  <th style="padding:0.75rem; text-align:right;">Acciones</th>
-                </tr>
-              </thead>
-              <tbody id="usersRolesTableBody"></tbody>
-            </table>
-          </div>
-
-          <!-- Pagination container for RBAC Users (6 per page) -->
-          <div id="rbacUsersPagination"
-            style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; padding-top:0.75rem; border-top:1px solid var(--bg-card-border); font-size:0.85rem; color:var(--text-muted);">
-          </div>
-        </div>
-
-        <!-- Tab 2: Roles & Permission Matrix -->
-        <div id="rbacTabMatrix" class="view-hidden">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-            <h3 style="font-size:1.1rem; color:white;">Configurar Permisos por Rol</h3>
-            <button class="btn btn-secondary" onclick="toggleNewRoleForm()"><i class="fa-solid fa-plus"></i> Nuevo
-              Rol</button>
-          </div>
-
-          <!-- New Role Form -->
-          <div id="newRoleForm"
-            style="display:none; background:var(--bg-dark); padding:1rem; border-radius:var(--radius-md); margin-bottom:1.5rem; border:1px solid var(--bg-card-border);">
-            <h4 style="color:white; margin-bottom:0.75rem;">Crear Nuevo Rol</h4>
-            <div class="form-row">
-              <div class="form-group">
-                <input type="text" id="newRoleNombre" class="form-control"
-                  placeholder="Nombre del Rol (Ej: Supervisor)">
-              </div>
-              <div class="form-group">
-                <input type="text" id="newRoleDesc" class="form-control" placeholder="Descripción del rol...">
-              </div>
-            </div>
-            <button type="button" class="btn btn-primary" onclick="handleCreateRole()">Guardar Rol</button>
-          </div>
-
-          <div id="rolesMatrixContainer"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-    <!-- Burbuja Flotante de Chat IA -->
+  <script type="module" src="js/app.js?v=20261015-popupfix"></script>
+  <!-- Burbuja Flotante de Chat IA -->
   <div id="chatBubbleBtn" class="chat-floating-bubble" onclick="toggleChatWindow()" title="Consultar con IA">
     <i class="fa-solid fa-wand-magic-sparkles"></i>
   </div>
@@ -544,13 +1272,13 @@
     <div class="chat-window-header">
       <div class="chat-header-title">
         <i class="fa-solid fa-brain"></i>
-        <span>Asistente IA - BlogApp</span>
+        <span>Asistente IA - Prixma</span>
       </div>
       <button class="chat-close-btn" onclick="toggleChatWindow()" title="Cerrar"><i class="fa-solid fa-xmark"></i></button>
     </div>
     <div id="chatMessages" class="chat-messages-container">
       <div class="chat-msg chat-msg-bot">
-        ¡Hola! Soy tu asistente de BlogApp. Puedo responder preguntas, relacionar y clasificar publicaciones existentes en la base de datos. ¿En qué te puedo ayudar?
+        ¡Hola! Soy tu asistente de IA. Puedo responder preguntas, relacionar y clasificar publicaciones existentes en la base de datos de Prixma. ¿En qué te puedo ayudar?
       </div>
     </div>
     <form id="chatForm" class="chat-input-bar" onsubmit="enviarPreguntaChat(event)">
@@ -558,8 +1286,6 @@
       <button type="submit" id="chatSendBtn" title="Enviar"><i class="fa-solid fa-paper-plane"></i></button>
     </form>
   </div>
-
-  <script src="js/app.js"></script>
 </body>
 
 </html>

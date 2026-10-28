@@ -5,6 +5,8 @@ public class CreatePostDto
     public ulong UsuarioId { get; set; }
     public ushort ModuloId { get; set; }
     public byte TipoId { get; set; }
+    public byte? TipoConocimientoId { get; set; }
+    public string? PalabrasClave { get; set; }
     public string Titulo { get; set; } = string.Empty;
     public string? Resumen { get; set; }
     public string Contenido { get; set; } = string.Empty;
@@ -17,6 +19,8 @@ public class UpdatePostDto
 {
     public ushort ModuloId { get; set; }
     public byte TipoId { get; set; }
+    public byte? TipoConocimientoId { get; set; }
+    public string? PalabrasClave { get; set; }
     public string Titulo { get; set; } = string.Empty;
     public string? Resumen { get; set; }
     public string Contenido { get; set; } = string.Empty;
@@ -47,6 +51,9 @@ public class PostResponseDto
     public string ModuloCategoriaPadre { get; set; } = string.Empty;
     public byte TipoId { get; set; }
     public string TipoNombre { get; set; } = string.Empty;
+    public byte? TipoConocimientoId { get; set; }
+    public string? TipoConocimientoNombre { get; set; }
+    public string? PalabrasClave { get; set; }
     public byte EstadoId { get; set; } = 1;
     public string EstadoNombre { get; set; } = "Activo";
     public string Titulo { get; set; } = string.Empty;
@@ -54,18 +61,8 @@ public class PostResponseDto
     public string? Resumen { get; set; }
     public string Contenido { get; set; } = string.Empty;
     public string Estado { get; set; } = string.Empty;
-    public uint Visitas { get; set; }
     public DateTime CreadoEn { get; set; }
     public DateTime ActualizadoEn { get; set; }
     public string? PortadaUrl { get; set; }
     public List<AdjuntoResponseDto> Adjuntos { get; set; } = new();
-}
-
-public class PagedResultDto<T>
-{
-    public List<T> Items { get; set; } = new();
-    public int TotalItems { get; set; }
-    public int Page { get; set; }
-    public int PageSize { get; set; }
-    public int TotalPages => PageSize > 0 ? (int)Math.Ceiling((double)TotalItems / PageSize) : 0;
 }

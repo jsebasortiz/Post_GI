@@ -8,7 +8,7 @@ namespace BlogApp.Services;
 
 public interface IPostService
 {
-    Task<PagedResultDto<PostResponseDto>> GetPostsAsync(ushort? moduloId = null, string? moduloSlug = null, string? categoriaPadre = null, byte? tipoId = null, string? search = null, string? estado = "publicado", int page = 1, int pageSize = 10);
+    Task<PagedResultDto<PostResponseDto>> GetPostsAsync(ushort? moduloId = null, string? moduloSlug = null, string? categoriaPadre = null, byte? tipoId = null, byte? tipoConocimientoId = null, string? search = null, string? estado = "publicado", int page = 1, int pageSize = 10);
     Task<PostResponseDto?> GetPostBySlugAsync(string slug);
     Task<PostResponseDto?> GetPostByIdAsync(ulong id);
     Task<PostResponseDto> CreatePostAsync(CreatePostDto dto);
@@ -16,6 +16,7 @@ public interface IPostService
     Task<bool> DeletePostAsync(ulong id);
     Task<AdjuntoResponseDto?> AddAdjuntoToPostAsync(ulong postId, IFormFile file, bool esPortada = false);
     Task<bool> DeleteAdjuntoAsync(ulong adjuntoId);
+    Task<bool> SetPortadaAsync(ulong adjuntoId);
 }
 
 public class PostService : IPostService
@@ -29,13 +30,14 @@ public class PostService : IPostService
         _fileStorage = fileStorage;
     }
 
-    public async Task<PagedResultDto<PostResponseDto>> GetPostsAsync(ushort? moduloId = null, string? moduloSlug = null, string? categoriaPadre = null, byte? tipoId = null, string? search = null, string? estado = "publicado", int page = 1, int pageSize = 10)
+    public async Task<PagedResultDto<PostResponseDto>> GetPostsAsync(ushort? moduloId = null, string? moduloSlug = null, string? categoriaPadre = null, byte? tipoId = null, byte? tipoConocimientoId = null, string? search = null, string? estado = "publicado", int page = 1, int pageSize = 10)
     {
         // Solo obtener publicaciones activas (estado_id = 1)
         var query = _context.Posts
             .Include(p => p.Usuario)
             .Include(p => p.Modulo).ThenInclude(m => m!.Area)
             .Include(p => p.Tipo)
+            .Include(p => p.TipoConocimiento)
             .Include(p => p.Adjuntos)
             .AsNoTracking()
             .Where(p => p.EstadoId == 1);
@@ -60,10 +62,15 @@ public class PostService : IPostService
             query = query.Where(p => p.TipoId == tipoId.Value);
         }
 
+        if (tipoConocimientoId.HasValue)
+        {
+            query = query.Where(p => p.TipoConocimientoId == tipoConocimientoId.Value);
+        }
+
         if (!string.IsNullOrWhiteSpace(search))
         {
             var term = search.Trim().ToLower();
-            query = query.Where(p => p.Titulo.ToLower().Contains(term) || (p.Resumen != null && p.Resumen.ToLower().Contains(term)) || p.Contenido.ToLower().Contains(term));
+            query = query.Where(p => p.Titulo.ToLower().Contains(term) || (p.Resumen != null && p.Resumen.ToLower().Contains(term)) || p.Contenido.ToLower().Contains(term) || (p.PalabrasClave != null && p.PalabrasClave.ToLower().Contains(term)));
         }
 
         int totalItems = await query.CountAsync();
@@ -91,14 +98,11 @@ public class PostService : IPostService
             .Include(p => p.Usuario)
             .Include(p => p.Modulo).ThenInclude(m => m!.Area)
             .Include(p => p.Tipo)
+            .Include(p => p.TipoConocimiento)
             .Include(p => p.Adjuntos)
             .FirstOrDefaultAsync(p => p.Slug == slug && p.EstadoId == 1);
 
         if (post == null) return null;
-
-        // Incrementar visitas
-        post.Visitas++;
-        await _context.SaveChangesAsync();
 
         return MapToResponseDto(post);
     }
@@ -109,14 +113,11 @@ public class PostService : IPostService
             .Include(p => p.Usuario)
             .Include(p => p.Modulo).ThenInclude(m => m!.Area)
             .Include(p => p.Tipo)
+            .Include(p => p.TipoConocimiento)
             .Include(p => p.Adjuntos)
             .FirstOrDefaultAsync(p => p.Id == id && p.EstadoId == 1);
 
         if (post == null) return null;
-
-        // Incrementar contador de visitas en BD al consultar la publicación
-        post.Visitas++;
-        await _context.SaveChangesAsync();
 
         return MapToResponseDto(post);
     }
@@ -130,13 +131,14 @@ public class PostService : IPostService
             UsuarioId = dto.UsuarioId,
             ModuloId = dto.ModuloId,
             TipoId = dto.TipoId,
+            TipoConocimientoId = dto.TipoConocimientoId,
+            PalabrasClave = dto.PalabrasClave,
             EstadoId = 1, // 1 = Activo
             Titulo = dto.Titulo,
             Slug = slug,
             Resumen = dto.Resumen,
             Contenido = dto.Contenido,
             Estado = "publicado",
-            Visitas = 0,
             CreadoEn = DateTime.UtcNow,
             ActualizadoEn = DateTime.UtcNow
         };
@@ -147,13 +149,33 @@ public class PostService : IPostService
         // Procesar archivos adjuntos si los hay
         if (dto.Archivos != null && dto.Archivos.Count > 0)
         {
-            int portadaIdx = dto.PortadaIndex ?? 0;
+            int? targetPortadaIdx = dto.PortadaIndex;
+            if (targetPortadaIdx.HasValue && (targetPortadaIdx.Value < 0 || targetPortadaIdx.Value >= dto.Archivos.Count || !IsImageFile(dto.Archivos[targetPortadaIdx.Value].ContentType, dto.Archivos[targetPortadaIdx.Value].FileName)))
+            {
+                targetPortadaIdx = null;
+            }
+
+            if (!targetPortadaIdx.HasValue)
+            {
+                for (int i = 0; i < dto.Archivos.Count; i++)
+                {
+                    if (IsImageFile(dto.Archivos[i].ContentType, dto.Archivos[i].FileName))
+                    {
+                        targetPortadaIdx = i;
+                        break;
+                    }
+                }
+            }
+
             for (int i = 0; i < dto.Archivos.Count; i++)
             {
                 var file = dto.Archivos[i];
                 if (file.Length == 0) continue;
 
                 var savedFile = await _fileStorage.SaveFileAsync(file, "posts");
+                bool isImg = IsImageFile(savedFile.MimeType, savedFile.ArchivoNombreOriginal);
+                bool esPortada = isImg && targetPortadaIdx.HasValue && (i == targetPortadaIdx.Value);
+
                 var adjunto = new AdjuntoPost
                 {
                     PostId = post.Id,
@@ -161,7 +183,7 @@ public class PostService : IPostService
                     ArchivoNombreOriginal = savedFile.ArchivoNombreOriginal,
                     MimeType = savedFile.MimeType,
                     TamanioBytes = savedFile.TamanioBytes,
-                    EsPortada = (i == portadaIdx),
+                    EsPortada = esPortada,
                     CreadoEn = DateTime.UtcNow
                 };
                 _context.AdjuntosPost.Add(adjunto);
@@ -186,6 +208,8 @@ public class PostService : IPostService
 
         post.ModuloId = dto.ModuloId;
         post.TipoId = dto.TipoId;
+        post.TipoConocimientoId = dto.TipoConocimientoId;
+        post.PalabrasClave = dto.PalabrasClave;
         post.Resumen = dto.Resumen;
         post.Contenido = dto.Contenido;
         post.Estado = dto.Estado;
@@ -214,10 +238,11 @@ public class PostService : IPostService
         if (post == null) return null;
 
         var savedFile = await _fileStorage.SaveFileAsync(file, "posts");
+        bool isImg = IsImageFile(savedFile.MimeType, savedFile.ArchivoNombreOriginal);
 
-        if (esPortada)
+        if (esPortada && isImg)
         {
-            // Desmarcar portadas anteriores si esta será la portada principal
+            // Desmarcar portadas anteriores si esta nueva es una imagen
             foreach (var a in post.Adjuntos)
             {
                 a.EsPortada = false;
@@ -231,7 +256,7 @@ public class PostService : IPostService
             ArchivoNombreOriginal = savedFile.ArchivoNombreOriginal,
             MimeType = savedFile.MimeType,
             TamanioBytes = savedFile.TamanioBytes,
-            EsPortada = esPortada,
+            EsPortada = esPortada && isImg,
             CreadoEn = DateTime.UtcNow
         };
 
@@ -261,6 +286,41 @@ public class PostService : IPostService
         adjunto.EsPortada = false;
         await _context.SaveChangesAsync();
         return true;
+    }
+
+    public async Task<bool> SetPortadaAsync(ulong adjuntoId)
+    {
+        var targetAdjunto = await _context.AdjuntosPost.FirstOrDefaultAsync(a => a.Id == adjuntoId && a.EstadoId == 1);
+        if (targetAdjunto == null) return false;
+
+        if (!IsImageFile(targetAdjunto.MimeType, targetAdjunto.ArchivoNombreOriginal))
+            return false;
+
+        var allPostAdjuntos = await _context.AdjuntosPost
+            .Where(a => a.PostId == targetAdjunto.PostId && a.EstadoId == 1)
+            .ToListAsync();
+
+        foreach (var a in allPostAdjuntos)
+        {
+            a.EsPortada = (a.Id == targetAdjunto.Id);
+        }
+
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+
+    private static bool IsImageFile(string? mimeType, string? fileName)
+    {
+        if (!string.IsNullOrEmpty(mimeType) && mimeType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (!string.IsNullOrEmpty(fileName))
+        {
+            var ext = Path.GetExtension(fileName).ToLowerInvariant();
+            return ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".webp" || ext == ".gif" || ext == ".svg";
+        }
+        return false;
     }
 
     private async Task<string> GenerateUniqueSlugAsync(string title, ulong? excludeId = null)
@@ -299,7 +359,8 @@ public class PostService : IPostService
     {
         // Filtrar solo los adjuntos con EstadoId == 1 (Activos)
         var activeAdjuntos = post.Adjuntos.Where(a => a.EstadoId == 1).ToList();
-        var portada = activeAdjuntos.FirstOrDefault(a => a.EsPortada) ?? activeAdjuntos.FirstOrDefault();
+        var portada = activeAdjuntos.FirstOrDefault(a => a.EsPortada && IsImageFile(a.MimeType, a.ArchivoNombreOriginal)) 
+                      ?? activeAdjuntos.FirstOrDefault(a => IsImageFile(a.MimeType, a.ArchivoNombreOriginal));
 
         return new PostResponseDto
         {
@@ -312,6 +373,9 @@ public class PostService : IPostService
             ModuloCategoriaPadre = post.Modulo?.Area?.Codigo ?? "apps",
             TipoId = post.TipoId,
             TipoNombre = post.Tipo?.Nombre ?? "Noticia",
+            TipoConocimientoId = post.TipoConocimientoId,
+            TipoConocimientoNombre = post.TipoConocimiento?.Nombre,
+            PalabrasClave = post.PalabrasClave,
             EstadoId = post.EstadoId,
             EstadoNombre = post.EstadoId == 1 ? "Activo" : "Inactivo",
             Titulo = post.Titulo,
@@ -319,7 +383,6 @@ public class PostService : IPostService
             Resumen = post.Resumen,
             Contenido = post.Contenido,
             Estado = post.Estado,
-            Visitas = post.Visitas,
             CreadoEn = post.CreadoEn,
             ActualizadoEn = post.ActualizadoEn,
             PortadaUrl = portada?.ArchivoUrl,
@@ -331,7 +394,7 @@ public class PostService : IPostService
                 ArchivoNombreOriginal = a.ArchivoNombreOriginal,
                 MimeType = a.MimeType,
                 TamanioBytes = a.TamanioBytes,
-                EsPortada = a.EsPortada,
+                EsPortada = a.EsPortada && IsImageFile(a.MimeType, a.ArchivoNombreOriginal),
                 EstadoId = a.EstadoId,
                 CreadoEn = a.CreadoEn
             }).ToList()

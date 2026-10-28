@@ -11,12 +11,72 @@ public static class DbInitializer
         {
             await context.Database.EnsureCreatedAsync();
 
-            // Seed PostEstado (1 = Activo, 2 = Inactivo)
-            if (!await context.PostEstados.AnyAsync())
+            // Seed Estado (1 = Activo, 2 = Inactivo)
+            try
             {
-                context.PostEstados.Add(new PostEstado { Id = 1, Nombre = "Activo", Descripcion = "Publicación activa visible en el portal" });
-                context.PostEstados.Add(new PostEstado { Id = 2, Nombre = "Inactivo", Descripcion = "Publicación eliminada lógicamente" });
-                await context.SaveChangesAsync();
+                var createEstadoSql = @"
+                CREATE TABLE IF NOT EXISTS `estado` (
+                  `id` tinyint unsigned NOT NULL AUTO_INCREMENT,
+                  `nombre` varchar(50) NOT NULL,
+                  `descripcion` varchar(255) DEFAULT NULL,
+                  PRIMARY KEY (`id`),
+                  UNIQUE KEY `idx_estado_nombre` (`nombre`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
+
+                await context.Database.ExecuteSqlRawAsync(createEstadoSql);
+
+                if (!await context.Estados.AnyAsync())
+                {
+                    context.Estados.Add(new Estado { Id = 1, Nombre = "Activo", Descripcion = "Entidad activa en el sistema" });
+                    context.Estados.Add(new Estado { Id = 2, Nombre = "Inactivo", Descripcion = "Entidad inactivada o eliminada lógicamente" });
+                    await context.SaveChangesAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[DbInitializer] Verificación de tabla estado: {ex.Message}");
+            }
+
+            // Asegurar columna estado_id en post_tipo y rol
+            try
+            {
+                var conn = context.Database.GetDbConnection();
+                if (conn.State != System.Data.ConnectionState.Open)
+                    await conn.OpenAsync();
+
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'post_tipo' AND COLUMN_NAME = 'estado_id'";
+                    var colCount = Convert.ToInt64(await cmd.ExecuteScalarAsync());
+                    if (colCount == 0)
+                    {
+                        await context.Database.ExecuteSqlRawAsync("ALTER TABLE `post_tipo` ADD COLUMN `estado_id` TINYINT UNSIGNED NOT NULL DEFAULT 1;");
+                    }
+                }
+
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'rol' AND COLUMN_NAME = 'estado_id'";
+                    var colCount = Convert.ToInt64(await cmd.ExecuteScalarAsync());
+                    if (colCount == 0)
+                    {
+                        await context.Database.ExecuteSqlRawAsync("ALTER TABLE `rol` ADD COLUMN `estado_id` TINYINT UNSIGNED NOT NULL DEFAULT 1;");
+                    }
+                }
+
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'post_tipo' AND COLUMN_NAME = 'rol_id'";
+                    var colCount = Convert.ToInt64(await cmd.ExecuteScalarAsync());
+                    if (colCount == 0)
+                    {
+                        await context.Database.ExecuteSqlRawAsync("ALTER TABLE `post_tipo` ADD COLUMN `rol_id` TINYINT UNSIGNED NULL;");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[DbInitializer] Verificación de columnas estado_id en post_tipo y rol: {ex.Message}");
             }
 
             // Asegurar columna estado_id en adjunto_post para borrado lógico de forma limpia
@@ -39,23 +99,7 @@ public static class DbInitializer
                 Console.WriteLine($"[DbInitializer] Verificación de columna estado_id: {ex.Message}");
             }
 
-            // Asegurar creación de tabla modulo_estado en MySQL si no existe
-            try
-            {
-                var createModuloEstadoSql = @"
-                CREATE TABLE IF NOT EXISTS `modulo_estado` (
-                  `id` tinyint unsigned NOT NULL AUTO_INCREMENT,
-                  `nombre` varchar(50) NOT NULL,
-                  `descripcion` varchar(255) DEFAULT NULL,
-                  PRIMARY KEY (`id`)
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
 
-                await context.Database.ExecuteSqlRawAsync(createModuloEstadoSql);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[DbInitializer] Verificación de tabla modulo_estado: {ex.Message}");
-            }
 
             // Asegurar creación de tabla area en MySQL si no existe
             try
@@ -108,6 +152,61 @@ public static class DbInitializer
                 Console.WriteLine($"[DbInitializer] Verificación de columna area_id en modulo: {ex.Message}");
             }
 
+            // Asegurar creación de tabla tipo_conocimiento y columnas en post
+            try
+            {
+                var createTipoConocimientoSql = @"
+                CREATE TABLE IF NOT EXISTS `tipo_conocimiento` (
+                  `id` tinyint unsigned NOT NULL AUTO_INCREMENT,
+                  `nombre` varchar(100) NOT NULL,
+                  `descripcion` varchar(255) DEFAULT NULL,
+                  `estado_id` tinyint unsigned NOT NULL DEFAULT '1',
+                  `creado_en` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+                  PRIMARY KEY (`id`),
+                  UNIQUE KEY `idx_tipo_conocimiento_nombre` (`nombre`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
+
+                await context.Database.ExecuteSqlRawAsync(createTipoConocimientoSql);
+
+                var conn = context.Database.GetDbConnection();
+                if (conn.State != System.Data.ConnectionState.Open)
+                    await conn.OpenAsync();
+
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'post' AND COLUMN_NAME = 'tipo_conocimiento_id'";
+                    var colCount = Convert.ToInt64(await cmd.ExecuteScalarAsync());
+                    if (colCount == 0)
+                    {
+                        await context.Database.ExecuteSqlRawAsync("ALTER TABLE `post` ADD COLUMN `tipo_conocimiento_id` TINYINT UNSIGNED NULL;");
+                    }
+                }
+
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'post' AND COLUMN_NAME = 'palabras_clave'";
+                    var colCount = Convert.ToInt64(await cmd.ExecuteScalarAsync());
+                    if (colCount == 0)
+                    {
+                        await context.Database.ExecuteSqlRawAsync("ALTER TABLE `post` ADD COLUMN `palabras_clave` VARCHAR(500) NULL;");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[DbInitializer] Verificación de tabla tipo_conocimiento y columnas en post: {ex.Message}");
+            }
+
+            // Seed TipoConocimiento
+            if (!await context.TiposConocimiento.AnyAsync())
+            {
+                context.TiposConocimiento.Add(new TipoConocimiento { Id = 1, Nombre = "Técnico", Descripcion = "Documentación de arquitectura, código, configuraciones e infraestructura" });
+                context.TiposConocimiento.Add(new TipoConocimiento { Id = 2, Nombre = "Funcional / Operativo", Descripcion = "Procedimientos corporativos, guías operativas e instructivos de uso" });
+                context.TiposConocimiento.Add(new TipoConocimiento { Id = 3, Nombre = "Normativo / Políticas", Descripcion = "Políticas de empresa, estándares de cumplimiento y normativas" });
+                context.TiposConocimiento.Add(new TipoConocimiento { Id = 4, Nombre = "Soporte / Incidencias", Descripcion = "Solución a fallos recurrentes, preguntas frecuentes y soporte técnico" });
+                await context.SaveChangesAsync();
+            }
+
             // Seed PostTipo con IDs explícitos (byte)
             if (!await context.PostTipos.AnyAsync())
             {
@@ -118,13 +217,7 @@ public static class DbInitializer
                 await context.SaveChangesAsync();
             }
 
-            // Seed ModuloEstado (1 = Activo, 2 = Inactivo)
-            if (!await context.ModuloEstados.AnyAsync())
-            {
-                context.ModuloEstados.Add(new ModuloEstado { Id = 1, Nombre = "Activo", Descripcion = "Módulo activo visible en el portal" });
-                context.ModuloEstados.Add(new ModuloEstado { Id = 2, Nombre = "Inactivo", Descripcion = "Módulo inactivo o borrado lógicamente" });
-                await context.SaveChangesAsync();
-            }
+
 
             // Seed Modulo con AreaId (1 = Apps, 2 = Infraestructura)
             if (!await context.Modulos.AnyAsync())
@@ -138,7 +231,7 @@ public static class DbInitializer
                 // Submódulos de Infraestructura (AreaId = 2)
                 context.Modulos.Add(new Modulo { Id = 5, Nombre = "Servidores & Cloud", Slug = "servidores-cloud", AreaId = 2, Descripcion = "Servidores virtuales, Azure, Docker y cloud computing", EstadoId = 1 });
                 context.Modulos.Add(new Modulo { Id = 6, Nombre = "Redes & Comunicaciones", Slug = "redes-comunicaciones", AreaId = 2, Descripcion = "Conectividad, switches, firewalls, VPN y enlaces", EstadoId = 1 });
-                context.Modulos.Add(new Modulo { Id = 7, Nombre = "Seguridad AD / LDAP", Slug = "seguridad-ad-ldap", AreaId = 2, Descripcion = "Directorio Activo, políticas de grupo, accesos e identidades", EstadoId = 1 });
+                context.Modulos.Add(new Modulo { Id = 7, Nombre = "Seguridad Cloud & M365", Slug = "seguridad-cloud-m365", AreaId = 2, Descripcion = "Microsoft 365, políticas de acceso, identidades y seguridad cloud", EstadoId = 1 });
                 context.Modulos.Add(new Modulo { Id = 8, Nombre = "Bases de Datos", Slug = "bases-de-datos", AreaId = 2, Descripcion = "Administración, respaldos y optimización de SQL Server / MySQL", EstadoId = 1 });
                 await context.SaveChangesAsync();
             }
@@ -160,6 +253,31 @@ public static class DbInitializer
                 context.Permisos.Add(new Permiso { Id = 3, Codigo = "posts.delete", Nombre = "Eliminar Publicaciones", Descripcion = "Permite eliminar publicaciones" });
                 context.Permisos.Add(new Permiso { Id = 4, Codigo = "modulos.create", Nombre = "Crear Módulos", Descripcion = "Permite registrar nuevos módulos temáticos" });
                 context.Permisos.Add(new Permiso { Id = 5, Codigo = "roles.manage", Nombre = "Gestionar Roles & Permisos", Descripcion = "Acceso al panel de administración de roles y permisos" });
+                context.Permisos.Add(new Permiso { Id = 6, Codigo = "tipos.manage", Nombre = "Gestionar Tipos de Publicación", Descripcion = "Permite crear, editar y eliminar tipos de publicación" });
+                await context.SaveChangesAsync();
+            }
+            else if (!await context.Permisos.AnyAsync(p => p.Codigo == "tipos.manage"))
+            {
+                context.Permisos.Add(new Permiso { Id = 6, Codigo = "tipos.manage", Nombre = "Gestionar Tipos de Publicación", Descripcion = "Permite crear, editar y eliminar tipos de publicación" });
+                await context.SaveChangesAsync();
+
+                if (!await context.RolPermisos.AnyAsync(rp => rp.RolId == 1 && rp.PermisoId == 6))
+                    context.RolPermisos.Add(new RolPermiso { RolId = 1, PermisoId = 6 });
+                if (!await context.RolPermisos.AnyAsync(rp => rp.RolId == 2 && rp.PermisoId == 6))
+                    context.RolPermisos.Add(new RolPermiso { RolId = 2, PermisoId = 6 });
+                await context.SaveChangesAsync();
+            }
+
+            if (!await context.Permisos.AnyAsync(p => p.Codigo == "tipos_conocimiento.manage"))
+            {
+                var p7 = new Permiso { Codigo = "tipos_conocimiento.manage", Nombre = "Gestionar Tipos de Conocimiento", Descripcion = "Permite crear, editar y eliminar tipos de conocimiento" };
+                context.Permisos.Add(p7);
+                await context.SaveChangesAsync();
+
+                if (!await context.RolPermisos.AnyAsync(rp => rp.RolId == 1 && rp.PermisoId == p7.Id))
+                    context.RolPermisos.Add(new RolPermiso { RolId = 1, PermisoId = p7.Id });
+                if (!await context.RolPermisos.AnyAsync(rp => rp.RolId == 2 && rp.PermisoId == p7.Id))
+                    context.RolPermisos.Add(new RolPermiso { RolId = 2, PermisoId = p7.Id });
                 await context.SaveChangesAsync();
             }
 
@@ -172,11 +290,13 @@ public static class DbInitializer
                 context.RolPermisos.Add(new RolPermiso { RolId = 1, PermisoId = 3 });
                 context.RolPermisos.Add(new RolPermiso { RolId = 1, PermisoId = 4 });
                 context.RolPermisos.Add(new RolPermiso { RolId = 1, PermisoId = 5 });
+                context.RolPermisos.Add(new RolPermiso { RolId = 1, PermisoId = 6 });
 
-                // Editor (Rol 2) puede crear/editar posts y módulos
+                // Editor (Rol 2) puede crear/editar posts, módulos y tipos
                 context.RolPermisos.Add(new RolPermiso { RolId = 2, PermisoId = 1 });
                 context.RolPermisos.Add(new RolPermiso { RolId = 2, PermisoId = 2 });
                 context.RolPermisos.Add(new RolPermiso { RolId = 2, PermisoId = 4 });
+                context.RolPermisos.Add(new RolPermiso { RolId = 2, PermisoId = 6 });
 
                 await context.SaveChangesAsync();
             }
@@ -214,7 +334,6 @@ public static class DbInitializer
                         Resumen = "Primer artículo demostrativo creado automáticamente con soporte para archivos adjuntos e imágenes de portada.",
                         Contenido = "Este es un blog completo desarrollado con ASP.NET Core en .NET 10. Permite crear publicaciones por módulo, categorizarlas por tipo de post, subir múltiples fotos o adjuntos y gestionar imágenes de portada.",
                         Estado = "publicado",
-                        Visitas = 12,
                         CreadoEn = DateTime.UtcNow,
                         ActualizadoEn = DateTime.UtcNow
                     };

@@ -43,14 +43,18 @@ public class Post
     [Column("estado")]
     public string Estado { get; set; } = "publicado";
 
-    [Column("visitas")]
-    public uint Visitas { get; set; } = 0;
-
     [Column("creado_en")]
     public DateTime CreadoEn { get; set; } = DateTime.UtcNow;
 
     [Column("actualizado_en")]
     public DateTime ActualizadoEn { get; set; } = DateTime.UtcNow;
+
+    [Column("tipo_conocimiento_id")]
+    public byte? TipoConocimientoId { get; set; }
+
+    [MaxLength(500)]
+    [Column("palabras_clave")]
+    public string? PalabrasClave { get; set; }
 
     [ForeignKey(nameof(UsuarioId))]
     public Usuario? Usuario { get; set; }
@@ -61,8 +65,11 @@ public class Post
     [ForeignKey(nameof(TipoId))]
     public PostTipo? Tipo { get; set; }
 
+    [ForeignKey(nameof(TipoConocimientoId))]
+    public TipoConocimiento? TipoConocimiento { get; set; }
+
     [ForeignKey(nameof(EstadoId))]
-    public PostEstado? EstadoEntidad { get; set; }
+    public Estado? EstadoEntidad { get; set; }
 
     public ICollection<AdjuntoPost> Adjuntos { get; set; } = new List<AdjuntoPost>();
 }

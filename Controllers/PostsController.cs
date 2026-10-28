@@ -1,9 +1,11 @@
 using BlogApp.DTOs;
 using BlogApp.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BlogApp.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class PostsController : ControllerBase
@@ -21,12 +23,13 @@ public class PostsController : ControllerBase
         [FromQuery] string? moduloSlug,
         [FromQuery] string? categoriaPadre,
         [FromQuery] byte? tipoId,
+        [FromQuery] byte? tipoConocimientoId,
         [FromQuery] string? search,
         [FromQuery] string? estado = "publicado",
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10)
     {
-        var result = await _postService.GetPostsAsync(moduloId, moduloSlug, categoriaPadre, tipoId, search, estado, page, pageSize);
+        var result = await _postService.GetPostsAsync(moduloId, moduloSlug, categoriaPadre, tipoId, tipoConocimientoId, search, estado, page, pageSize);
         return Ok(result);
     }
 
@@ -47,6 +50,7 @@ public class PostsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Administrador,Editor")]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> CreatePost([FromForm] CreatePostDto dto)
     {
@@ -64,6 +68,7 @@ public class PostsController : ControllerBase
     }
 
     [HttpPut("{id:long}")]
+    [Authorize(Roles = "Administrador,Editor")]
     public async Task<IActionResult> UpdatePost(ulong id, [FromBody] UpdatePostDto dto)
     {
         var updatedPost = await _postService.UpdatePostAsync(id, dto);
@@ -72,6 +77,7 @@ public class PostsController : ControllerBase
     }
 
     [HttpDelete("{id:long}")]
+    [Authorize(Roles = "Administrador,Editor")]
     public async Task<IActionResult> DeletePost(ulong id)
     {
         var result = await _postService.DeletePostAsync(id);
@@ -80,6 +86,7 @@ public class PostsController : ControllerBase
     }
 
     [HttpPost("{id:long}/adjuntos")]
+    [Authorize(Roles = "Administrador,Editor")]
     public async Task<IActionResult> AddAdjunto(ulong id, IFormFile file, [FromQuery] bool esPortada = false)
     {
         if (file == null || file.Length == 0)
@@ -94,10 +101,21 @@ public class PostsController : ControllerBase
     }
 
     [HttpDelete("adjuntos/{adjuntoId:long}")]
+    [Authorize(Roles = "Administrador,Editor")]
     public async Task<IActionResult> DeleteAdjunto(ulong adjuntoId)
     {
         var result = await _postService.DeleteAdjuntoAsync(adjuntoId);
         if (!result) return NotFound(new { message = "Archivo adjunto no encontrado" });
         return Ok(new { message = "Adjunto eliminado correctamente" });
     }
+
+    [HttpPut("adjuntos/{adjuntoId:long}/portada")]
+    [Authorize(Roles = "Administrador,Editor")]
+    public async Task<IActionResult> SetPortada(ulong adjuntoId)
+    {
+        var result = await _postService.SetPortadaAsync(adjuntoId);
+        if (!result) return BadRequest(new { message = "No se pudo cambiar la portada. El archivo debe ser una imagen válida." });
+        return Ok(new { message = "Portada actualizada correctamente" });
+    }
 }
+

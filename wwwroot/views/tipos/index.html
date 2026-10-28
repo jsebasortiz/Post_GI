@@ -1,0 +1,59 @@
+<!-- VISTA INDEX DE TIPOS -->
+<div id="viewPostTiposIndex" class="app-view view-hidden">
+  <div class="modal-card" style="max-width: 900px; margin: 0 auto; box-shadow: var(--shadow-md);">
+    <div class="modal-header"
+      style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+      <div>
+        <h2 style="margin:0;"><i class="fa-solid fa-tags" style="color:var(--accent-emerald);"></i> Gestión de Tipos</h2>
+        <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0.25rem; margin-bottom:0;">Administra los tipos de publicación y tipos de conocimiento de la plataforma.</p>
+      </div>
+      <div>
+        <a href="/dashboard" class="btn btn-secondary" onclick="navigateTo('/dashboard'); return false;">
+          <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
+        </a>
+      </div>
+    </div>
+    <div class="modal-body">
+      <!-- Sub-tabs -->
+      <div class="rbac-tabs"
+        style="display:flex; gap:1rem; margin-bottom:1.5rem; border-bottom:1px solid var(--bg-card-border); padding-bottom:0.75rem;">
+        <button class="btn btn-secondary active-rbac-tab" id="tabBtnTiposPublicacion"
+          onclick="switchTiposSubTab('publicacion')">
+          <i class="fa-solid fa-tags"></i> Tipos de Publicación
+        </button>
+        <button class="btn btn-secondary" id="tabBtnTiposConocimiento"
+          onclick="switchTiposSubTab('conocimiento')">
+          <i class="fa-solid fa-brain"></i> Tipos de Conocimiento
+        </button>
+      </div>
+
+      <!-- Tab 1: Tipos de Publicación -->
+      <div id="tiposTabPublicacion">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem;">
+          <div>
+            <h3 style="font-size:1.1rem; color:var(--text-main); margin-bottom:0.25rem;">Tipos de Publicación</h3>
+            <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">Tipos de contenido para artículos (Guía, Incidencia, Manual, etc.).</p>
+          </div>
+          <a href="/tipos/create" class="btn btn-primary" onclick="navigateTo('/tipos/create'); return false;">
+            <i class="fa-solid fa-plus"></i> Nuevo Tipo
+          </a>
+        </div>
+        <div id="postTiposListContainer"></div>
+      </div>
+
+      <!-- Tab 2: Tipos de Conocimiento -->
+      <div id="tiposTabConocimiento" class="view-hidden">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem;">
+          <div>
+            <h3 style="font-size:1.1rem; color:var(--text-main); margin-bottom:0.25rem;">Tipos de Conocimiento</h3>
+            <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">Categorías de conocimiento para clasificar los artículos (Técnico, Funcional, etc.).</p>
+          </div>
+          <a href="/tipos-conocimiento/create" class="btn btn-primary" onclick="navigateTo('/tipos-conocimiento/create'); return false;">
+            <i class="fa-solid fa-plus"></i> Nuevo Tipo de Conocimiento
+          </a>
+        </div>
+        <div id="tiposConocimientoListContainer"></div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -33,3 +33,9 @@ public class AssignUsuarioRolDto
     public ulong UsuarioId { get; set; }
     public byte RolId { get; set; }
 }
+
+public class UpdateRolDto
+{
+    public string Nombre { get; set; } = string.Empty;
+    public string? Descripcion { get; set; }
+}

@@ -21,6 +21,12 @@ public class Rol
     [Column("descripcion")]
     public string? Descripcion { get; set; }
 
+    [Column("estado_id")]
+    public byte EstadoId { get; set; } = 1;
+
+    [ForeignKey("EstadoId")]
+    public Estado? Estado { get; set; }
+
     [Column("creado_en")]
     public DateTime CreadoEn { get; set; } = DateTime.UtcNow;
 

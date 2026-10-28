@@ -31,6 +31,13 @@ public class CreatePostTipoDto
 {
     public string Nombre { get; set; } = string.Empty;
     public string? Descripcion { get; set; }
+    public byte? RolId { get; set; }
+}
+
+public class CreateTipoConocimientoDto
+{
+    public string Nombre { get; set; } = string.Empty;
+    public string? Descripcion { get; set; }
 }
 
 public class CreateUsuarioDto
@@ -57,3 +64,25 @@ public class UsuarioResponseDto
     public List<string> Permisos { get; set; } = new();
     public DateTime CreadoEn { get; set; }
 }
+
+public class LoginResponseDto
+{
+    public string Token { get; set; } = string.Empty;
+    public UsuarioResponseDto Usuario { get; set; } = new();
+}
+
+public class MicrosoftLoginDto
+{
+    public string IdToken { get; set; } = string.Empty;
+    public string? AccessToken { get; set; }
+}
+
+public class AuthConfigDto
+{
+    public string ClientId { get; set; } = string.Empty;
+    public string TenantId { get; set; } = string.Empty;
+    public string AllowedDomain { get; set; } = string.Empty;
+    public bool IsConfigured { get; set; }
+}
+
+

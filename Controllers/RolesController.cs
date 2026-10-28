@@ -1,9 +1,11 @@
 using BlogApp.DTOs;
 using BlogApp.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BlogApp.Controllers;
 
+[Authorize(Roles = "Administrador")]
 [ApiController]
 [Route("api/[controller]")]
 public class RolesController : ControllerBase
@@ -44,6 +46,15 @@ public class RolesController : ControllerBase
         return Ok(rol);
     }
 
+    [HttpPut("{rolId:int}")]
+    public async Task<IActionResult> UpdateRol(byte rolId, [FromBody] UpdateRolDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.Nombre)) return BadRequest(new { message = "El nombre del rol es requerido." });
+        var updated = await _roleService.UpdateRolAsync(rolId, dto);
+        if (updated == null) return NotFound(new { message = "Rol no encontrado." });
+        return Ok(updated);
+    }
+
     [HttpPut("{rolId:int}/permisos")]
     public async Task<IActionResult> UpdateRolPermisos(byte rolId, [FromBody] UpdateRolPermisosDto dto)
     {
@@ -58,5 +69,24 @@ public class RolesController : ControllerBase
         var success = await _roleService.AssignRolToUsuarioAsync(dto.UsuarioId, dto.RolId);
         if (!success) return BadRequest(new { message = "No se pudo asignar el rol al usuario." });
         return Ok(new { message = "Rol asignado correctamente al usuario." });
+    }
+
+    [HttpDelete("{rolId:int}")]
+    public async Task<IActionResult> DeleteRol(byte rolId)
+    {
+        try
+        {
+            var success = await _roleService.DeleteRolAsync(rolId);
+            if (!success) return NotFound(new { message = "Rol no encontrado." });
+            return Ok(new { message = "Rol eliminado correctamente." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Error al eliminar el rol.", detail = ex.Message });
+        }
     }
 }

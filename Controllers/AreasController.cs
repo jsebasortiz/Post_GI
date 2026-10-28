@@ -1,9 +1,11 @@
 using BlogApp.DTOs;
 using BlogApp.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BlogApp.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class AreasController : ControllerBase
@@ -31,6 +33,7 @@ public class AreasController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Administrador,Editor")]
     public async Task<IActionResult> CreateArea([FromBody] CreateAreaDto dto)
     {
         try
@@ -53,6 +56,7 @@ public class AreasController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [Authorize(Roles = "Administrador,Editor")]
     public async Task<IActionResult> UpdateArea(ushort id, [FromBody] UpdateAreaDto dto)
     {
         try
@@ -75,6 +79,7 @@ public class AreasController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Administrador,Editor")]
     public async Task<IActionResult> InactivarArea(ushort id)
     {
         var success = await _areaService.InactivarAreaAsync(id);

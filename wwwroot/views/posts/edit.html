@@ -1,0 +1,75 @@
+<!-- VISTA EDITAR PUBLICACIÓN -->
+<div id="viewEditPost" class="app-view view-hidden">
+  <div style="margin-bottom: 1.5rem;">
+    <a href="/dashboard" class="btn btn-secondary" onclick="handleCancelEditPost(event); return false;">
+      <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
+    </a>
+  </div>
+  <div class="modal-card" style="max-width: 800px; margin: 0 auto; box-shadow: var(--shadow-md);">
+    <div class="modal-header">
+      <h2><i class="fa-solid fa-pen-to-square" style="color:var(--primary);"></i> Editar Publicación</h2>
+    </div>
+    <div class="modal-body">
+      <form id="editPostForm" onsubmit="handleSaveEditPost(event)">
+        <input type="hidden" id="editPostId">
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="editSelectCategoriaPadre"><i class="fa-solid fa-sitemap"></i> Área / Categoría Principal</label>
+            <select id="editSelectCategoriaPadre" onchange="onEditPostCategoriaChange(this.value)" required></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="editSelectModulo"><i class="fa-solid fa-folder"></i> Módulo Temático</label>
+            <select id="editSelectModulo" required></select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="editSelectTipo"><i class="fa-solid fa-tag"></i> Tipo de Publicación</label>
+          <select id="editSelectTipo" required></select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="editPostTitulo">Título de la Publicación</label>
+          <input type="text" id="editPostTitulo" class="form-control" placeholder="Título de la publicación..." required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="editPostResumen">Resumen o Introducción (Opcional)</label>
+          <textarea id="editPostResumen" rows="2" class="form-control" placeholder="Breve descripción..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="editPostContenido">Contenido Completo del Blog</label>
+          <textarea id="editPostContenido" rows="6" class="form-control" placeholder="Cuerpo del artículo..." required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Adjuntos de la Publicación</label>
+          <div class="file-upload-zone" onclick="document.getElementById('editFileInput').click()" style="margin-bottom: 1rem;">
+            <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+            <p>Haz clic para agregar más fotos o archivos a esta publicación</p>
+            <input type="file" id="editFileInput" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.txt" style="display:none" onchange="handleEditFileSelect(event)">
+          </div>
+
+          <div class="file-previews" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap:1rem;">
+            <div id="editExistingAdjuntos" style="display:contents;"></div>
+            <div id="editFilePreviews" style="display:contents;"></div>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem;">
+          <button type="button" class="btn btn-danger" id="btnDeletePostInEdit" onclick="handleDeletePostFromModal()">
+            <i class="fa-solid fa-trash-can"></i> Eliminar
+          </button>
+          <div style="display:flex; gap:1rem;">
+            <button type="button" class="btn btn-secondary" onclick="handleCancelEditPost(event)">Cancelar</button>
+            <button type="submit" class="btn btn-primary" id="btnSubmitEditPost">
+              <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

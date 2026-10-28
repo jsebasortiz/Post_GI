@@ -1,0 +1,39 @@
+<!-- VISTA CREAR TIPO -->
+<div id="viewPostTiposCreate" class="app-view view-hidden">
+  <div style="margin-bottom: 1.5rem;">
+    <a href="/tipos" class="btn btn-secondary" onclick="navigateTo('/tipos'); return false;">
+      <i class="fa-solid fa-arrow-left"></i> Volver a Tipos de Publicación
+    </a>
+  </div>
+  <div class="modal-card" style="max-width: 700px; margin: 0 auto; box-shadow: var(--shadow-md);">
+    <div class="modal-header">
+      <h2><i class="fa-solid fa-tag" style="color:var(--accent-emerald);"></i> Crear Tipo de Publicación</h2>
+    </div>
+    <div class="modal-body">
+      <form id="createPostTipoForm" onsubmit="handleSaveCreatePostTipo(event)">
+        <div class="form-group">
+          <label class="form-label" for="newPostTipoNombre"><i class="fa-solid fa-pen"></i> Nombre del Tipo</label>
+          <input type="text" id="newPostTipoNombre" class="form-control"
+            placeholder="Ej: Procedimiento, Guía Técnica, Estándar" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="newPostTipoDesc"><i class="fa-solid fa-align-left"></i> Descripción (Opcional)</label>
+          <textarea id="newPostTipoDesc" rows="3" class="form-control"
+            placeholder="Breve descripción del propósito de este tipo..."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="newPostTipoRolId"><i class="fa-solid fa-user-shield"></i> Rol Asignado (Opcional)</label>
+          <select id="newPostTipoRolId" class="form-control">
+            <option value="">-- Todos los Roles / Ninguno --</option>
+          </select>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:1.5rem;">
+          <a href="/tipos" class="btn btn-secondary" onclick="navigateTo('/tipos'); return false;">Cancelar</a>
+          <button type="submit" class="btn btn-primary" id="btnSavePostTipo">
+            <i class="fa-solid fa-floppy-disk"></i> Guardar Tipo
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

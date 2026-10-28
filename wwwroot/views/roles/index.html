@@ -1,0 +1,106 @@
+<!-- VISTA INDEX DE ROLES Y PERMISOS (RBAC) -->
+<div id="viewRbacIndex" class="app-view view-hidden">
+  <div class="modal-card" style="max-width: 100%; margin: 0 auto; box-shadow: var(--shadow-md);">
+    <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+      <h2 style="margin:0;"><i class="fa-solid fa-user-shield" style="color:var(--accent-purple);"></i> Gestión de Roles y Permisos (RBAC)</h2>
+      <a href="/dashboard" class="btn btn-secondary" onclick="navigateTo('/dashboard'); return false;">
+        <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
+      </a>
+    </div>
+    <div class="modal-body">
+      <!-- Sub-tabs -->
+      <div class="rbac-tabs" style="display:flex; gap:1rem; margin-bottom:1.5rem; border-bottom:1px solid var(--bg-card-border); padding-bottom:0.75rem;">
+        <button class="btn btn-secondary active-rbac-tab" id="tabBtnUsersRole" onclick="switchRbacSubTab('users')">
+          <i class="fa-solid fa-users"></i> Asignación de Usuarios
+        </button>
+        <button class="btn btn-secondary" id="tabBtnRolesManage" onclick="switchRbacSubTab('roles')">
+          <i class="fa-solid fa-user-gear"></i> Gestión de Roles
+        </button>
+        <button class="btn btn-secondary" id="tabBtnRolesMatrix" onclick="switchRbacSubTab('matrix')">
+          <i class="fa-solid fa-key"></i> Matriz de Permisos
+        </button>
+      </div>
+
+      <!-- Tab 1: User Role Assignment -->
+      <div id="rbacTabUsers">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem;">
+          <div>
+            <h3 style="font-size:1.1rem; color:var(--text-main); margin-bottom:0.25rem;">Asignar Roles a Usuarios de Microsoft 365</h3>
+            <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">Cambia los permisos de los usuarios autenticados seleccionando el rol correspondiente.</p>
+          </div>
+          <!-- Search bar for RBAC users -->
+          <div style="position:relative; width: 280px; flex-shrink: 0;">
+            <i class="fa-solid fa-magnifying-glass" style="position:absolute; left:0.85rem; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:0.85rem;" aria-hidden="true"></i>
+            <input type="text" id="rbacUserSearchInput" class="form-control" placeholder="Buscar usuario o correo..." oninput="onRbacUserSearchInput()" style="padding-left:2.3rem; font-size:0.85rem; height:38px;">
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="rbac-table" style="width:100%; border-collapse:collapse;">
+            <thead>
+              <tr style="text-align:left; border-bottom:1px solid var(--bg-card-border); color:var(--text-muted); font-size:0.85rem;">
+                <th style="padding:0.75rem;">Usuario</th>
+                <th style="padding:0.75rem;">Correo / AD</th>
+                <th style="padding:0.75rem; text-align:right;">Rol Asignado</th>
+              </tr>
+            </thead>
+            <tbody id="usersRolesTableBody"></tbody>
+          </table>
+        </div>
+
+        <div id="rbacUsersPagination" style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; padding-top:0.75rem; border-top:1px solid var(--bg-card-border); font-size:0.85rem; color:var(--text-muted);"></div>
+      </div>
+
+      <!-- Tab 2: Role Management (Crear, Renombrar, Eliminar) -->
+      <div id="rbacTabRoles" class="view-hidden">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem;">
+          <div>
+            <h3 style="font-size:1.1rem; color:var(--text-main); margin-bottom:0.25rem;">Gestión de Roles</h3>
+            <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">Modifica el nombre, la descripción o elimina roles de forma directa.</p>
+          </div>
+          <a href="/roles/create" class="btn btn-primary" onclick="navigateTo('/roles/create'); return false;"><i class="fa-solid fa-plus"></i> Nuevo Rol</a>
+        </div>
+
+        <!-- Roles Management Table -->
+        <div class="table-responsive">
+          <table class="rbac-table" style="width:100%; border-collapse:collapse;">
+            <thead>
+              <tr style="text-align:left; border-bottom:1px solid var(--bg-card-border); color:var(--text-muted); font-size:0.85rem;">
+                <th style="padding:0.75rem;">Rol</th>
+                <th style="padding:0.75rem;">Descripción</th>
+                <th style="padding:0.75rem;">Permisos</th>
+                <th style="padding:0.75rem; text-align:right;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="rolesManagementTableBody"></tbody>
+          </table>
+        </div>
+
+        <!-- Roles Pagination Container -->
+        <div id="rbacRolesPagination" style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; padding-top:0.75rem; border-top:1px solid var(--bg-card-border); font-size:0.85rem; color:var(--text-muted);"></div>
+      </div>
+
+      <!-- Tab 3: Permission Matrix -->
+      <div id="rbacTabMatrix" class="view-hidden">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem;">
+          <div>
+            <h3 style="font-size:1.1rem; color:var(--text-main); margin-bottom:0.25rem;">Configurar Permisos por Rol</h3>
+            <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">Asigna o revoca accesos específicos para cada rol del sistema.</p>
+          </div>
+          <div style="display:flex; gap:0.5rem; align-items:center;">
+            <div style="display:flex; background:var(--bg-input); padding:3px; border-radius:8px; border:1px solid var(--bg-card-border);">
+              <button class="btn btn-sm" id="btnRbacViewCards" onclick="switchRbacMatrixView('cards')" style="border:none; padding:0.35rem 0.75rem; font-size:0.8rem; border-radius:6px; background:var(--primary); color:white;">
+                <i class="fa-solid fa-border-all"></i> Tarjetas Lado a Lado
+              </button>
+              <button class="btn btn-sm" id="btnRbacViewTable" onclick="switchRbacMatrixView('table')" style="border:none; padding:0.35rem 0.75rem; font-size:0.8rem; border-radius:6px; background:transparent; color:var(--text-muted);">
+                <i class="fa-solid fa-table-cells"></i> Matriz Comparativa
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="rolesMatrixContainer"></div>
+      </div>
+    </div>
+  </div>
+</div>

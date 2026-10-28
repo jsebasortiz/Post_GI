@@ -11,8 +11,7 @@ public class BlogDbContext : DbContext
 
     public DbSet<Usuario> Usuarios => Set<Usuario>();
     public DbSet<PostTipo> PostTipos => Set<PostTipo>();
-    public DbSet<PostEstado> PostEstados => Set<PostEstado>();
-    public DbSet<ModuloEstado> ModuloEstados => Set<ModuloEstado>();
+    public DbSet<Estado> Estados => Set<Estado>();
     public DbSet<Modulo> Modulos => Set<Modulo>();
     public DbSet<Post> Posts => Set<Post>();
     public DbSet<AdjuntoPost> AdjuntosPost => Set<AdjuntoPost>();
@@ -20,10 +19,17 @@ public class BlogDbContext : DbContext
     public DbSet<Permiso> Permisos => Set<Permiso>();
     public DbSet<RolPermiso> RolPermisos => Set<RolPermiso>();
     public DbSet<Area> Areas => Set<Area>();
+    public DbSet<TipoConocimiento> TiposConocimiento => Set<TipoConocimiento>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        // Tabla estado
+        modelBuilder.Entity<Estado>(entity =>
+        {
+            entity.HasIndex(e => e.Nombre).IsUnique();
+        });
 
         // Tabla rol
         modelBuilder.Entity<Rol>(entity =>
@@ -77,12 +83,6 @@ public class BlogDbContext : DbContext
             entity.Property(pt => pt.CreadoEn).HasDefaultValueSql("CURRENT_TIMESTAMP");
         });
 
-        // Tabla post_estado
-        modelBuilder.Entity<PostEstado>(entity =>
-        {
-            entity.HasIndex(pe => pe.Nombre).IsUnique();
-        });
-
         // Tabla area
         modelBuilder.Entity<Area>(entity =>
         {
@@ -95,12 +95,6 @@ public class BlogDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(a => a.EstadoId)
                 .OnDelete(DeleteBehavior.Restrict);
-        });
-
-        // Tabla modulo_estado
-        modelBuilder.Entity<ModuloEstado>(entity =>
-        {
-            entity.HasIndex(me => me.Nombre).IsUnique();
         });
 
         // Tabla modulo
@@ -120,9 +114,16 @@ public class BlogDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(m => m.Estado)
-                .WithMany(me => me.Modulos)
+                .WithMany()
                 .HasForeignKey(m => m.EstadoId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Tabla tipo_conocimiento
+        modelBuilder.Entity<TipoConocimiento>(entity =>
+        {
+            entity.HasIndex(tc => tc.Nombre).IsUnique();
+            entity.Property(tc => tc.CreadoEn).HasDefaultValueSql("CURRENT_TIMESTAMP");
         });
 
         // Tabla post
@@ -132,12 +133,12 @@ public class BlogDbContext : DbContext
             entity.HasIndex(p => p.UsuarioId).HasDatabaseName("idx_post_usuario");
             entity.HasIndex(p => p.ModuloId).HasDatabaseName("idx_post_modulo");
             entity.HasIndex(p => p.TipoId).HasDatabaseName("idx_post_tipo");
+            entity.HasIndex(p => p.TipoConocimientoId).HasDatabaseName("idx_post_tipo_conocimiento");
             entity.HasIndex(p => p.EstadoId).HasDatabaseName("idx_post_estado_id");
             entity.HasIndex(p => p.CreadoEn).HasDatabaseName("idx_post_creado");
 
             entity.Property(p => p.EstadoId).HasDefaultValue((byte)1);
             entity.Property(p => p.Estado).HasDefaultValue("publicado");
-            entity.Property(p => p.Visitas).HasDefaultValue(0u);
             entity.Property(p => p.CreadoEn).HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(p => p.ActualizadoEn).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
@@ -156,8 +157,13 @@ public class BlogDbContext : DbContext
                 .HasForeignKey(p => p.TipoId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            entity.HasOne(p => p.TipoConocimiento)
+                .WithMany(tc => tc.Posts)
+                .HasForeignKey(p => p.TipoConocimientoId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             entity.HasOne(p => p.EstadoEntidad)
-                .WithMany(pe => pe.Posts)
+                .WithMany()
                 .HasForeignKey(p => p.EstadoId)
                 .OnDelete(DeleteBehavior.Restrict);
         });

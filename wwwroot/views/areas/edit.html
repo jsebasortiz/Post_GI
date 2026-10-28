@@ -1,0 +1,37 @@
+<!-- VISTA EDITAR ÁREA -->
+<div id="viewAreaEdit" class="app-view view-hidden">
+  <div style="margin-bottom: 1.5rem;">
+    <a href="/areas" class="btn btn-secondary" onclick="handleCancelEditArea(event); return false;">
+      <i class="fa-solid fa-arrow-left"></i> Volver a Gestión de Áreas
+    </a>
+  </div>
+  <div class="modal-card" style="max-width: 700px; margin: 0 auto; box-shadow: var(--shadow-md);">
+    <div class="modal-header">
+      <h2><i class="fa-solid fa-pen-to-square" style="color:var(--accent-cyan);"></i> Editar Área</h2>
+    </div>
+    <div class="modal-body">
+      <form id="editAreaForm" onsubmit="handleSaveEditArea(event)">
+        <input type="hidden" id="editAreaId">
+        <div class="form-group">
+          <label class="form-label" for="editAreaNombre"><i class="fa-solid fa-tag"></i> Nombre del Área</label>
+          <input type="text" id="editAreaNombre" class="form-control" placeholder="Nombre del área..." required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="editAreaDesc"><i class="fa-solid fa-align-left"></i> Descripción</label>
+          <textarea id="editAreaDesc" rows="3" class="form-control" placeholder="Descripción..."></textarea>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem;">
+          <button type="button" class="btn btn-danger" onclick="handleDeleteAreaFromForm()">
+            <i class="fa-solid fa-trash-can"></i> Eliminar
+          </button>
+          <div style="display:flex; gap:1rem;">
+            <button type="button" class="btn btn-secondary" onclick="handleCancelEditArea(event)">Cancelar</button>
+            <button type="submit" class="btn btn-primary" id="btnSubmitEditArea">
+              <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
