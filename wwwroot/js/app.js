@@ -2050,3 +2050,69 @@ function handleDeletePostFromModal() {
 }
 
 
+
+// ==========================================================================
+// Logica del Asistente IA Flotante
+// ==========================================================================
+function toggleChatWindow() {
+  const win = document.getElementById('chatFloatingWindow');
+  if (!win) return;
+  win.classList.toggle('active');
+  if (win.classList.contains('active')) {
+    setTimeout(() => {
+      const input = document.getElementById('chatInput');
+      if (input) input.focus();
+    }, 150);
+  }
+}
+
+async function enviarPreguntaChat(event) {
+  event.preventDefault();
+  const input = document.getElementById('chatInput');
+  const sendBtn = document.getElementById('chatSendBtn');
+  const container = document.getElementById('chatMessages');
+  if (!input || !container) return;
+
+  const pregunta = input.value.trim();
+  if (!pregunta) return;
+
+  // Agregar mensaje del usuario
+  const userMsgDiv = document.createElement('div');
+  userMsgDiv.className = 'chat-msg chat-msg-user';
+  userMsgDiv.textContent = pregunta;
+  container.appendChild(userMsgDiv);
+  input.value = '';
+
+  // Mensaje temporal de espera
+  const botMsgDiv = document.createElement('div');
+  botMsgDiv.className = 'chat-msg chat-msg-bot';
+  botMsgDiv.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Consultando en los posts...';
+  container.appendChild(botMsgDiv);
+  container.scrollTop = container.scrollHeight;
+
+  input.disabled = true;
+  if (sendBtn) sendBtn.disabled = true;
+
+  try {
+    const res = await fetch('/api/Chat/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pregunta })
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      botMsgDiv.textContent = 'Error: ' + (errData.mensaje || 'No se pudo obtener respuesta.');
+    } else {
+      const data = await res.json();
+      botMsgDiv.textContent = data.respuesta || 'Sin respuesta.';
+    }
+  } catch (error) {
+    botMsgDiv.textContent = 'Error de conexión con el servidor: ' + error.message;
+  } finally {
+    input.disabled = false;
+    if (sendBtn) sendBtn.disabled = false;
+    input.focus();
+    container.scrollTop = container.scrollHeight;
+  }
+}

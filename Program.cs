@@ -35,6 +35,8 @@ else
         options.UseInMemoryDatabase("BlogAppSharedDb", inMemoryRoot));
 }
 
+builder.Services.AddHttpClient();
+
 // Registro de servicios de la aplicación
 builder.Services.AddScoped<IActiveDirectoryService, ActiveDirectoryService>();
 builder.Services.AddScoped<IFileStorageService, AzureBlobStorageService>();
@@ -43,6 +45,7 @@ builder.Services.AddScoped<IModuloService, ModuloService>();
 builder.Services.AddScoped<IAreaService, AreaService>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
+builder.Services.AddScoped<IPostChatService, PostChatService>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
