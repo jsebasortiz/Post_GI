@@ -44,7 +44,7 @@ namespace BlogApp.Middleware
             {
                 Status = context.Response.StatusCode,
                 Title = "Ocurrió un error interno en el servidor",
-                Detail = _env.IsDevelopment() ? exception.Message : "Se produjo un error inesperado al procesar la solicitud. Por favor contacte al administrador.",
+                Detail = _env.IsDevelopment() ? (exception.InnerException != null ? exception.Message + " | Detalle: " + exception.InnerException.Message : exception.Message) : "Se produjo un error inesperado al procesar la solicitud. Por favor contacte al administrador.",
                 Instance = context.Request.Path
             };
 

@@ -30,7 +30,7 @@ public class PostChatService : IPostChatService
     public async Task<string> ResponderPreguntaAsync(string pregunta)
     {
         var apiKey = _config["Gemini:ApiKey"];
-        var model = _config["Gemini:Model"] ?? "gemini-2.5-flash";
+        var model = _config["Gemini:Model"] ?? "gemini-flash-latest";
 
         if (string.IsNullOrWhiteSpace(apiKey) || apiKey == "TU_API_KEY_AQUI")
         {

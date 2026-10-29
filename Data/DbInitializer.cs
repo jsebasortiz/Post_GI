@@ -11,6 +11,33 @@ public static class DbInitializer
         {
             await context.Database.EnsureCreatedAsync();
 
+            // Asegurar que la tabla post_estado contenga los IDs esperados por la FK fk_post_estado_id
+            try
+            {
+                var conn = context.Database.GetDbConnection();
+                if (conn.State != System.Data.ConnectionState.Open)
+                    await conn.OpenAsync();
+
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = @"
+                CREATE TABLE IF NOT EXISTS `post_estado` (
+                  `id` tinyint unsigned NOT NULL,
+                  `nombre` varchar(50) NOT NULL,
+                  `descripcion` varchar(255) DEFAULT NULL,
+                  PRIMARY KEY (`id`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+                INSERT IGNORE INTO `post_estado` (`id`, `nombre`, `descripcion`) VALUES 
+                (1, 'Activo', 'Publicación activa'),
+                (2, 'Inactivo', 'Publicación archivada o inactiva');
+                ";
+                await cmd.ExecuteNonQueryAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[DbInitializer] Asegurar post_estado: {ex.Message}");
+            }
+
             // Seed Estado (1 = Activo, 2 = Inactivo)
             try
             {
@@ -344,7 +371,7 @@ public static class DbInitializer
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[DbInitializer] Error al sembrar datos: {ex.Message}");
+            var innerMsg = ex.InnerException != null ? $" | Detalle: {ex.InnerException.Message}" : ""; Console.WriteLine($"[DbInitializer] Error al sembrar datos: {ex.Message}{innerMsg}");
         }
     }
 }
