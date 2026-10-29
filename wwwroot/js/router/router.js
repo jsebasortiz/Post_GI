@@ -26,7 +26,7 @@ export function navigateTo(path) {
 
 export function switchAppView(viewId) {
   const views = [
-    'viewDashboard', 'viewCreatePost', 'viewEditPost', 'viewPostDetail',
+    'viewDashboard', 'viewAiSearch', 'viewCreatePost', 'viewEditPost', 'viewPostDetail',
     'viewAreaIndex', 'viewAreaCreate', 'viewAreaEdit',
     'viewModuleIndex', 'viewModuleCreate', 'viewModuleEdit',
     'viewPostTiposIndex', 'viewPostTiposCreate', 'viewPostTiposEdit',
@@ -114,6 +114,14 @@ export async function handleRoute() {
     // 3. Mostrar Vista Principal de la App
     await showMainApp();
 
+    if (cleanHash === '/ia-search') {
+      switchAppView('viewAiSearch');
+      setTimeout(() => {
+        const inp = document.getElementById('aiSearchInput');
+        if (inp) inp.focus();
+      }, 100);
+      return;
+    }
     // 4. Subrutas de Navegación SPA por Recurso
     if (cleanHash === '/rbac' || cleanHash === '/roles') {
       if (!hasPermission('roles.manage')) {

@@ -392,3 +392,74 @@ window.enviarPreguntaChat = async function(event) {
     container.scrollTop = container.scrollHeight;
   }
 };
+// ==========================================================================
+// Logica del Buscador y Analizador Inteligente con IA (Ruta /ia-search)
+// ==========================================================================
+window.setAiQuery = function(text) {
+  const input = document.getElementById('aiSearchInput');
+  if (input) {
+    input.value = text;
+    input.focus();
+  }
+};
+
+window.copyAiResponse = function() {
+  const content = document.getElementById('aiResultsContent');
+  if (!content) return;
+  navigator.clipboard.writeText(content.innerText).then(() => {
+    if (window.Swal) {
+      Swal.fire({
+        icon: 'success',
+        title: 'Copiado',
+        text: 'El informe de la IA ha sido copiado al portapapeles.',
+        timer: 1800,
+        showConfirmButton: false
+      });
+    } else {
+      alert('Informe copiado.');
+    }
+  });
+};
+
+window.handleAiSearchSubmit = async function(event) {
+  event.preventDefault();
+  const input = document.getElementById('aiSearchInput');
+  const btn = document.getElementById('btnAiSearchSubmit');
+  const loader = document.getElementById('aiSearchLoader');
+  const resultsCard = document.getElementById('aiSearchResults');
+  const resultsContent = document.getElementById('aiResultsContent');
+
+  if (!input || !loader || !resultsCard || !resultsContent) return;
+
+  const pregunta = input.value.trim();
+  if (!pregunta) return;
+
+  // Estado visual de carga
+  loader.style.display = 'block';
+  resultsCard.style.display = 'none';
+  if (btn) btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/Chat/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pregunta })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      resultsContent.textContent = 'Error: ' + (err.mensaje || err.message || 'No se pudo completar el análisis.');
+    } else {
+      const data = await res.json();
+      resultsContent.textContent = data.respuesta || 'Sin resultados generados.';
+    }
+    resultsCard.style.display = 'block';
+  } catch (error) {
+    resultsContent.textContent = 'Error al comunicarse con el servidor: ' + error.message;
+    resultsCard.style.display = 'block';
+  } finally {
+    loader.style.display = 'none';
+    if (btn) btn.disabled = false;
+    resultsCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+};

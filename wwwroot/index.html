@@ -314,6 +314,10 @@
             style="display:none;" title="Tipos de Publicación">
             <i class="fa-solid fa-tags" style="color:var(--accent-emerald);"></i> <span class="btn-text">Tipos</span>
           </button>
+                    <button class="btn btn-secondary" id="btnOpenAiSearch" onclick="navigateTo('#/ia-search'); return false;"
+            title="Buscador Inteligente con IA">
+            <i class="fa-solid fa-wand-magic-sparkles" style="color:var(--accent-purple);"></i> <span class="btn-text">Buscador IA</span>
+          </button>
           <button class="btn btn-primary" id="btnOpenCreatePost" onclick="navigateTo('#/posts/create'); return false;"
             title="Crear Publicación">
             <i class="fa-solid fa-pen-to-square"></i>
@@ -1259,6 +1263,62 @@
         </div>
       </div>
 
+          <!-- VISTA BUSCADOR INTELIGENTE IA (Ruta: /ia-search) -->
+      <div id="viewAiSearch" class="app-view view-hidden">
+        <div class="ai-search-hero">
+          <div class="ai-search-badge">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Inteligencia Artificial Prixma
+          </div>
+          <h2 class="ai-search-title">Buscador & Analizador Inteligente</h2>
+          <p class="ai-search-subtitle">
+            Ingresa palabras clave, conceptos o temas. La IA examinará toda la base de datos de publicaciones, extraerá los puntos clave, generará un resumen estructurado y relacionará los datos temáticamente.
+          </p>
+
+          <form id="aiSearchForm" class="ai-search-bar" onsubmit="handleAiSearchSubmit(event)">
+            <i class="fa-solid fa-magnifying-glass ai-search-icon"></i>
+            <input type="text" id="aiSearchInput" placeholder="Ej: despliegue de apis, procedimientos de red, seguridad o soporte..." autocomplete="off" required>
+            <button type="submit" id="btnAiSearchSubmit" class="btn btn-primary">
+              <i class="fa-solid fa-bolt"></i> Analizar
+            </button>
+          </form>
+
+          <div class="ai-search-chips">
+            <span class="ai-chip-label">Preguntas rápidas:</span>
+            <button type="button" class="ai-chip" onclick="setAiQuery('Resume las temáticas principales en la base de datos y cómo se relacionan entre sí.')">Clasificación General</button>
+            <button type="button" class="ai-chip" onclick="setAiQuery('¿Qué publicaciones hay del área de aplicaciones y cuáles son sus autores?')">Módulos de Apps</button>
+            <button type="button" class="ai-chip" onclick="setAiQuery('¿Cuáles son los procedimientos técnicos o guías documentadas?')">Guías Técnicas</button>
+          </div>
+        </div>
+
+        <!-- Indicador de Carga -->
+        <div id="aiSearchLoader" class="ai-search-loader" style="display: none;">
+          <div class="ai-pulse-circle">
+            <i class="fa-solid fa-brain fa-beat"></i>
+          </div>
+          <h3>Analizando las publicaciones en la base de datos...</h3>
+          <p>Relacionando contenidos, áreas y módulos clave con Gemini Flash</p>
+        </div>
+
+        <!-- Resultados del Análisis Inteligente -->
+        <div id="aiSearchResults" class="ai-search-results-card" style="display: none;">
+          <div class="ai-results-header">
+            <div class="ai-results-title">
+              <i class="fa-solid fa-lightbulb"></i>
+              <h3>Resumen & Relaciones de Información</h3>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="copyAiResponse()" title="Copiar informe">
+              <i class="fa-regular fa-copy"></i> Copiar
+            </button>
+          </div>
+          
+          <div id="aiResultsContent" class="ai-results-body"></div>
+
+          <div class="ai-results-footer">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>Este análisis fue generado exclusivamente con la información activa de la base de datos de Prixma.</span>
+          </div>
+        </div>
+      </div>
     </main>
   </div>
 

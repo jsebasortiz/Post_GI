@@ -2332,3 +2332,213 @@ textarea:disabled {
 .chat-input-bar button:hover {
   background: var(--primary-hover);
 }
+/* ==========================================================================
+   Buscador Inteligente IA (Vista Completa con Ruta /ia-search)
+   ========================================================================== */
+.ai-search-hero {
+  background: var(--bg-card);
+  border: 1px solid var(--bg-card-border);
+  border-radius: var(--radius-lg);
+  padding: 2.5rem 2rem;
+  text-align: center;
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow-md);
+  position: relative;
+  overflow: hidden;
+}
+
+.ai-search-hero::before {
+  content: '';
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 400px;
+  height: 180px;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.15) 0%, rgba(79, 70, 229, 0) 70%);
+  pointer-events: none;
+}
+
+.ai-search-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.85rem;
+  background: rgba(124, 58, 237, 0.12);
+  color: var(--accent-purple);
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.ai-search-title {
+  font-size: 2rem;
+  font-family: var(--font-heading);
+  color: var(--text-main);
+  margin-bottom: 0.6rem;
+  font-weight: 700;
+}
+
+.ai-search-subtitle {
+  color: var(--text-muted);
+  max-width: 680px;
+  margin: 0 auto 1.75rem auto;
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.ai-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 720px;
+  margin: 0 auto 1.5rem auto;
+  background: var(--bg-input);
+  border: 2px solid var(--bg-card-border);
+  border-radius: var(--radius-md);
+  padding: 0.4rem 0.5rem 0.4rem 1.25rem;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition-fast);
+}
+
+.ai-search-bar:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px var(--primary-glow);
+}
+
+.ai-search-icon {
+  color: var(--text-muted);
+  font-size: 1.1rem;
+}
+
+.ai-search-bar input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text-main);
+  font-size: 1rem;
+  outline: none;
+  font-family: var(--font-main);
+}
+
+.ai-search-chips {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.ai-chip-label {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.ai-chip {
+  background: var(--bg-dark);
+  border: 1px solid var(--bg-card-border);
+  color: var(--text-main);
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.ai-chip:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-glow);
+}
+
+.ai-search-loader {
+  background: var(--bg-card);
+  border: 1px solid var(--bg-card-border);
+  border-radius: var(--radius-lg);
+  padding: 3rem 2rem;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 2rem;
+}
+
+.ai-pulse-circle {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 1.25rem auto;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4f46e5, #9333ea);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  box-shadow: 0 8px 24px rgba(79, 70, 229, 0.4);
+}
+
+.ai-search-loader h3 {
+  font-size: 1.2rem;
+  color: var(--text-main);
+  margin-bottom: 0.4rem;
+}
+
+.ai-search-loader p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.ai-search-results-card {
+  background: var(--bg-card);
+  border: 1px solid var(--bg-card-border);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  box-shadow: var(--shadow-md);
+  margin-bottom: 2rem;
+}
+
+.ai-results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--bg-card-border);
+  padding-bottom: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.ai-results-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--accent-purple);
+}
+
+.ai-results-title h3 {
+  color: var(--text-main);
+  font-size: 1.25rem;
+  font-family: var(--font-heading);
+  margin: 0;
+}
+
+.ai-results-body {
+  color: var(--text-main);
+  font-size: 0.95rem;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.ai-results-body strong {
+  color: var(--primary);
+}
+
+.ai-results-footer {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--bg-card-border);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
