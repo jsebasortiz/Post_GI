@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using BlogApp.Data;
 using BlogApp.DTOs;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +18,7 @@ public class PostChatService : IPostChatService
     private readonly IConfiguration _config;
     private readonly HttpClient _httpClient;
 
+    // Modelos del tier gratuito de Google Gemini API
     private static readonly string[] ModelosGratuitos = new[]
     {
         "gemini-flash-latest",
@@ -47,6 +49,7 @@ public class PostChatService : IPostChatService
             .Posts.Include(p => p.Modulo)
                 .ThenInclude(m => m!.Area)
             .Include(p => p.Tipo)
+            .Include(p => p.TipoConocimiento)
             .Include(p => p.Usuario)
             .Where(p => p.Estado == "publicado" || p.EstadoId == 1)
             .Select(p => new
@@ -55,6 +58,8 @@ public class PostChatService : IPostChatService
                 Titulo = p.Titulo,
                 Resumen = p.Resumen,
                 Contenido = p.Contenido,
+                PalabrasClave = p.PalabrasClave,
+                TipoConocimiento = p.TipoConocimiento != null ? p.TipoConocimiento.Nombre : "Técnico",
                 Area = p.Modulo != null && p.Modulo.Area != null ? p.Modulo.Area.Nombre : "Apps (Aplicaciones)",
                 CodigoArea = p.Modulo != null && p.Modulo.Area != null ? p.Modulo.Area.Codigo : "apps",
                 Modulo = p.Modulo != null ? p.Modulo.Nombre : "Sin módulo",
@@ -73,34 +78,38 @@ public class PostChatService : IPostChatService
         var postsCatalogoJson = JsonSerializer.Serialize(posts);
 
         var systemInstruction = $@"
-Eres el motor de búsqueda y análisis inteligente de 'Prixma' (CentroAguas SA ESP).
-Analiza las publicaciones disponibles y responde con un JSON válido estructurado con esta forma exacta:
+Eres el motor de análisis y búsqueda inteligente de 'Prixma' (CentroAguas SA ESP).
+Analiza las publicaciones del catálogo y responde OBLIGATORIAMENTE con un JSON estructurado de la siguiente forma:
+
 {{
-  ""resumen"": ""Párrafo ejecutivo conciso y claro de 2 o 3 líneas respondiendo al tema consultado."",
+  ""resumen"": ""Párrafo ejecutivo conciso de 2 o 3 líneas respondiendo directamente a la consulta del usuario."",
   ""publicaciones"": [
     {{
       ""id"": 30,
-      ""titulo"": ""Nombre exacto del post"",
+      ""titulo"": ""Nombre exacto del artículo"",
       ""area"": ""Nombre del área"",
       ""modulo"": ""Nombre del módulo"",
-      ""tipo"": ""Tipo de post (ej: Soporte, Tutorial)"",
+      ""tipo"": ""Tipo de publicación"",
       ""autor"": ""Nombre del autor"",
       ""fecha"": ""YYYY-MM-DD"",
-      ""descripcion"": ""Breve síntesis de qué resuelve o qué contiene este post.""
+      ""descripcion"": ""Breve explicación de qué resuelve o contiene este post.""
     }}
   ],
   ""relaciones"": [
-    ""Punto clave 1 explicando la conexión o proceso entre las publicaciones encontradas."",
-    ""Punto clave 2 sobre el impacto operativo o recomendaciones técnicas.""
+    ""📌 Flujo Operativo: Explicación paso a paso conectando el artículo [Título Exacto] con [Título Exacto]."",
+    ""💡 Impacto Técnico: Cómo interactúan las tecnologías o módulos entre sí."",
+    ""⚠️ Recomendación o Alerta: Buenas prácticas, riesgos a evitar o requisitos normativos.""
   ]
 }}
 
-REGLAS ESTRICTAS:
-1. Responde ÚNICAMENTE con el objeto JSON.
-2. Si la consulta no coincide con ningún post, devuelve ""publicaciones"": [], explica la situación en ""resumen"" y en ""relaciones"" sugiere qué módulos/áreas sí están documentados.
-3. Basa todo ÚNICAMENTE en el catálogo adjunto.
+REGLAS CRÍTICAS PARA 'relaciones':
+1. NUNCA escribas texto genérico como 'ID 37' o 'ID 30' de forma cruda. En su lugar menciona el NOMBRE del artículo entre corchetes o comillas, por ejemplo: 'el post [Control de Cambios y Versionamiento] debe aplicarse antes de [Guía para editar un registro]'.
+2. Cada elemento del array 'relaciones' debe ser enriquecido con un prefijo temático relevante (ej: '📌 Flujo:', '🔗 Conexión:', '⚠️ Alerta:', '💡 Recomendación:').
+3. Explica claramente la SINERGIA: ¿por qué un artículo complementa al otro?, ¿cuál es el orden lógico de ejecución? y ¿qué impacto tiene en la seguridad, rendimiento o continuidad operativa?
+4. Si la consulta no encuentra coincidencias, devuelve ""publicaciones"": [], explica la situación en ""resumen"" y en ""relaciones"" sugiere qué temas sí existen.
+5. Responde ÚNICAMENTE con el objeto JSON válido.
 
-CATÁLOGO DE PUBLICACIONES:
+CATÁLOGO COMPLETO DE PUBLICACIONES:
 {postsCatalogoJson}
 ";
 
@@ -140,91 +149,86 @@ CATÁLOGO DE PUBLICACIONES:
             try
             {
                 var response = await _httpClient.PostAsync(url, jsonContent);
-                if (response.IsSuccessStatusCode)
-                {
-                    var responseJson = await response.Content.ReadAsStringAsync();
-                    using var doc = JsonDocument.Parse(responseJson);
+                var responseString = await response.Content.ReadAsStringAsync();
 
-                    if (doc.RootElement.TryGetProperty("candidates", out var candidates) && candidates.GetArrayLength() > 0)
+                if (!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"[PostChatService] Modelo {modelo} falló con status {response.StatusCode}: {responseString}");
+                    continue;
+                }
+
+                using var doc = JsonDocument.Parse(responseString);
+                var root = doc.RootElement;
+
+                if (!root.TryGetProperty("candidates", out var candidates) || candidates.GetArrayLength() == 0)
+                {
+                    continue;
+                }
+
+                var candidate = candidates[0];
+                if (!candidate.TryGetProperty("content", out var contentElem) ||
+                    !contentElem.TryGetProperty("parts", out var parts) ||
+                    parts.GetArrayLength() == 0)
+                {
+                    continue;
+                }
+
+                var part = parts[0];
+                if (part.TryGetProperty("text", out var textElem))
+                {
+                    var rawJson = textElem.GetString() ?? "";
+
+                    // Limpiar posibles delimitadores markdown ```json ... ```
+                    rawJson = Regex.Replace(rawJson, @"^```json\s*", "", RegexOptions.IgnoreCase).Trim();
+                    rawJson = Regex.Replace(rawJson, @"^```\s*", "", RegexOptions.IgnoreCase).Trim();
+                    rawJson = Regex.Replace(rawJson, @"\s*```$", "", RegexOptions.IgnoreCase).Trim();
+
+                    // Intentar deserializar a ChatResponse estructurado
+                    var jsonDeserialized = TryParseChatResponse(rawJson);
+                    if (jsonDeserialized != null && (!string.IsNullOrWhiteSpace(jsonDeserialized.Resumen) || jsonDeserialized.Publicaciones.Any()))
                     {
-                        var firstCandidate = candidates[0];
-                        if (firstCandidate.TryGetProperty("content", out var contentElem) &&
-                            contentElem.TryGetProperty("parts", out var parts))
-                        {
-                            var sb = new StringBuilder();
-                            foreach (var part in parts.EnumerateArray())
-                            {
-                                if (part.TryGetProperty("text", out var t))
-                                {
-                                    sb.Append(t.GetString());
-                                }
-                            }
-
-                            var rawOutput = sb.ToString().Trim();
-                            responseObj.RespuestaRaw = rawOutput;
-
-                            // Extractor infalible: Tomar desde la primera llave '{' hasta la última '}'
-                            var primerLlave = rawOutput.IndexOf('{');
-                            var ultimaLlave = rawOutput.LastIndexOf('}');
-
-                            if (primerLlave >= 0 && ultimaLlave > primerLlave)
-                            {
-                                var jsonCandidato = rawOutput.Substring(primerLlave, (ultimaLlave - primerLlave) + 1);
-
-                                // Si el modelo imprimió borradores con múltiples JSONs, buscar el último JSON completo válido
-                                while (ultimaLlave > primerLlave)
-                                {
-                                    try
-                                    {
-                                        var jsonSegmento = rawOutput.Substring(primerLlave, (ultimaLlave - primerLlave) + 1);
-                                        var parsed = JsonSerializer.Deserialize<ChatResponse>(jsonSegmento, new JsonSerializerOptions
-                                        {
-                                            PropertyNameCaseInsensitive = true
-                                        });
-
-                                        if (parsed != null && (!string.IsNullOrEmpty(parsed.Resumen) || parsed.Publicaciones.Count > 0))
-                                        {
-                                            parsed.RespuestaRaw = rawOutput;
-                                            return parsed;
-                                        }
-                                    }
-                                    catch
-                                    {
-                                        // Intentar con el siguiente bloque si hubiera texto previo
-                                        var siguienteLlave = rawOutput.IndexOf('{', primerLlave + 1);
-                                        if (siguienteLlave > primerLlave && siguienteLlave < ultimaLlave)
-                                        {
-                                            primerLlave = siguienteLlave;
-                                            continue;
-                                        }
-                                    }
-                                    break;
-                                }
-                            }
-
-                            // Fallback si no fue JSON
-                            responseObj.Resumen = rawOutput;
-                            return responseObj;
-                        }
+                        return jsonDeserialized;
                     }
-                }
-                else
-                {
-                    var errCode = (int)response.StatusCode;
-                    if (errCode == 503 || errCode == 429) continue;
-                    break;
+
+                    // Fallback
+                    responseObj.Resumen = rawJson;
+                    responseObj.RespuestaRaw = rawJson;
+                    return responseObj;
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                continue;
+                Console.WriteLine($"[PostChatService] Excepción intentando con modelo {modelo}: {ex.Message}");
             }
         }
 
-        if (string.IsNullOrEmpty(responseObj.Resumen))
-        {
-            responseObj.Resumen = "No se pudo obtener respuesta del motor de análisis en este momento.";
-        }
+        responseObj.Resumen = "El servicio de Inteligencia Artificial se encuentra temporalmente ocupado. Por favor, intenta de nuevo en unos segundos.";
         return responseObj;
+    }
+
+    private static ChatResponse? TryParseChatResponse(string jsonText)
+    {
+        try
+        {
+            var startIndex = jsonText.IndexOf('{');
+            var lastIndex = jsonText.LastIndexOf('}');
+
+            if (startIndex >= 0 && lastIndex > startIndex)
+            {
+                jsonText = jsonText.Substring(startIndex, lastIndex - startIndex + 1);
+            }
+
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+
+            return JsonSerializer.Deserialize<ChatResponse>(jsonText, options);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[PostChatService] Falló deserialización de JSON: {ex.Message}");
+            return null;
+        }
     }
 }

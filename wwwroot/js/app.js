@@ -877,22 +877,45 @@ window.renderAiResponseObject = function(data) {
     `;
   }
 
-  // 3. Relaciones y Conclusiones
+  // 3. Relaciones, Puntos Clave & Sinergia
   if (relaciones && relaciones.length > 0) {
     html += `
-      <div class="ai-relaciones-panel">
-        <div class="ai-section-title" style="margin: 0 0 0.5rem 0;">
-          <i class="fa-solid fa-diagram-project" style="color:var(--accent-purple);"></i>
-          <span>Relaciones & Conexiones Identificadas</span>
+      <div class="ai-relaciones-panel" style="border-left: 4px solid var(--accent-purple); padding:1.25rem 1.4rem; background:var(--bg-card); border-radius:12px; box-shadow:0 4px 16px rgba(0,0,0,0.05); margin-top:1.5rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; border-bottom:1px solid var(--bg-card-border); padding-bottom:0.6rem;">
+          <div style="font-size:1.05rem; font-weight:700; color:var(--text-main); font-family:var(--font-heading); display:flex; align-items:center; gap:0.5rem;">
+            <i class="fa-solid fa-diagram-project" style="color:var(--accent-purple);"></i>
+            <span>Relaciones & Puntos Clave de la Arquitectura</span>
+          </div>
+          <span style="font-size:0.75rem; background:rgba(168,85,247,0.12); color:var(--accent-purple); padding:2px 8px; border-radius:12px; font-weight:600;">
+            ${relaciones.length} conexiones detectadas
+          </span>
         </div>
-        <ul class="ai-relaciones-list">
+        <ul class="ai-relaciones-list" style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:0.75rem;">
     `;
 
     relaciones.forEach(r => {
+      // Limpiar menciones de ID crudo si vienen
+      let cleanR = r.replace(/\(ID:\s*\d+\)/gi, '').replace(/ID:\s*\d+/gi, '').trim();
+
+      // Detectar si tiene prefijo temático
+      let icon = 'fa-circle-nodes';
+      let iconColor = 'var(--accent-purple)';
+
+      if (cleanR.includes('⚠️') || cleanR.toLowerCase().includes('alerta') || cleanR.toLowerCase().includes('riesgo')) {
+        icon = 'fa-triangle-exclamation';
+        iconColor = 'var(--accent-amber)';
+      } else if (cleanR.includes('💡') || cleanR.toLowerCase().includes('recomend') || cleanR.toLowerCase().includes('impacto')) {
+        icon = 'fa-lightbulb';
+        iconColor = 'var(--primary)';
+      } else if (cleanR.includes('📌') || cleanR.toLowerCase().includes('flujo') || cleanR.toLowerCase().includes('orden') || cleanR.toLowerCase().includes('paso')) {
+        icon = 'fa-route';
+        iconColor = 'var(--accent-emerald)';
+      }
+
       html += `
-        <li class="ai-relacion-item">
-          <i class="fa-solid fa-circle-nodes ai-relacion-icon"></i>
-          <span>${window.formatMarkdownMini(r)}</span>
+        <li class="ai-relacion-item" style="display:flex; align-items:flex-start; gap:0.75rem; padding:0.75rem 1rem; background:var(--bg-dark); border:1px solid var(--bg-card-border); border-radius:8px; line-height:1.55; font-size:0.92rem; color:var(--text-main);">
+          <i class="fa-solid ${icon}" style="color:${iconColor}; font-size:1rem; margin-top:0.2rem; flex-shrink:0;"></i>
+          <span>${window.formatMarkdownMini(cleanR)}</span>
         </li>
       `;
     });
