@@ -15,11 +15,6 @@ public class ChatController : ControllerBase
         _chatService = chatService;
     }
 
-    /// <summary>
-    /// Consulta al asistente virtual sobre la información y relaciones de los posts en la base de datos.
-    /// </summary>
-    /// <param name="request">Pregunta enviada por el usuario.</param>
-    /// <returns>Respuesta generada por la IA basada estrictamente en los posts.</returns>
     [HttpPost("ask")]
     public async Task<IActionResult> Ask([FromBody] ChatPromptRequest request)
     {
@@ -28,8 +23,7 @@ public class ChatController : ControllerBase
             return BadRequest(new { mensaje = "La pregunta no puede estar vacía." });
         }
 
-        var respuesta = await _chatService.ResponderPreguntaAsync(request.Pregunta);
-        return Ok(new ChatResponse { Respuesta = respuesta });
+        var response = await _chatService.ResponderPreguntaAsync(request.Pregunta);
+        return Ok(response);
     }
 }
-

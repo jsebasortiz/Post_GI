@@ -43,6 +43,9 @@ public class Post
     [Column("estado")]
     public string Estado { get; set; } = "publicado";
 
+    [Column("visitas")]
+    public int Visitas { get; set; } = 0;
+
     [Column("creado_en")]
     public DateTime CreadoEn { get; set; } = DateTime.UtcNow;
 

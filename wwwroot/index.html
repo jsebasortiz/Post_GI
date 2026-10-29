@@ -138,6 +138,7 @@
       document.write('<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"><\/script>');
     }
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 
 <body>
@@ -587,30 +588,43 @@
         </div>
       </div>
 
-      <!-- 4. POST DETAIL VIEW -->
+            <!-- 4. POST DETAIL VIEW -->
       <div id="viewPostDetail" class="app-view view-hidden">
-        <div style="margin-bottom: 1.5rem;">
-          <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('#/dashboard'); return false;">
-            <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
-          </a>
-        </div>
-        <div class="modal-card" style="max-width: 860px; margin: 0 auto; box-shadow: var(--shadow-md);">
-          <div class="modal-header">
-            <div id="detailBadges"></div>
-            <div style="display:flex; gap:0.5rem; align-items:center;">
-              <div id="detailHeaderActions"></div>
-            </div>
+        <div class="post-detail-container">
+          <div class="post-detail-top-nav">
+            <a href="#/dashboard" class="btn btn-secondary" onclick="if(window.history.length > 1) { window.history.back(); } else { navigateTo('#/dashboard'); } return false;">
+              <i class="fa-solid fa-arrow-left"></i> Volver
+            </a>
+            <div id="detailHeaderActions" style="display:flex; gap:0.5rem; align-items:center;"></div>
           </div>
-          <div class="modal-body">
-            <h1 id="detailTitle"
-              style="font-family:var(--font-heading); font-size:2rem; margin-bottom:1rem; color:var(--text-main);"></h1>
-            <div id="detailMeta"
-              style="color:var(--text-muted); font-size:0.88rem; margin-bottom:1.5rem; display:flex; gap:1.5rem;"></div>
+
+          <div class="post-detail-card">
+            <!-- Insignias / Pills -->
+            <div id="detailBadges" class="post-detail-badges-row"></div>
+
+            <!-- Título Principal -->
+            <h1 id="detailTitle" class="post-detail-title"></h1>
+
+            <!-- Barra de Metadatos Completa (Autor, Fecha, Módulo, Área, Estado) -->
+            <div id="detailMeta" class="post-detail-meta-bar"></div>
+
+            <!-- Imagen de Portada -->
             <div id="detailCoverContainer"></div>
-            <div id="detailContent"
-              style="white-space: pre-wrap; font-size:1.05rem; line-height:1.8; color:var(--text-main); margin-bottom:2rem;">
+
+            <!-- Cuadro de Resumen Destacado -->
+            <div id="detailResumenBox" class="post-detail-resumen-box" style="display:none;">
+              <div class="post-detail-resumen-title"><i class="fa-solid fa-sparkles"></i> Resumen del Artículo</div>
+              <div id="detailResumenText"></div>
             </div>
-            <div class="attachments-gallery" id="detailAttachments"></div>
+
+            <!-- Contenido Principal -->
+            <div id="detailContent" class="post-detail-body"></div>
+
+            <!-- Palabras Clave / Tags -->
+            <div id="detailTagsSection" class="post-detail-tags-section" style="display:none;"></div>
+
+            <!-- Galería de Adjuntos -->
+            <div id="detailAttachments" style="margin-top:2rem;"></div>
           </div>
         </div>
       </div>
@@ -1263,7 +1277,7 @@
         </div>
       </div>
 
-          <!-- VISTA BUSCADOR INTELIGENTE IA (Ruta: /ia-search) -->
+                <!-- VISTA BUSCADOR INTELIGENTE IA (Ruta: /ia-search) -->
       <div id="viewAiSearch" class="app-view view-hidden">
         <div class="ai-search-hero">
           <div class="ai-search-badge">
@@ -1290,21 +1304,42 @@
           </div>
         </div>
 
-        <!-- Indicador de Carga -->
-        <div id="aiSearchLoader" class="ai-search-loader" style="display: none;">
-          <div class="ai-pulse-circle">
-            <i class="fa-solid fa-brain fa-beat"></i>
+        <!-- Skeleton Loading State -->
+        <div id="aiSearchLoader" class="ai-skeleton-container" style="display: none;">
+          <div class="ai-skeleton-box" style="padding: 1.5rem; height: 110px;">
+            <div class="ai-skeleton-line" style="width: 25%; height: 16px;"></div>
+            <div class="ai-skeleton-line" style="width: 90%;"></div>
+            <div class="ai-skeleton-line" style="width: 75%;"></div>
           </div>
-          <h3>Analizando las publicaciones en la base de datos...</h3>
-          <p>Relacionando contenidos, áreas y módulos clave con Gemini Flash</p>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 1.25rem;">
+            <div class="ai-skeleton-box" style="padding: 1.5rem; height: 180px;">
+              <div class="ai-skeleton-line" style="width: 60%; height: 18px;"></div>
+              <div class="ai-skeleton-line" style="width: 40%; height: 12px; margin-bottom: 1.2rem;"></div>
+              <div class="ai-skeleton-line" style="width: 95%;"></div>
+              <div class="ai-skeleton-line" style="width: 80%;"></div>
+            </div>
+            <div class="ai-skeleton-box" style="padding: 1.5rem; height: 180px;">
+              <div class="ai-skeleton-line" style="width: 55%; height: 18px;"></div>
+              <div class="ai-skeleton-line" style="width: 35%; height: 12px; margin-bottom: 1.2rem;"></div>
+              <div class="ai-skeleton-line" style="width: 95%;"></div>
+              <div class="ai-skeleton-line" style="width: 70%;"></div>
+            </div>
+          </div>
+
+          <div class="ai-skeleton-box" style="padding: 1.5rem; height: 120px;">
+            <div class="ai-skeleton-line" style="width: 30%; height: 16px;"></div>
+            <div class="ai-skeleton-line" style="width: 85%;"></div>
+            <div class="ai-skeleton-line" style="width: 80%;"></div>
+          </div>
         </div>
 
-        <!-- Resultados del Análisis Inteligente -->
-        <div id="aiSearchResults" class="ai-search-results-card" style="display: none;">
+        <!-- Resultados del Análisis Inteligente (DENTRO de viewAiSearch) -->
+        <div id="aiSearchResults" class="ai-search-results-card" style="display: none; margin-top: 1.5rem;">
           <div class="ai-results-header">
             <div class="ai-results-title">
-              <i class="fa-solid fa-lightbulb"></i>
-              <h3>Resumen & Relaciones de Información</h3>
+              <i class="fa-solid fa-sparkles"></i>
+              <h3>Resultados del Análisis</h3>
             </div>
             <button class="btn btn-secondary btn-sm" onclick="copyAiResponse()" title="Copiar informe">
               <i class="fa-regular fa-copy"></i> Copiar
@@ -1315,7 +1350,7 @@
 
           <div class="ai-results-footer">
             <i class="fa-solid fa-circle-info"></i>
-            <span>Este análisis fue generado exclusivamente con la información activa de la base de datos de Prixma.</span>
+            <span>Análisis generado exclusivamente a partir de la base de conocimiento activa de Prixma.</span>
           </div>
         </div>
       </div>

@@ -61,6 +61,7 @@ public class PostResponseDto
     public string? Resumen { get; set; }
     public string Contenido { get; set; } = string.Empty;
     public string Estado { get; set; } = string.Empty;
+    public int Visitas { get; set; } = 0;
     public DateTime CreadoEn { get; set; }
     public DateTime ActualizadoEn { get; set; }
     public string? PortadaUrl { get; set; }

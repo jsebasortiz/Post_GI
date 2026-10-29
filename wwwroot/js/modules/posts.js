@@ -317,23 +317,31 @@ export async function openDetailView(postId) {
     }
     const post = await res.json();
 
-    const catBadge = post.moduloCategoriaPadre === 'infraestructura'
-      ? `<span class="badge badge-cat-infra" style="position:static;"><i class="fa-solid fa-server"></i> Infraestructura</span>`
-      : `<span class="badge badge-cat-apps" style="position:static;"><i class="fa-solid fa-rocket"></i> Apps</span>`;
+    // Determinar nombres y valores
+    const areaNombre = (post.moduloCategoriaPadre === 'infraestructura' || (post.moduloCategoriaPadre && post.moduloCategoriaPadre.toLowerCase().includes('infra')))
+      ? 'Infraestructura'
+      : (post.moduloCategoriaPadre ? post.moduloCategoriaPadre.charAt(0).toUpperCase() + post.moduloCategoriaPadre.slice(1) : 'Aplicaciones');
+    const areaIcon = areaNombre.toLowerCase().includes('infra') ? 'fa-server' : 'fa-rocket';
+    const areaClass = areaNombre.toLowerCase().includes('infra') ? 'badge-cat-infra' : 'badge-cat-apps';
 
-    const tcBadge = post.tipoConocimientoNombre
-      ? `<span class="badge" style="position:static; margin-left:0.5rem; background:var(--accent-purple); color:#fff;"><i class="fa-solid fa-brain"></i> ${escapeHtml(post.tipoConocimientoNombre)}</span>`
-      : '';
+    const moduloNombre = post.moduloNombre || 'Sin Módulo';
+    const tipoNombre = post.tipoNombre || 'Sin Tipo';
+    const tipoConocimientoNombre = post.tipoConocimientoNombre || 'No especificado';
+    const palabrasClave = post.palabrasClave ? post.palabrasClave.trim() : '';
 
+    // Badges en la cabecera
     if (document.getElementById('detailBadges')) {
       document.getElementById('detailBadges').innerHTML = `
-        ${catBadge}
-        <span class="badge badge-module" style="position:static; margin-left:0.5rem;">${escapeHtml(post.moduloNombre)}</span>
-        <span class="badge badge-type" style="position:static; margin-left:0.5rem;">${escapeHtml(post.tipoNombre)}</span>
-        ${tcBadge}
+        <span class="badge ${areaClass}" style="position:static;"><i class="fa-solid ${areaIcon}"></i> ${escapeHtml(areaNombre)}</span>
+        <span class="badge badge-module" style="position:static; margin-left:0.5rem;"><i class="fa-solid fa-folder"></i> ${escapeHtml(moduloNombre)}</span>
+        <span class="badge badge-type" style="position:static; margin-left:0.5rem;"><i class="fa-solid fa-tag"></i> ${escapeHtml(tipoNombre)}</span>
+        ${post.tipoConocimientoNombre ? `<span class="badge" style="position:static; margin-left:0.5rem; background:var(--accent-purple); color:#fff;"><i class="fa-solid fa-brain"></i> ${escapeHtml(post.tipoConocimientoNombre)}</span>` : ''}
       `;
     }
-    if (document.getElementById('detailTitle')) document.getElementById('detailTitle').innerText = post.titulo;
+
+    if (document.getElementById('detailTitle')) {
+      document.getElementById('detailTitle').innerText = post.titulo || 'Sin Título';
+    }
 
     const headerActions = document.getElementById('detailHeaderActions');
     if (headerActions) {
@@ -348,30 +356,123 @@ export async function openDetailView(postId) {
     }
 
     const dateStr = formatDate(post.creadoEn);
+    const updatedStr = (post.actualizadoEn && post.actualizadoEn !== post.creadoEn) ? formatDate(post.actualizadoEn) : null;
+    const estadoTxt = post.estado || 'publicado';
+
+    // Barra de Metadatos
     if (document.getElementById('detailMeta')) {
       document.getElementById('detailMeta').innerHTML = `
-        <span><i class="fa-regular fa-user"></i> ${escapeHtml(post.usuarioNombre)}</span>
-        <span style="white-space:nowrap;"><i class="fa-regular fa-calendar"></i> ${dateStr}</span>
+        <span title="Autor del artículo"><i class="fa-solid fa-circle-user" style="color:var(--primary);"></i> <strong>${escapeHtml(post.usuarioNombre)}</strong></span>
+        <span title="Fecha de publicación" style="white-space:nowrap;"><i class="fa-regular fa-calendar" style="color:var(--accent-cyan);"></i> Publicado: ${dateStr}</span>
+        ${updatedStr ? `<span title="Última actualización" style="white-space:nowrap;"><i class="fa-solid fa-clock-rotate-left" style="color:var(--accent-amber);"></i> Editado: ${updatedStr}</span>` : ''}
+        <span title="Estado del post" class="badge" style="font-size:0.72rem; padding:2px 8px; background:rgba(16,185,129,0.15); color:var(--accent-emerald); border:1px solid rgba(16,185,129,0.3); border-radius:12px;"><i class="fa-solid fa-check"></i> ${escapeHtml(estadoTxt.toUpperCase())}</span>
       `;
     }
 
-    const coverContainer = document.getElementById('detailCoverContainer');
-    if (coverContainer) coverContainer.innerHTML = '';
-
-    let detailTagsHtml = '';
-    if (post.palabrasClave) {
-      const tags = post.palabrasClave.split(',').map(t => t.trim()).filter(Boolean);
-      if (tags.length > 0) {
-        detailTagsHtml = `<div style="display:flex; flex-wrap:wrap; gap:0.4rem; margin-bottom:1.5rem;">` +
-          tags.map(tag => `<span style="font-size:0.8rem; background:rgba(37,99,235,0.12); color:var(--primary); padding:3px 10px; border-radius:14px; font-weight:600;"><i class="fa-solid fa-hashtag" style="font-size:0.7rem;"></i>${escapeHtml(tag)}</span>`).join('') +
-          `</div>`;
+    // Panel de Ficha Técnica / Datos Clasificatorios del Post
+    let infoGridEl = document.getElementById('detailInfoGrid');
+    if (!infoGridEl) {
+      const metaBar = document.getElementById('detailMeta');
+      if (metaBar) {
+        metaBar.insertAdjacentHTML('afterend', `
+          <div id="detailInfoGrid" class="post-detail-info-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:1rem; padding:1.25rem; background:rgba(15,23,42,0.03); border:1px solid var(--bg-card-border); border-radius:12px; margin-bottom:1.75rem;">
+          </div>
+        `);
+        infoGridEl = document.getElementById('detailInfoGrid');
       }
     }
 
+    if (infoGridEl) {
+      infoGridEl.innerHTML = `
+        <div class="info-grid-item">
+          <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); font-weight:700; margin-bottom:0.25rem;">
+            <i class="fa-solid ${areaIcon}" style="color:var(--primary);"></i> Área / Categoría
+          </div>
+          <div style="font-weight:600; color:var(--text-main); font-size:0.95rem;">${escapeHtml(areaNombre)}</div>
+        </div>
+
+        <div class="info-grid-item">
+          <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); font-weight:700; margin-bottom:0.25rem;">
+            <i class="fa-solid fa-folder" style="color:var(--accent-cyan);"></i> Módulo Temático
+          </div>
+          <div style="font-weight:600; color:var(--text-main); font-size:0.95rem;">${escapeHtml(moduloNombre)}</div>
+        </div>
+
+        <div class="info-grid-item">
+          <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); font-weight:700; margin-bottom:0.25rem;">
+            <i class="fa-solid fa-tag" style="color:var(--accent-amber);"></i> Tipo de Publicación
+          </div>
+          <div style="font-weight:600; color:var(--text-main); font-size:0.95rem;">${escapeHtml(tipoNombre)}</div>
+        </div>
+
+        <div class="info-grid-item">
+          <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); font-weight:700; margin-bottom:0.25rem;">
+            <i class="fa-solid fa-brain" style="color:var(--accent-purple);"></i> Tipo de Conocimiento
+          </div>
+          <div style="font-weight:600; color:var(--text-main); font-size:0.95rem;">
+            ${escapeHtml(tipoConocimientoNombre)}
+          </div>
+        </div>
+      `;
+    }
+
+    // Portada si existe
+    const coverContainer = document.getElementById('detailCoverContainer');
+    if (coverContainer) {
+      if (post.portadaUrl && isImageUrl(post.portadaUrl)) {
+        coverContainer.innerHTML = `<div style="max-height:360px; overflow:hidden; border-radius:12px; margin-bottom:1.5rem; box-shadow:0 8px 24px rgba(0,0,0,0.15);"><img src="${post.portadaUrl}" alt="${escapeHtml(post.titulo)}" style="width:100%; height:100%; object-fit:cover; display:block;"></div>`;
+      } else {
+        coverContainer.innerHTML = '';
+      }
+    }
+
+    // Cuadro de Resumen Destacado
+    const resumenBox = document.getElementById('detailResumenBox');
+    const resumenText = document.getElementById('detailResumenText');
+    if (resumenBox && resumenText) {
+      if (post.resumen && post.resumen.trim()) {
+        resumenText.innerText = post.resumen;
+        resumenBox.style.display = 'block';
+      } else {
+        resumenBox.style.display = 'none';
+      }
+    }
+
+    // Contenido Completo del Blog
     if (document.getElementById('detailContent')) {
-      document.getElementById('detailContent').innerText = post.contenido;
-      if (detailTagsHtml) {
-        document.getElementById('detailContent').insertAdjacentHTML('afterend', detailTagsHtml);
+      document.getElementById('detailContent').innerText = post.contenido || 'Sin contenido registrado.';
+    }
+
+    // Palabras Clave / Etiquetas
+    const tagsSection = document.getElementById('detailTagsSection');
+    if (tagsSection) {
+      if (palabrasClave) {
+        const tags = palabrasClave.split(',').map(t => t.trim()).filter(Boolean);
+        if (tags.length > 0) {
+          tagsSection.innerHTML = `
+            <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.6rem; color:var(--text-muted); font-size:0.85rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">
+              <i class="fa-solid fa-hashtag" style="color:var(--primary);"></i> Palabras Clave / Etiquetas:
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:0.4rem;">
+              ${tags.map(t => `<span style="font-size:0.82rem; background:rgba(37,99,235,0.1); color:var(--primary); padding:4px 12px; border-radius:14px; font-weight:600; border:1px solid rgba(37,99,235,0.25);"><i class="fa-solid fa-tag" style="font-size:0.7rem; opacity:0.8;"></i> ${escapeHtml(t)}</span>`).join('')}
+            </div>
+          `;
+          tagsSection.style.display = 'block';
+        } else {
+          tagsSection.innerHTML = `
+            <div style="color:var(--text-muted); font-size:0.85rem; font-style:italic;">
+              <i class="fa-solid fa-hashtag"></i> Palabras Clave: <em>Sin palabras clave asignadas</em>
+            </div>
+          `;
+          tagsSection.style.display = 'block';
+        }
+      } else {
+        tagsSection.innerHTML = `
+          <div style="color:var(--text-muted); font-size:0.85rem; font-style:italic; padding-top:0.75rem;">
+            <i class="fa-solid fa-hashtag"></i> <em>Sin palabras clave asignadas</em>
+          </div>
+        `;
+        tagsSection.style.display = 'block';
       }
     }
 
@@ -405,7 +506,11 @@ export async function openDetailView(postId) {
         galleryHtml += '</div>';
         attachContainer.innerHTML = galleryHtml;
       } else {
-        attachContainer.innerHTML = '';
+        attachContainer.innerHTML = `
+          <div style="margin-top:1.5rem; padding:1.25rem; border:1px dashed var(--bg-card-border); border-radius:10px; background:rgba(15,23,42,0.02); text-align:center; color:var(--text-muted); font-size:0.9rem;">
+            <i class="fa-solid fa-paperclip" style="opacity:0.6; margin-right:0.4rem;"></i> Sin archivos adjuntos actualmente.
+          </div>
+        `;
       }
     }
   } catch (err) {
@@ -875,3 +980,5 @@ export async function handleDeletePostFromModal() {
     await loadPosts(1);
   }
 }
+
+window.openDetailView = openDetailView;

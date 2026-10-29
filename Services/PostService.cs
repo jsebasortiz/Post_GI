@@ -383,6 +383,7 @@ public class PostService : IPostService
             Resumen = post.Resumen,
             Contenido = post.Contenido,
             Estado = post.Estado,
+            Visitas = post.Visitas,
             CreadoEn = post.CreadoEn,
             ActualizadoEn = post.ActualizadoEn,
             PortadaUrl = portada?.ArchivoUrl,
@@ -401,3 +402,4 @@ public class PostService : IPostService
         };
     }
 }
+
