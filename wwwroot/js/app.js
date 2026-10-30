@@ -803,12 +803,10 @@ window.parsePostsListToCards = function(postsText) {
 window.renderAiResponseObject = function(data) {
   if (!data) return '<p class="text-muted">Sin información recibida.</p>';
 
-  // Si vino en formato estructurado (DTO)
   const resumen = data.resumen || data.Resumen || '';
   const publicaciones = data.publicaciones || data.Publicaciones || [];
   const relaciones = data.relaciones || data.Relaciones || [];
 
-  // Si vino texto libre fallback
   if (!publicaciones.length && !relaciones.length && resumen) {
     if (window.renderAiResponseClean) {
       return window.renderAiResponseClean(resumen);
@@ -817,7 +815,10 @@ window.renderAiResponseObject = function(data) {
 
   let html = '<div class="ai-results-container">';
 
-  // 1. Resumen Ejecutivo
+  // 1. Grid Superior: Resumen Ejecutivo + Relaciones & Puntos Clave
+  html += '<div class="ai-top-insights-grid">';
+
+  // Tarjeta de Resumen de Análisis
   if (resumen) {
     html += `
       <div class="ai-resumen-banner">
@@ -829,13 +830,62 @@ window.renderAiResponseObject = function(data) {
     `;
   }
 
-  // 2. Publicaciones en Grid
+  // Tarjeta de Relaciones & Puntos Clave
+  if (relaciones && relaciones.length > 0) {
+    html += `
+      <div class="ai-relaciones-panel">
+        <div class="ai-relaciones-header">
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <i class="fa-solid fa-diagram-project"></i>
+            <span>Relaciones & Puntos Clave</span>
+          </div>
+          <span style="font-size:0.75rem; background:rgba(168,85,247,0.12); color:var(--accent-purple); padding:2px 8px; border-radius:12px; font-weight:600;">
+            ${relaciones.length} conexiones
+          </span>
+        </div>
+        <ul class="ai-relaciones-list">
+    `;
+
+    relaciones.forEach(r => {
+      let cleanR = r.replace(/\(ID:\s*\d+\)/gi, '').replace(/ID:\s*\d+/gi, '').trim();
+
+      let icon = 'fa-circle-nodes';
+      let iconColor = 'var(--accent-purple)';
+
+      if (cleanR.includes('⚠️') || cleanR.toLowerCase().includes('alerta') || cleanR.toLowerCase().includes('riesgo')) {
+        icon = 'fa-triangle-exclamation';
+        iconColor = 'var(--accent-amber)';
+      } else if (cleanR.includes('💡') || cleanR.toLowerCase().includes('recomend') || cleanR.toLowerCase().includes('impacto')) {
+        icon = 'fa-lightbulb';
+        iconColor = 'var(--primary)';
+      } else if (cleanR.includes('📌') || cleanR.toLowerCase().includes('flujo') || cleanR.toLowerCase().includes('orden') || cleanR.toLowerCase().includes('paso')) {
+        icon = 'fa-route';
+        iconColor = 'var(--accent-emerald)';
+      }
+
+      html += `
+        <li class="ai-relacion-item">
+          <i class="fa-solid ${icon} ai-relacion-icon" style="color:${iconColor};"></i>
+          <span>${window.formatMarkdownMini(cleanR)}</span>
+        </li>
+      `;
+    });
+
+    html += `
+        </ul>
+      </div>
+    `;
+  }
+
+  html += '</div>'; // Fin ai-top-insights-grid
+
+  // 2. Sección Inferior: Publicaciones Relevantes en Cards Elegantes
   if (publicaciones && publicaciones.length > 0) {
     html += `
-      <div>
+      <div class="ai-posts-section" style="margin-top:1.5rem;">
         <div class="ai-section-title">
           <i class="fa-solid fa-layer-group" style="color:var(--primary);"></i>
-          <span>Publicaciones Relevantes (${publicaciones.length})</span>
+          <span>Publicaciones Relevantes Identificadas (${publicaciones.length})</span>
         </div>
         <div class="ai-posts-cards-grid">
     `;
@@ -854,18 +904,25 @@ window.renderAiResponseObject = function(data) {
 
       html += `
         <div class="ai-card-post" ${clickAction} title="Clic para abrir esta publicación">
-          <div class="ai-card-post-header">
-            <div class="ai-card-post-pills">
-              ${area ? `<span class="ai-pill ai-pill-area"><i class="fa-solid fa-sitemap"></i> ${area}</span>` : ''}
-              ${modulo ? `<span class="ai-pill ai-pill-modulo"><i class="fa-solid fa-folder"></i> ${modulo}</span>` : ''}
-              ${tipo ? `<span class="ai-pill ai-pill-tipo"><i class="fa-solid fa-tag"></i> ${tipo}</span>` : ''}
+          <div>
+            <div class="ai-card-top-row">
+              <div class="ai-card-post-pills">
+                ${area ? `<span class="ai-pill ai-pill-area"><i class="fa-solid fa-sitemap"></i> ${escapeHtml(area)}</span>` : ''}
+                ${modulo ? `<span class="ai-pill ai-pill-modulo"><i class="fa-solid fa-folder"></i> ${escapeHtml(modulo)}</span>` : ''}
+                ${tipo ? `<span class="ai-pill ai-pill-tipo"><i class="fa-solid fa-tag"></i> ${escapeHtml(tipo)}</span>` : ''}
+              </div>
+              ${id ? `
+                <button class="ai-btn-view-post" onclick="event.stopPropagation(); window.openPostInNewTab(${id})" title="Abrir en pestaña nueva">
+                  <i class="fa-solid fa-eye"></i>
+                </button>
+              ` : ''}
             </div>
-            <h4 class="ai-card-post-title">${titulo}</h4>
+            <h4 class="ai-card-post-title">${escapeHtml(titulo)}</h4>
             <p class="ai-card-post-desc">${window.formatMarkdownMini(desc)}</p>
           </div>
           <div class="ai-card-post-meta">
-            <span><i class="fa-regular fa-user" style="margin-right:0.3rem;"></i> ${autor}</span>
-            <span><i class="fa-regular fa-calendar" style="margin-right:0.3rem;"></i> ${fecha}</span>
+            <span class="ai-meta-item"><i class="fa-regular fa-user" style="color:var(--primary);"></i> ${escapeHtml(autor)}</span>
+            <span class="ai-meta-item"><i class="fa-regular fa-calendar" style="color:var(--accent-cyan);"></i> ${escapeHtml(fecha)}</span>
           </div>
         </div>
       `;
@@ -877,56 +934,7 @@ window.renderAiResponseObject = function(data) {
     `;
   }
 
-  // 3. Relaciones, Puntos Clave & Sinergia
-  if (relaciones && relaciones.length > 0) {
-    html += `
-      <div class="ai-relaciones-panel" style="border-left: 4px solid var(--accent-purple); padding:1.25rem 1.4rem; background:var(--bg-card); border-radius:12px; box-shadow:0 4px 16px rgba(0,0,0,0.05); margin-top:1.5rem;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; border-bottom:1px solid var(--bg-card-border); padding-bottom:0.6rem;">
-          <div style="font-size:1.05rem; font-weight:700; color:var(--text-main); font-family:var(--font-heading); display:flex; align-items:center; gap:0.5rem;">
-            <i class="fa-solid fa-diagram-project" style="color:var(--accent-purple);"></i>
-            <span>Relaciones & Puntos Clave de la Arquitectura</span>
-          </div>
-          <span style="font-size:0.75rem; background:rgba(168,85,247,0.12); color:var(--accent-purple); padding:2px 8px; border-radius:12px; font-weight:600;">
-            ${relaciones.length} conexiones detectadas
-          </span>
-        </div>
-        <ul class="ai-relaciones-list" style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:0.75rem;">
-    `;
-
-    relaciones.forEach(r => {
-      // Limpiar menciones de ID crudo si vienen
-      let cleanR = r.replace(/\(ID:\s*\d+\)/gi, '').replace(/ID:\s*\d+/gi, '').trim();
-
-      // Detectar si tiene prefijo temático
-      let icon = 'fa-circle-nodes';
-      let iconColor = 'var(--accent-purple)';
-
-      if (cleanR.includes('⚠️') || cleanR.toLowerCase().includes('alerta') || cleanR.toLowerCase().includes('riesgo')) {
-        icon = 'fa-triangle-exclamation';
-        iconColor = 'var(--accent-amber)';
-      } else if (cleanR.includes('💡') || cleanR.toLowerCase().includes('recomend') || cleanR.toLowerCase().includes('impacto')) {
-        icon = 'fa-lightbulb';
-        iconColor = 'var(--primary)';
-      } else if (cleanR.includes('📌') || cleanR.toLowerCase().includes('flujo') || cleanR.toLowerCase().includes('orden') || cleanR.toLowerCase().includes('paso')) {
-        icon = 'fa-route';
-        iconColor = 'var(--accent-emerald)';
-      }
-
-      html += `
-        <li class="ai-relacion-item" style="display:flex; align-items:flex-start; gap:0.75rem; padding:0.75rem 1rem; background:var(--bg-dark); border:1px solid var(--bg-card-border); border-radius:8px; line-height:1.55; font-size:0.92rem; color:var(--text-main);">
-          <i class="fa-solid ${icon}" style="color:${iconColor}; font-size:1rem; margin-top:0.2rem; flex-shrink:0;"></i>
-          <span>${window.formatMarkdownMini(cleanR)}</span>
-        </li>
-      `;
-    });
-
-    html += `
-        </ul>
-      </div>
-    `;
-  }
-
-  html += '</div>';
+  html += '</div>'; // Fin ai-results-container
   return html;
 };
 

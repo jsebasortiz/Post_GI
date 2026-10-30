@@ -1279,29 +1279,21 @@
 
                 <!-- VISTA BUSCADOR INTELIGENTE IA (Ruta: /ia-search) -->
       <div id="viewAiSearch" class="app-view view-hidden">
-        <div class="ai-search-hero">
-          <div class="ai-search-badge">
-            <i class="fa-solid fa-wand-magic-sparkles"></i> Inteligencia Artificial Prixma
+        <div class="ai-search-hero ai-search-hero-compact">
+          <div class="ai-search-header-row">
+            <div class="ai-search-badge">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Inteligencia Artificial Prixma
+            </div>
+            <h2 class="ai-search-title">Buscador & Analizador Inteligente</h2>
           </div>
-          <h2 class="ai-search-title">Buscador & Analizador Inteligente</h2>
-          <p class="ai-search-subtitle">
-            Ingresa palabras clave, conceptos o temas. La IA examinará toda la base de datos de publicaciones, extraerá los puntos clave, generará un resumen estructurado y relacionará los datos temáticamente.
-          </p>
 
           <form id="aiSearchForm" class="ai-search-bar" onsubmit="handleAiSearchSubmit(event)">
             <i class="fa-solid fa-magnifying-glass ai-search-icon"></i>
-            <input type="text" id="aiSearchInput" placeholder="Ej: despliegue de apis, procedimientos de red, seguridad o soporte..." autocomplete="off" required>
+            <input type="text" id="aiSearchInput" placeholder="Pregunta sobre módulos, guías, arquitectura, seguridad, bases de datos o soporte..." autocomplete="off" required>
             <button type="submit" id="btnAiSearchSubmit" class="btn btn-primary">
               <i class="fa-solid fa-bolt"></i> Analizar
             </button>
           </form>
-
-          <div class="ai-search-chips">
-            <span class="ai-chip-label">Preguntas rápidas:</span>
-            <button type="button" class="ai-chip" onclick="setAiQuery('Resume las temáticas principales en la base de datos y cómo se relacionan entre sí.')">Clasificación General</button>
-            <button type="button" class="ai-chip" onclick="setAiQuery('¿Qué publicaciones hay del área de aplicaciones y cuáles son sus autores?')">Módulos de Apps</button>
-            <button type="button" class="ai-chip" onclick="setAiQuery('¿Cuáles son los procedimientos técnicos o guías documentadas?')">Guías Técnicas</button>
-          </div>
         </div>
 
         <!-- Skeleton Loading State -->

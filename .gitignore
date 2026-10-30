@@ -24,3 +24,4 @@ appsettings.Development.json
 ## Uploads (Keep folder, ignore uploaded user files)
 wwwroot/uploads/*
 !wwwroot/uploads/.gitkeep
+update_render_ai.js
