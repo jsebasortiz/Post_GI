@@ -122,7 +122,7 @@ export async function handleRoute() {
     // 3. Mostrar Vista Principal de la App
     await showMainApp();
 
-    if (cleanHash === '/ia-search') {
+    if (cleanHash === '/buscadorinteligente' || cleanHash === '/ia-search') {
       switchAppView('viewAiSearch');
       setTimeout(() => {
         const inp = document.getElementById('aiSearchInput');

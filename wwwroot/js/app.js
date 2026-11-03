@@ -403,7 +403,7 @@ window.enviarPreguntaChat = async function(event) {
   }
 };
 // ==========================================================================
-// Logica del Buscador y Analizador Inteligente con IA (Ruta /ia-search)
+// Logica del Buscador y Analizador Inteligente con IA (Ruta /buscadorinteligente)
 // ==========================================================================
 window.setAiQuery = function(text) {
   const input = document.getElementById('aiSearchInput');

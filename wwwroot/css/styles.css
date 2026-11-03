@@ -2335,7 +2335,7 @@ textarea:disabled {
   background: var(--primary-hover);
 }
 /* ==========================================================================
-   Buscador Inteligente IA (Vista Completa con Ruta /ia-search)
+   Buscador Inteligente IA (Vista Completa con Ruta /buscadorinteligente)
    ========================================================================== */
 .ai-search-hero {
   background: var(--bg-card);
