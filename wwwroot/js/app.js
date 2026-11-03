@@ -840,12 +840,12 @@ window.renderAiResponseObject = function(data) {
     html += `
       <div class="ai-relaciones-panel">
         <div class="ai-relaciones-header">
-          <div style="display:flex; align-items:center; gap:0.5rem;">
+          <div class="ai-relaciones-header-title">
             <i class="fa-solid fa-diagram-project"></i>
             <span>Relaciones & Puntos Clave</span>
           </div>
-          <span style="font-size:0.75rem; background:rgba(168,85,247,0.12); color:var(--accent-purple); padding:2px 8px; border-radius:12px; font-weight:600;">
-            ${relaciones.length} conexiones
+          <span class="ai-connections-badge">
+            <i class="fa-solid fa-circle-nodes"></i> ${relaciones.length} conexiones
           </span>
         </div>
         <ul class="ai-relaciones-list">
@@ -883,13 +883,13 @@ window.renderAiResponseObject = function(data) {
       }
 
       html += `
-        <li class="ai-relacion-item" style="display:flex; align-items:flex-start; gap:0.75rem;">
-          <div style="flex-shrink:0; margin-top:2px;">
-            <span style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:3px 8px; border-radius:8px; background:${badgeBg}; color:${iconColor}; display:inline-flex; align-items:center; gap:0.35rem;">
-              <i class="fa-solid ${icon}"></i> ${badgeLabel}
+        <li class="ai-relacion-item">
+          <div class="ai-relacion-header-top">
+            <span class="ai-relacion-badge" style="background:${badgeBg}; color:${iconColor}; border-color:${iconColor}33;">
+              ${badgeLabel}
             </span>
           </div>
-          <span style="font-size:0.92rem; line-height:1.55; color:var(--text-main);">${window.formatMarkdownMini(cleanR)}</span>
+          <div class="ai-relacion-body">${window.formatMarkdownMini(cleanR)}</div>
         </li>
       `;
     });
@@ -908,7 +908,7 @@ window.renderAiResponseObject = function(data) {
       <div class="ai-posts-section" style="margin-top:1.5rem;">
         <div class="ai-section-title">
           <i class="fa-solid fa-layer-group" style="color:var(--primary);"></i>
-          <span>Publicaciones Relevantes Identificadas (${publicaciones.length})</span>
+          <span>Publicaciones Relevantes (${publicaciones.length})</span>
         </div>
         <div class="ai-posts-cards-grid">
     `;
@@ -927,7 +927,7 @@ window.renderAiResponseObject = function(data) {
 
       html += `
         <div class="ai-card-post" ${clickAction} title="Clic para abrir esta publicación">
-          <div>
+          <div class="ai-card-post-main">
             <div class="ai-card-top-row">
               <div class="ai-card-post-pills">
                 ${area ? `<span class="ai-pill ai-pill-area"><i class="fa-solid fa-sitemap"></i> ${escapeHtml(area)}</span>` : ''}
@@ -935,13 +935,13 @@ window.renderAiResponseObject = function(data) {
                 ${tipo ? `<span class="ai-pill ai-pill-tipo"><i class="fa-solid fa-tag"></i> ${escapeHtml(tipo)}</span>` : ''}
               </div>
               ${id ? `
-                <button class="ai-btn-view-post" onclick="event.stopPropagation(); window.openPostInNewTab(${id})" title="Abrir en pestaña nueva">
-                  <i class="fa-solid fa-eye"></i>
+                <button class="ai-btn-view-post" onclick="event.stopPropagation(); window.openPostInNewTab(${id})" title="Abrir publicación">
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i>
                 </button>
               ` : ''}
             </div>
             <h4 class="ai-card-post-title">${escapeHtml(titulo)}</h4>
-            <p class="ai-card-post-desc">${window.formatMarkdownMini(desc)}</p>
+            <div class="ai-card-post-desc">${window.formatMarkdownMini(desc)}</div>
           </div>
           <div class="ai-card-post-meta">
             <span class="ai-meta-item"><i class="fa-regular fa-user" style="color:var(--primary);"></i> ${escapeHtml(autor)}</span>
@@ -1003,232 +1003,4 @@ window.handleAiSearchSubmit = async function(event) {
     resultsCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 };
-// ==========================================================================
-// Renderizador en 2 Columnas: Cero Espacios Vacíos y Aprovechamiento Total
-// ==========================================================================
-window.renderAiResponseObject = function(data) {
-  if (!data) return '<p class="text-muted">Sin información recibida.</p>';
-
-  const resumen = data.resumen || data.Resumen || '';
-  const publicaciones = data.publicaciones || data.Publicaciones || [];
-  const relaciones = data.relaciones || data.Relaciones || [];
-
-  if (!publicaciones.length && !relaciones.length && resumen) {
-    if (window.renderAiResponseClean) {
-      return window.renderAiResponseClean(resumen);
-    }
-  }
-
-  let html = '<div class="ai-results-container">';
-
-  // 1. Fila Superior Equilibrada: Resumen (Izquierda) + Relaciones/Conclusiones (Derecha)
-  if (resumen || (relaciones && relaciones.length > 0)) {
-    html += '<div class="ai-top-insights-grid">';
-
-    // Columna Izquierda: Resumen
-    if (resumen) {
-      html += `
-        <div class="ai-resumen-banner">
-          <div class="ai-resumen-tag">
-            <i class="fa-solid fa-sparkles"></i> Resumen de Análisis
-          </div>
-          <p class="ai-resumen-texto">${window.formatMarkdownMini(resumen)}</p>
-        </div>
-      `;
-    }
-
-    // Columna Derecha: Conexiones y Conclusiones
-    if (relaciones && relaciones.length > 0) {
-      html += `
-        <div class="ai-relaciones-panel">
-          <div class="ai-relaciones-header">
-            <i class="fa-solid fa-diagram-project"></i> Relaciones & Puntos Clave
-          </div>
-          <ul class="ai-relaciones-list">
-      `;
-      relaciones.forEach(r => {
-        html += `
-          <li class="ai-relacion-item">
-            <i class="fa-solid fa-circle-nodes ai-relacion-icon"></i>
-            <span>${window.formatMarkdownMini(r)}</span>
-          </li>
-        `;
-      });
-      html += `
-          </ul>
-        </div>
-      `;
-    }
-
-    html += '</div>';
-  }
-
-  // 2. Fila Inferior: Publicaciones Relevantes
-  if (publicaciones && publicaciones.length > 0) {
-    html += `
-      <div class="ai-posts-section">
-        <div class="ai-section-title">
-          <i class="fa-solid fa-layer-group" style="color:var(--primary);"></i>
-          <span>Publicaciones Relevantes (${publicaciones.length})</span>
-        </div>
-        <div class="ai-posts-cards-grid">
-    `;
-
-    publicaciones.forEach(p => {
-      const id = p.id || p.Id || '';
-      const titulo = p.titulo || p.Titulo || 'Sin título';
-      const area = p.area || p.Area || '';
-      const modulo = p.modulo || p.Modulo || '';
-      const tipo = p.tipo || p.Tipo || '';
-      const autor = p.autor || p.Autor || 'CentroAguas';
-      const fecha = p.fecha || p.Fecha || '';
-      const desc = p.descripcion || p.Descripcion || '';
-
-      const clickAction = id ? `onclick="window.openPostInNewTab(${id})"` : `onclick="navigateTo('#/dashboard');"`;
-
-      html += `
-        <div class="ai-card-post" ${clickAction} title="Clic para abrir esta publicación">
-          <div class="ai-card-post-header">
-            <div class="ai-card-post-pills">
-              ${area ? `<span class="ai-pill ai-pill-area"><i class="fa-solid fa-sitemap"></i> ${area}</span>` : ''}
-              ${modulo ? `<span class="ai-pill ai-pill-modulo"><i class="fa-solid fa-folder"></i> ${modulo}</span>` : ''}
-              ${tipo ? `<span class="ai-pill ai-pill-tipo"><i class="fa-solid fa-tag"></i> ${tipo}</span>` : ''}
-            </div>
-            <h4 class="ai-card-post-title">${titulo}</h4>
-            <p class="ai-card-post-desc">${window.formatMarkdownMini(desc)}</p>
-          </div>
-          <div class="ai-card-post-meta">
-            <span><i class="fa-regular fa-user" style="margin-right:0.3rem;"></i> ${autor}</span>
-            <span><i class="fa-regular fa-calendar" style="margin-right:0.3rem;"></i> ${fecha}</span>
-          </div>
-        </div>
-      `;
-    });
-
-    html += `
-        </div>
-      </div>
-    `;
-  }
-
-  html += '</div>';
-  return html;
-};
-// ==========================================================================
-// Renderizador con Boton "Eye" y Cards Visuales de Alta Calidad
-// ==========================================================================
-window.renderAiResponseObject = function(data) {
-  if (!data) return '<p class="text-muted">Sin información recibida.</p>';
-
-  const resumen = data.resumen || data.Resumen || '';
-  const publicaciones = data.publicaciones || data.Publicaciones || [];
-  const relaciones = data.relaciones || data.Relaciones || [];
-
-  if (!publicaciones.length && !relaciones.length && resumen) {
-    if (window.renderAiResponseClean) {
-      return window.renderAiResponseClean(resumen);
-    }
-  }
-
-  let html = '<div class="ai-results-container">';
-
-  // 1. Fila Superior en Grid Armónico: Resumen (Izquierda) + Relaciones/Conclusiones (Derecha)
-  if (resumen || (relaciones && relaciones.length > 0)) {
-    html += '<div class="ai-top-insights-grid">';
-
-    if (resumen) {
-      html += `
-        <div class="ai-resumen-banner">
-          <div class="ai-resumen-tag">
-            <i class="fa-solid fa-sparkles"></i> Resumen de Análisis
-          </div>
-          <p class="ai-resumen-texto">${window.formatMarkdownMini(resumen)}</p>
-        </div>
-      `;
-    }
-
-    if (relaciones && relaciones.length > 0) {
-      html += `
-        <div class="ai-relaciones-panel">
-          <div class="ai-relaciones-header">
-            <i class="fa-solid fa-diagram-project"></i> Relaciones & Puntos Clave
-          </div>
-          <ul class="ai-relaciones-list">
-      `;
-      relaciones.forEach(r => {
-        html += `
-          <li class="ai-relacion-item">
-            <i class="fa-solid fa-circle-nodes ai-relacion-icon"></i>
-            <span>${window.formatMarkdownMini(r)}</span>
-          </li>
-        `;
-      });
-      html += `
-          </ul>
-        </div>
-      `;
-    }
-
-    html += '</div>';
-  }
-
-  // 2. Fila Inferior: Publicaciones Relevantes con Boton Eye
-  if (publicaciones && publicaciones.length > 0) {
-    html += `
-      <div class="ai-posts-section">
-        <div class="ai-section-title">
-          <i class="fa-solid fa-layer-group" style="color:var(--primary);"></i>
-          <span>Publicaciones Relevantes (${publicaciones.length})</span>
-        </div>
-        <div class="ai-posts-cards-grid">
-    `;
-
-    publicaciones.forEach(p => {
-      const id = p.id || p.Id || '';
-      const titulo = p.titulo || p.Titulo || 'Sin título';
-      const area = p.area || p.Area || '';
-      const modulo = p.modulo || p.Modulo || '';
-      const tipo = p.tipo || p.Tipo || '';
-      const autor = p.autor || p.Autor || 'CentroAguas';
-      const fecha = p.fecha || p.Fecha || '';
-      const desc = p.descripcion || p.Descripcion || '';
-
-      const clickAction = id ? `onclick="window.openPostInNewTab(${id})"` : `onclick="navigateTo('#/dashboard');"`;
-
-      html += `
-        <div class="ai-card-post">
-          <div>
-            <div class="ai-card-top-row">
-              <div class="ai-card-post-pills">
-                ${area ? `<span class="ai-pill ai-pill-area"><i class="fa-solid fa-sitemap"></i> ${area}</span>` : ''}
-                ${modulo ? `<span class="ai-pill ai-pill-modulo"><i class="fa-solid fa-folder"></i> ${modulo}</span>` : ''}
-                ${tipo ? `<span class="ai-pill ai-pill-tipo"><i class="fa-solid fa-tag"></i> ${tipo}</span>` : ''}
-              </div>
-              <button class="ai-btn-view-post" ${clickAction} title="Ver publicación completa">
-                <i class="fa-solid fa-eye"></i>
-              </button>
-            </div>
-
-            <h4 class="ai-card-post-title" ${clickAction} title="Ver publicación completa">
-              ${titulo}
-            </h4>
-            <p class="ai-card-post-desc">${window.formatMarkdownMini(desc)}</p>
-          </div>
-
-          <div class="ai-card-post-meta">
-            <span class="ai-meta-item"><i class="fa-regular fa-user"></i> ${autor}</span>
-            <span class="ai-meta-item"><i class="fa-regular fa-calendar"></i> ${fecha}</span>
-          </div>
-        </div>
-      `;
-    });
-
-    html += `
-        </div>
-      </div>
-    `;
-  }
-
-  html += '</div>';
-  return html;
-};
+// Fin de archivo app.js

@@ -3238,12 +3238,12 @@ textarea:disabled {
   margin-top: 0.15rem;
 }
 /* ==========================================================================
-   LAYOUT PROFESIONAL: 2 Columnas Inteligentes (Aprovechamiento Real del Espacio)
+   LAYOUT PROFESIONAL: Resumen de Análisis y Relaciones & Puntos Clave
    ========================================================================== */
 .ai-results-container {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.5rem;
   margin-top: 1rem;
   animation: aiSlideUp 0.3s ease-out;
 }
@@ -3251,33 +3251,33 @@ textarea:disabled {
 /* Fila Superior: Resumen y Conexiones en Grid Balanceado */
 .ai-top-insights-grid {
   display: grid;
-  grid-template-columns: 1fr 1.2fr;
+  grid-template-columns: minmax(340px, 1fr) minmax(380px, 1.25fr);
   gap: 1.5rem;
   align-items: stretch;
 }
 
 .ai-resumen-banner {
-  background: linear-gradient(145deg, var(--bg-card), rgba(79, 70, 229, 0.03));
+  background: var(--bg-card);
   border: 1px solid var(--bg-card-border);
   border-top: 4px solid var(--primary);
-  border-radius: 14px;
-  padding: 1.6rem 1.75rem;
+  border-radius: var(--radius-md);
+  padding: 1.6rem 1.8rem;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
   position: relative;
   overflow: hidden;
 }
 
-.ai-resumen-banner::before {
+.ai-resumen-banner::after {
   content: '';
   position: absolute;
   top: 0;
   right: 0;
-  width: 140px;
-  height: 140px;
-  background: radial-gradient(circle, rgba(79, 70, 229, 0.08) 0%, transparent 70%);
+  width: 130px;
+  height: 130px;
+  background: radial-gradient(circle, rgba(79, 70, 229, 0.06) 0%, transparent 70%);
   pointer-events: none;
 }
 
@@ -3285,47 +3285,56 @@ textarea:disabled {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.75px;
   color: var(--primary);
-  margin-bottom: 0.85rem;
+  margin-bottom: 1.1rem;
   background: rgba(79, 70, 229, 0.08);
-  padding: 4px 12px;
+  padding: 5px 14px;
   border-radius: 20px;
   align-self: flex-start;
 }
 
 .ai-resumen-texto {
-  font-size: 1rem;
-  line-height: 1.7;
+  font-size: 1.02rem;
+  line-height: 1.75;
   color: var(--text-main);
   margin: 0;
   font-weight: 450;
+  letter-spacing: 0.2px;
+}
+
+.ai-resumen-texto p {
+  margin: 0 0 0.85rem 0;
+}
+
+.ai-resumen-texto p:last-child {
+  margin-bottom: 0;
 }
 
 .ai-relaciones-panel {
-  background: linear-gradient(145deg, var(--bg-card), rgba(168, 85, 247, 0.03));
+  background: var(--bg-card);
   border: 1px solid var(--bg-card-border);
   border-top: 4px solid var(--accent-purple);
-  border-radius: 14px;
-  padding: 1.6rem 1.75rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  border-radius: var(--radius-md);
+  padding: 1.6rem 1.8rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
   position: relative;
   overflow: hidden;
   display: flex;
   flex-direction: column;
 }
 
-.ai-relaciones-panel::before {
+.ai-relaciones-panel::after {
   content: '';
   position: absolute;
   top: 0;
   right: 0;
-  width: 140px;
-  height: 140px;
-  background: radial-gradient(circle, rgba(168, 85, 247, 0.08) 0%, transparent 70%);
+  width: 130px;
+  height: 130px;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.06) 0%, transparent 70%);
   pointer-events: none;
 }
 
@@ -3333,20 +3342,35 @@ textarea:disabled {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
+  gap: 0.75rem;
+  margin-bottom: 1.1rem;
+  padding-bottom: 0.85rem;
   border-bottom: 1px solid var(--bg-card-border);
 }
 
-.ai-relaciones-header > div {
-  display: flex;
+.ai-relaciones-header-title {
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
+  gap: 0.6rem;
+  font-size: 0.88rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.75px;
   color: var(--accent-purple);
+}
+
+.ai-connections-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--accent-purple);
+  background: rgba(168, 85, 247, 0.1);
+  border: 1px solid rgba(168, 85, 247, 0.25);
+  padding: 4px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
 }
 
 .ai-relaciones-list {
@@ -3355,144 +3379,105 @@ textarea:disabled {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 0.95rem;
 }
 
 .ai-relacion-item {
   display: flex;
-  align-items: flex-start;
-  gap: 0.85rem;
-  font-size: 0.91rem;
-  line-height: 1.55;
-  color: var(--text-main);
+  flex-direction: column;
   background: var(--bg-dark);
-  padding: 0.85rem 1.1rem;
+  padding: 1rem 1.25rem;
   border-radius: 10px;
   border: 1px solid var(--bg-card-border);
-  transition: all 0.2s ease;
+  transition: all 0.22s ease;
+  position: relative;
 }
 
 .ai-relacion-item:hover {
-  border-color: rgba(168, 85, 247, 0.4);
-  background: rgba(168, 85, 247, 0.04);
-  transform: translateX(4px);
+  border-color: rgba(168, 85, 247, 0.45);
+  background: rgba(168, 85, 247, 0.03);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
 }
 
-.ai-relacion-icon {
-  font-size: 1rem;
-  margin-top: 0.2rem;
-  flex-shrink: 0;
+.ai-relacion-header-top {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px dashed var(--bg-card-border);
 }
 
-/* Grid de Publicaciones Aprovechando Todo el Ancho */
+.ai-relacion-badge {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.85px;
+  padding: 4px 14px;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  display: inline-block;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.ai-relacion-body {
+  font-size: 0.93rem;
+  line-height: 1.65;
+  color: var(--text-main);
+  width: 100%;
+}
+
+.ai-relacion-body p {
+  margin: 0 0 0.5rem 0;
+}
+
+.ai-relacion-body p:last-child {
+  margin-bottom: 0;
+}
+
+/* ==========================================================================
+   CARDS DE PUBLICACIONES RELEVANTES (BUSCADOR IA)
+   ========================================================================== */
 .ai-posts-section {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-}
-
-.ai-posts-cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
   gap: 1rem;
+  margin-top: 1.75rem;
 }
 
-/* Tarjeta Horizontal/Compacta cuando hay 1 o 2 publicaciones */
-.ai-card-post {
-  background: var(--bg-card);
-  border: 1px solid var(--bg-card-border);
-  border-radius: var(--radius-md);
-  padding: 1.15rem 1.25rem;
+.ai-section-title {
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  box-shadow: var(--shadow-sm);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  cursor: pointer;
-  min-height: 140px;
-}
-
-.ai-card-post:hover {
-  transform: translateY(-3px);
-  border-color: var(--primary);
-  box-shadow: var(--shadow-md);
-}
-
-.ai-card-post-header {
-  margin-bottom: 0.5rem;
-}
-
-.ai-card-post-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  margin-bottom: 0.5rem;
-}
-
-.ai-card-post-title {
-  font-size: 1.05rem;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 1.15rem;
   font-weight: 700;
+  font-family: var(--font-heading);
   color: var(--text-main);
-  line-height: 1.35;
-  margin-bottom: 0.45rem;
-  transition: color 0.15s;
-}
-
-.ai-card-post:hover .ai-card-post-title {
-  color: var(--primary);
-}
-
-.ai-card-post-desc {
-  font-size: 0.86rem;
-  color: var(--text-muted);
-  line-height: 1.5;
   margin: 0;
 }
 
-.ai-card-post-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 0.75rem;
-  padding-top: 0.65rem;
-  border-top: 1px solid var(--bg-card-border);
-  font-size: 0.78rem;
-  color: var(--text-muted);
-}
-
-/* Ajustes Responsive */
-@media (max-width: 900px) {
-  .ai-top-insights-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 600px) {
-  .ai-posts-cards-grid {
-    grid-template-columns: 1fr;
-  }
-}
-/* ==========================================================================
-   CARDS DE PUBLICACIONES PREMIUM CON BOTON EYE & EFECTO GLOW
-   ========================================================================== */
 .ai-posts-cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 1.15rem;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 1.25rem;
+  align-items: stretch;
 }
 
 .ai-card-post {
   background: var(--bg-card);
   border: 1px solid var(--bg-card-border);
   border-radius: var(--radius-md);
-  padding: 1.25rem 1.4rem;
+  padding: 1.4rem 1.5rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   overflow: hidden;
+  height: 100%;
 }
 
 .ai-card-post::after {
@@ -3503,13 +3488,13 @@ textarea:disabled {
   width: 4px;
   height: 100%;
   background: linear-gradient(180deg, var(--primary), var(--accent-cyan));
-  opacity: 0.7;
+  opacity: 0.85;
   transition: width 0.2s ease, opacity 0.2s ease;
 }
 
 .ai-card-post:hover {
   transform: translateY(-4px);
-  border-color: rgba(79, 70, 229, 0.4);
+  border-color: rgba(79, 70, 229, 0.45);
   box-shadow: 0 12px 28px -6px rgba(79, 70, 229, 0.16);
 }
 
@@ -3518,50 +3503,57 @@ textarea:disabled {
   opacity: 1;
 }
 
+.ai-card-post-main {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
 .ai-card-top-row {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.75rem;
-  margin-bottom: 0.65rem;
+  margin-bottom: 0.85rem;
 }
 
 .ai-card-post-pills {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
+  align-items: center;
+  gap: 0.45rem;
 }
 
-/* Boton Eye flotante y estilizado */
+/* Botón Abrir publicación estilizado */
 .ai-btn-view-post {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   background: var(--primary-glow);
   color: var(--primary);
   border: 1px solid rgba(79, 70, 229, 0.2);
   cursor: pointer;
   transition: all 0.2s ease;
   flex-shrink: 0;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
 }
 
 .ai-btn-view-post:hover {
   background: var(--primary);
   color: #ffffff;
-  transform: scale(1.12);
+  transform: scale(1.08);
   box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
 }
 
 .ai-card-post-title {
-  font-size: 1.08rem;
+  font-size: 1.12rem;
   font-weight: 700;
   color: var(--text-main);
-  line-height: 1.4;
-  margin: 0 0 0.55rem 0;
+  line-height: 1.42;
+  margin: 0 0 0.65rem 0;
   cursor: pointer;
   transition: color 0.18s;
   font-family: var(--font-heading);
@@ -3572,26 +3564,48 @@ textarea:disabled {
 }
 
 .ai-card-post-desc {
-  font-size: 0.88rem;
+  font-size: 0.9rem;
   color: var(--text-muted);
-  line-height: 1.55;
-  margin: 0 0 1rem 0;
+  line-height: 1.62;
+  margin: 0 0 1.25rem 0;
+  flex-grow: 1;
+}
+
+.ai-card-post-desc p {
+  margin: 0 0 0.5rem 0;
+}
+
+.ai-card-post-desc p:last-child {
+  margin-bottom: 0;
 }
 
 .ai-card-post-meta {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: 0.75rem;
+  padding-top: 0.85rem;
   border-top: 1px solid var(--bg-card-border);
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   color: var(--text-muted);
+  margin-top: auto;
 }
 
 .ai-meta-item {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.45rem;
+}
+
+@media (max-width: 900px) {
+  .ai-top-insights-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .ai-posts-cards-grid {
+    grid-template-columns: 1fr;
+  }
 }
 /* ==========================================================================
    DISEÑO MODERNO DE DETALLE DE POST (#/post/:id)
