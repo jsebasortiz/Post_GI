@@ -64,6 +64,7 @@ import {
   handleSaveCreateRole, handleSaveEditRole, handleCancelEditRole, handleDeleteRoleFromForm
 } from './modules/rbac.js';
 import {
+  renderPostTags, addPostTag, removePostTag, initPostTagInput,
   isImageUrl, getPostCoverUrl, renderPostCard, loadPosts, renderPaginationControls,
   goToPage, debounceSearch, handleCreatePost, openDetailView, openDetailModal,
   openEditView, openEditModal, hasPostEditChanged, handleCancelEditPost,
@@ -298,6 +299,10 @@ Object.assign(window, {
   handleDeleteRoleFromForm,
 
   // Posts
+  renderPostTags,
+  addPostTag,
+  removePostTag,
+  initPostTagInput,
   isImageUrl,
   getPostCoverUrl,
   renderPostCard,

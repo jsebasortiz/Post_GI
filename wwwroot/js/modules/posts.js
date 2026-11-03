@@ -222,6 +222,74 @@ export function debounceSearch() {
   }, 350);
 }
 
+
+// ==========================================================================
+// Gestor de Etiquetas Interactivas (Interactive Tag Input)
+// ==========================================================================
+export let postTagsList = [];
+
+export function renderPostTags() {
+  const container = document.getElementById('postTagChips');
+  const hiddenInput = document.getElementById('postPalabrasClave');
+  if (!container || !hiddenInput) return;
+
+  container.innerHTML = postTagsList.map((tag, idx) => `
+    <span class="tag-chip">
+      <i class="fa-solid fa-hashtag" style="font-size:0.65rem; opacity:0.8;"></i>
+      <span>${escapeHtml(tag)}</span>
+      <button type="button" class="tag-chip-remove" onclick="removePostTag(${idx})" title="Eliminar etiqueta">&times;</button>
+    </span>
+  `).join('');
+
+  hiddenInput.value = postTagsList.join(', ');
+}
+
+export function addPostTag(rawTag) {
+  if (!rawTag) return;
+  const clean = rawTag.trim().toLowerCase().replace(/[^a-záéíóúüñ0-9\-_\s]/g, '').trim();
+  if (clean && !postTagsList.includes(clean)) {
+    postTagsList.push(clean);
+    renderPostTags();
+  }
+  const input = document.getElementById('postTagInput');
+  if (input) input.value = '';
+}
+
+export function removePostTag(index) {
+  if (index >= 0 && index < postTagsList.length) {
+    postTagsList.splice(index, 1);
+    renderPostTags();
+  }
+}
+
+export function initPostTagInput() {
+  postTagsList = [];
+  const input = document.getElementById('postTagInput');
+  const hidden = document.getElementById('postPalabrasClave');
+  if (hidden && hidden.value) {
+    postTagsList = hidden.value.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+  }
+  renderPostTags();
+
+  if (input && !input.dataset.tagBound) {
+    input.dataset.tagBound = 'true';
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ',') {
+        e.preventDefault();
+        addPostTag(input.value);
+      } else if (e.key === 'Backspace' && !input.value && postTagsList.length > 0) {
+        removePostTag(postTagsList.length - 1);
+      }
+    });
+
+    input.addEventListener('blur', () => {
+      if (input.value.trim()) {
+        addPostTag(input.value);
+      }
+    });
+  }
+}
+
 export async function handleCreatePost(event) {
   if (event) event.preventDefault();
 
@@ -273,6 +341,8 @@ export async function handleCreatePost(event) {
     if (form) form.reset();
     state.selectedFiles = [];
     renderFilePreviews();
+    postTagsList = [];
+    renderPostTags();
 
     if (window.navigateTo) window.navigateTo('/dashboard');
     await loadPosts(1);
@@ -934,7 +1004,7 @@ export async function handleDeletePost(postId) {
 
   const result = await getPrixmaSwal().fire({
     title: '¿Eliminar publicación?',
-    text: 'Esta publicación se eliminará y dejará de mostrarse en el portal.',
+    text: 'Esta publicación pasará a estado archivado y dejará de mostrarse en el portal.',
     icon: 'warning',
     showCancelButton: true,
     confirmButtonColor: '#ef4444',
@@ -951,8 +1021,8 @@ export async function handleDeletePost(postId) {
 
     getPrixmaSwal().fire({
       icon: 'success',
-      title: 'Publicación Eliminada',
-      text: 'La publicación ha sido eliminada correctamente.',
+      title: 'Publicación Archivada',
+      text: 'La publicación ha sido archivada correctamente.',
       timer: 2000,
       showConfirmButton: false
     });

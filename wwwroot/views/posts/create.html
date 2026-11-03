@@ -1,62 +1,134 @@
 <!-- VISTA CREAR PUBLICACIÓN -->
 <div id="viewCreatePost" class="app-view view-hidden">
-  <div style="margin-bottom: 1.5rem;">
+  <div style="margin-bottom: 1.25rem;">
     <a href="/dashboard" class="btn btn-secondary" onclick="navigateTo('/dashboard'); return false;">
       <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
     </a>
   </div>
-  <div class="modal-card" style="max-width: 800px; margin: 0 auto; box-shadow: var(--shadow-md);">
+  <div class="modal-card post-form-card">
     <div class="modal-header">
-      <h2><i class="fa-solid fa-pen-to-square" style="color:var(--primary);"></i> Nueva Publicación</h2>
+      <div>
+        <h2 style="margin:0;"><i class="fa-solid fa-pen-to-square" style="color:var(--primary);"></i> Nueva Publicación
+        </h2>
+        <p style="font-size:0.85rem; color:var(--text-muted); margin:0.25rem 0 0 0;">Diligencia la información técnica o
+          corporativa para compartir con el equipo.</p>
+      </div>
     </div>
-    <div class="modal-body">
+    <div class="modal-body" style="padding: 1.75rem;">
       <form id="createPostForm" onsubmit="handleCreatePost(event)">
-        <div class="form-row">
+
+        <!-- SECCIÓN 1: CLASIFICACIÓN Y CATEGORIZACIÓN -->
+        <div class="post-form-section">
+          <div class="post-form-section-title">
+            <i class="fa-solid fa-sitemap"></i> 1. Clasificación & Categorización
+          </div>
+          <div class="form-row" style="margin-bottom: 1rem;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" for="selectCategoriaPadre"><i class="fa-solid fa-layer-group"
+                  style="color:var(--primary);"></i> Área Principal</label>
+              <select id="selectCategoriaPadre" onchange="onPostCategoriaChange(this.value)" required></select>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" for="selectModulo"><i class="fa-solid fa-folder"
+                  style="color:var(--accent-purple);"></i> Módulo Temático</label>
+              <select id="selectModulo" required></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" for="selectTipo"><i class="fa-solid fa-tag"
+                  style="color:var(--accent-cyan);"></i> Tipo de Publicación</label>
+              <select id="selectTipo" required></select>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" for="selectTipoConocimiento"><i class="fa-solid fa-brain"
+                  style="color:var(--accent-emerald);"></i> Tipo de Conocimiento</label>
+              <select id="selectTipoConocimiento"></select>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECCIÓN 2: INFORMACIÓN DEL ARTÍCULO -->
+        <div class="post-form-section">
+          <div class="post-form-section-title">
+            <i class="fa-solid fa-file-lines"></i> 2. Información del Artículo
+          </div>
+
           <div class="form-group">
-            <label class="form-label" for="selectCategoriaPadre"><i class="fa-solid fa-sitemap"></i> Área / Categoría Principal</label>
-            <select id="selectCategoriaPadre" onchange="onPostCategoriaChange(this.value)" required></select>
+            <label class="form-label" for="postTitulo">Título de la Publicación <span
+                style="color:var(--accent-rose);">*</span></label>
+            <input type="text" id="postTitulo" class="form-control" style="font-size:1.05rem; font-weight:600;"
+              placeholder="Ej: Guía de configuración de VPN corporativa y acceso remoto" required>
           </div>
+
+          <!-- Input interactivo de Tags / Palabras Clave -->
           <div class="form-group">
-            <label class="form-label" for="selectModulo"><i class="fa-solid fa-folder"></i> Módulo Temático</label>
-            <select id="selectModulo" required></select>
+            <label class="form-label" for="postTagInput"><i class="fa-solid fa-hashtag"
+                style="color:var(--primary);"></i> Palabras Clave / Etiquetas</label>
+            <div class="tag-input-container" id="postTagContainer"
+              onclick="document.getElementById('postTagInput').focus()">
+              <div id="postTagChips" style="display:contents;"></div>
+              <input type="text" id="postTagInput" class="tag-input-field"
+                placeholder="Escribe una etiqueta y presiona Enter o Coma...">
+            </div>
+            <input type="hidden" id="postPalabrasClave">
+
+            <div class="tag-suggestions">
+              <span style="font-size:0.75rem; color:var(--text-muted);"><i class="fa-solid fa-lightbulb"></i>
+                Sugerencias:</span>
+              <span class="tag-suggestion-pill" onclick="addPostTag('sql')">+ sql</span>
+              <span class="tag-suggestion-pill" onclick="addPostTag('azure')">+ azure</span>
+              <span class="tag-suggestion-pill" onclick="addPostTag('seguridad')">+ seguridad</span>
+              <span class="tag-suggestion-pill" onclick="addPostTag('sieweb')">+ sieweb</span>
+              <span class="tag-suggestion-pill" onclick="addPostTag('tutorial')">+ tutorial</span>
+              <span class="tag-suggestion-pill" onclick="addPostTag('soporte')">+ soporte</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="postResumen">Resumen Ejecutivo o Introducción <span
+                style="font-size:0.8rem; color:var(--text-muted); font-weight:normal;">(Visible en tarjetas y búsquedas
+                de IA)</span></label>
+            <textarea id="postResumen" rows="2" class="form-control"
+              placeholder="Breve síntesis de los objetivos o temas clave que aborda esta publicación..."></textarea>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" for="postContenido">Cuerpo / Contenido Completo del Blog <span
+                style="color:var(--accent-rose);">*</span></label>
+            <textarea id="postContenido" rows="7" class="form-control"
+              placeholder="Escribe el desarrollo completo del artículo, pasos técnicos, recomendaciones o normativas..."
+              required></textarea>
           </div>
         </div>
-        <div class="form-group">
-          <label class="form-label" for="selectTipo"><i class="fa-solid fa-tag"></i> Tipo de Publicación</label>
-          <select id="selectTipo" required></select>
-        </div>
 
-        <div class="form-group">
-          <label class="form-label" for="postTitulo">Título de la Publicación</label>
-          <input type="text" id="postTitulo" class="form-control" placeholder="Ej: Guía de procedimientos y soporte corporativo" required>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label" for="postResumen">Resumen o Introducción (Opcional)</label>
-          <textarea id="postResumen" rows="2" class="form-control" placeholder="Breve descripción del contenido..."></textarea>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label" for="postContenido">Contenido Completo del Blog</label>
-          <textarea id="postContenido" rows="6" class="form-control" placeholder="Escribe el cuerpo principal del artículo..." required></textarea>
-        </div>
-
-        <!-- Attachments Upload -->
-        <div class="form-group">
-          <label class="form-label">Subir Adjuntos / Fotos / Documentos</label>
-          <div class="file-upload-zone" onclick="document.getElementById('fileInput').click()">
-            <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
-            <p>Arrastra archivos o haz clic para explorar en tu equipo</p>
-            <span style="font-size:0.8rem; color:var(--text-muted);">Formatos admitidos: Fotos (JPG, PNG, WEBP, GIF), PDF, Word, Excel, PowerPoint, ZIP</span>
-            <input type="file" id="fileInput" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.txt" style="display:none" onchange="handleFileSelect(event)">
+        <!-- SECCIÓN 3: ARCHIVOS Y MULTIMEDIA -->
+        <div class="post-form-section">
+          <div class="post-form-section-title">
+            <i class="fa-solid fa-paperclip"></i> 3. Archivos Adjuntos & Multimedia
           </div>
-          <div class="file-previews" id="filePreviews"></div>
+          <div class="form-group" style="margin-bottom:0;">
+            <div class="file-upload-zone" onclick="document.getElementById('fileInput').click()">
+              <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+              <p style="font-weight:600; margin:0.5rem 0 0.25rem 0;">Arrastra archivos o haz clic para explorar en tu
+                equipo</p>
+              <span style="font-size:0.8rem; color:var(--text-muted);">Admite imágenes (JPG, PNG, WEBP), PDF, Word,
+                Excel, PowerPoint, ZIP</span>
+              <input type="file" id="fileInput" multiple
+                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.txt" style="display:none"
+                onchange="handleFileSelect(event)">
+            </div>
+            <div class="file-previews" id="filePreviews" style="margin-top:1rem;"></div>
+          </div>
         </div>
 
-        <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:1.5rem;">
-          <a href="/dashboard" class="btn btn-secondary" onclick="navigateTo('/dashboard'); return false;">Cancelar</a>
-          <button type="submit" class="btn btn-primary" id="btnSubmitPost">
-            <i class="fa-solid fa-paper-plane"></i> Publicar Ahora
+        <div
+          style="display:flex; justify-content:flex-end; align-items:center; gap:1rem; margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--bg-card-border);">
+          <a href="/dashboard" class="btn btn-secondary" onclick="navigateTo('/dashboard'); return false;">
+            Cancelar
+          </a>
+          <button type="submit" class="btn btn-primary" id="btnSubmitPost" style="padding:0.65rem 1.75rem;">
+            <i class="fa-solid fa-paper-plane"></i> Publicar Artículo
           </button>
         </div>
       </form>

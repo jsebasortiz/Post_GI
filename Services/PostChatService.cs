@@ -51,7 +51,7 @@ public class PostChatService : IPostChatService
             .Include(p => p.Tipo)
             .Include(p => p.TipoConocimiento)
             .Include(p => p.Usuario)
-            .Where(p => p.Estado == "publicado" || p.EstadoId == 1)
+            .Where(p => p.EstadoId == 1 && p.Estado == "publicado")
             .Select(p => new
             {
                 Id = p.Id,
