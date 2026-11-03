@@ -1377,29 +1377,6 @@
   </div>
 
   <script type="module" src="js/app.js?v=20261015-popupfix"></script>
-  <!-- Burbuja Flotante de Chat IA -->
-  <div id="chatBubbleBtn" class="chat-floating-bubble" onclick="toggleChatWindow()" title="Consultar con IA">
-    <i class="fa-solid fa-wand-magic-sparkles"></i>
-  </div>
-
-  <div id="chatFloatingWindow" class="chat-floating-window">
-    <div class="chat-window-header">
-      <div class="chat-header-title">
-        <i class="fa-solid fa-brain"></i>
-        <span>Asistente IA - Prixma</span>
-      </div>
-      <button class="chat-close-btn" onclick="toggleChatWindow()" title="Cerrar"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <div id="chatMessages" class="chat-messages-container">
-      <div class="chat-msg chat-msg-bot">
-        ¡Hola! Soy tu asistente de IA. Puedo responder preguntas, relacionar y clasificar publicaciones existentes en la base de datos de Prixma. ¿En qué te puedo ayudar?
-      </div>
-    </div>
-    <form id="chatForm" class="chat-input-bar" onsubmit="enviarPreguntaChat(event)">
-      <input type="text" id="chatInput" placeholder="Haz una pregunta sobre los posts..." autocomplete="off" required>
-      <button type="submit" id="chatSendBtn" title="Enviar"><i class="fa-solid fa-paper-plane"></i></button>
-    </form>
-  </div>
 </body>
 
 </html>

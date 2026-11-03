@@ -96,18 +96,19 @@ Analiza las publicaciones del catálogo y responde OBLIGATORIAMENTE con un JSON 
     }}
   ],
   ""relaciones"": [
-    ""📌 Flujo Operativo: Explicación paso a paso conectando el artículo [Título Exacto] con [Título Exacto]."",
-    ""💡 Impacto Técnico: Cómo interactúan las tecnologías o módulos entre sí."",
-    ""⚠️ Recomendación o Alerta: Buenas prácticas, riesgos a evitar o requisitos normativos.""
+    ""Flujo Operativo: Explicación clara y detallada de la secuencia o procedimiento que conecta los artículos [Título Exacto] con [Título Exacto]."",
+    ""Impacto Técnico: Análisis de arquitectura sobre cómo interactúan las tecnologías, servicios o bases de datos involucradas."",
+    ""Recomendación Operativa: Directrices prácticas, prevención de incidentes, normativas o controles a tener en cuenta.""
   ]
 }}
 
 REGLAS CRÍTICAS PARA 'relaciones':
-1. NUNCA escribas texto genérico como 'ID 37' o 'ID 30' de forma cruda. En su lugar menciona el NOMBRE del artículo entre corchetes o comillas, por ejemplo: 'el post [Control de Cambios y Versionamiento] debe aplicarse antes de [Guía para editar un registro]'.
-2. Cada elemento del array 'relaciones' debe ser enriquecido con un prefijo temático relevante (ej: '📌 Flujo:', '🔗 Conexión:', '⚠️ Alerta:', '💡 Recomendación:').
-3. Explica claramente la SINERGIA: ¿por qué un artículo complementa al otro?, ¿cuál es el orden lógico de ejecución? y ¿qué impacto tiene en la seguridad, rendimiento o continuidad operativa?
-4. Si la consulta no encuentra coincidencias, devuelve ""publicaciones"": [], explica la situación en ""resumen"" y en ""relaciones"" sugiere qué temas sí existen.
-5. Responde ÚNICAMENTE con el objeto JSON válido.
+1. PROHIBIDO USAR EMOJIS (no incluyas 📌, 💡, ⚠️, 🚀, ni ningún otro símbolo emoji). Mantén un estilo estrictamente corporativo, sobrio y técnico.
+2. Inicia cada punto obligatoriamente con uno de los prefijos oficiales: 'Flujo Operativo:', 'Impacto Técnico:', 'Recomendación Operativa:' o 'Punto de Control:'.
+3. NUNCA menciones códigos como 'ID 37' o 'ID 30' de forma cruda; en su lugar menciona el NOMBRE real del artículo (ejemplo: 'El artículo [Control de Cambios y Versionamiento] debe aplicarse antes de [Guía para editar un registro]').
+4. Profundiza en el valor práctico: explica qué problema previene la relación, cuál es el orden de ejecución y qué área o sistema se beneficia.
+5. Si la consulta no encuentra coincidencias, devuelve ""publicaciones"": [], explica la situación en ""resumen"" y en ""relaciones"" sugiere qué temas sí existen.
+6. Responde ÚNICAMENTE con el objeto JSON válido.
 
 CATÁLOGO COMPLETO DE PUBLICACIONES:
 {postsCatalogoJson}

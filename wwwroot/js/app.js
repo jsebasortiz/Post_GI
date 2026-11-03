@@ -852,26 +852,44 @@ window.renderAiResponseObject = function(data) {
     `;
 
     relaciones.forEach(r => {
-      let cleanR = r.replace(/\(ID:\s*\d+\)/gi, '').replace(/ID:\s*\d+/gi, '').trim();
+      // Filtrar IDs y eliminar cualquier emoji rezagado (📌, 💡, ⚠️, etc.)
+      let cleanR = r.replace(/\(ID:\s*\d+\)/gi, '').replace(/ID:\s*\d+/gi, '');
+      cleanR = cleanR.replace(/[\u{1F300}-\u{1F9FF}|\u{2600}-\u{26FF}|\u{2700}-\u{27BF}]/gu, '').trim();
 
       let icon = 'fa-circle-nodes';
       let iconColor = 'var(--accent-purple)';
+      let badgeLabel = 'Conexión';
+      let badgeBg = 'rgba(168,85,247,0.12)';
 
-      if (cleanR.includes('⚠️') || cleanR.toLowerCase().includes('alerta') || cleanR.toLowerCase().includes('riesgo')) {
-        icon = 'fa-triangle-exclamation';
-        iconColor = 'var(--accent-amber)';
-      } else if (cleanR.includes('💡') || cleanR.toLowerCase().includes('recomend') || cleanR.toLowerCase().includes('impacto')) {
-        icon = 'fa-lightbulb';
-        iconColor = 'var(--primary)';
-      } else if (cleanR.includes('📌') || cleanR.toLowerCase().includes('flujo') || cleanR.toLowerCase().includes('orden') || cleanR.toLowerCase().includes('paso')) {
+      const lower = cleanR.toLowerCase();
+      if (lower.startsWith('flujo operativo:') || lower.includes('flujo:')) {
         icon = 'fa-route';
         iconColor = 'var(--accent-emerald)';
+        badgeLabel = 'Flujo';
+        badgeBg = 'rgba(16,185,129,0.12)';
+        cleanR = cleanR.replace(/^(?:flujo\s*operativo|flujo):\s*/i, '');
+      } else if (lower.startsWith('impacto técnico:') || lower.includes('impacto:')) {
+        icon = 'fa-microchip';
+        iconColor = 'var(--primary)';
+        badgeLabel = 'Técnico';
+        badgeBg = 'rgba(37,99,235,0.12)';
+        cleanR = cleanR.replace(/^(?:impacto\s*técnico|impacto):\s*/i, '');
+      } else if (lower.startsWith('recomendación operativa:') || lower.startsWith('recomendacion operativa:') || lower.includes('alerta') || lower.includes('riesgo')) {
+        icon = 'fa-shield-halved';
+        iconColor = 'var(--accent-amber)';
+        badgeLabel = 'Recomendación';
+        badgeBg = 'rgba(245,158,11,0.12)';
+        cleanR = cleanR.replace(/^(?:recomendación\s*operativa|recomendacion\s*operativa|alerta):\s*/i, '');
       }
 
       html += `
-        <li class="ai-relacion-item">
-          <i class="fa-solid ${icon} ai-relacion-icon" style="color:${iconColor};"></i>
-          <span>${window.formatMarkdownMini(cleanR)}</span>
+        <li class="ai-relacion-item" style="display:flex; align-items:flex-start; gap:0.75rem;">
+          <div style="flex-shrink:0; margin-top:2px;">
+            <span style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:3px 8px; border-radius:8px; background:${badgeBg}; color:${iconColor}; display:inline-flex; align-items:center; gap:0.35rem;">
+              <i class="fa-solid ${icon}"></i> ${badgeLabel}
+            </span>
+          </div>
+          <span style="font-size:0.92rem; line-height:1.55; color:var(--text-main);">${window.formatMarkdownMini(cleanR)}</span>
         </li>
       `;
     });
