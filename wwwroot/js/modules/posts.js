@@ -55,17 +55,31 @@ export function renderPostCard(post) {
 
   const actionsHtml = (canEdit || canDelete) ? `
     <div class="post-card-actions">
-      ${canEdit ? `<button class="btn-card-action" onclick="event.stopPropagation(); openEditModal(${post.id})" title="Editar Publicación"><i class="fa-solid fa-pen-to-square"></i></button>` : ''}
-      ${canDelete ? `<button class="btn-card-action btn-card-delete" onclick="event.stopPropagation(); handleDeletePost(${post.id})" title="Eliminar Publicación"><i class="fa-solid fa-trash-can"></i></button>` : ''}
+      ${canEdit ? `<button class="btn-card-action" onclick="event.stopPropagation(); openEditModal(${post.id})" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>` : ''}
+      ${canDelete ? `<button class="btn-card-action btn-card-delete" onclick="event.stopPropagation(); handleDeletePost(${post.id})" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>` : ''}
     </div>
   ` : '';
+
+  // Badges sobre la imagen
+  const isInfra = (post.moduloCategoriaPadre || '').toLowerCase().includes('infra');
+  const catLabel = isInfra ? 'Infraestructura' : (post.moduloCategoriaPadre || 'Aplicaciones');
+  const catClass = isInfra ? 'badge-cat-infra' : 'badge-cat-apps';
+  const catIcon = isInfra ? 'fa-server' : 'fa-rocket';
+
+  let badgesOverlay = `
+    <div class="post-card-badges">
+      <span class="badge ${catClass}"><i class="fa-solid ${catIcon}"></i> ${escapeHtml(catLabel)}</span>
+      ${post.moduloNombre ? `<span class="badge badge-module"><i class="fa-solid fa-folder"></i> ${escapeHtml(post.moduloNombre)}</span>` : ''}
+    </div>
+  `;
 
   let tagsHtml = '';
   if (post.palabrasClave) {
     const tags = post.palabrasClave.split(',').map(t => t.trim()).filter(Boolean);
     if (tags.length > 0) {
-      tagsHtml = `<div class="post-tags" style="display:flex; flex-wrap:wrap; gap:0.35rem; margin-top:0.6rem;">` +
-        tags.map(tag => `<span style="font-size:0.73rem; background:rgba(37,99,235,0.12); color:var(--primary); padding:2px 8px; border-radius:12px; font-weight:600;"><i class="fa-solid fa-hashtag" style="font-size:0.65rem; opacity:0.8;"></i>${escapeHtml(tag)}</span>`).join('') +
+      tagsHtml = `<div class="post-tags">` +
+        tags.slice(0, 3).map(tag => `<span class="post-tag-chip"><i class="fa-solid fa-hashtag"></i>${escapeHtml(tag)}</span>`).join('') +
+        (tags.length > 3 ? `<span class="post-tag-more">+${tags.length - 3}</span>` : '') +
         `</div>`;
     }
   }
@@ -75,9 +89,11 @@ export function renderPostCard(post) {
       ${actionsHtml}
       <div class="post-cover">
         ${coverHtml}
+        <div class="post-cover-overlay"></div>
+        ${badgesOverlay}
       </div>
       <div class="post-body">
-        <h3 class="post-title">${escapeHtml(post.titulo)}</h3>
+        <h3 class="post-title" title="${escapeHtml(post.titulo)}">${escapeHtml(post.titulo)}</h3>
         <p class="post-summary">${escapeHtml(post.resumen || post.contenido)}</p>
         ${tagsHtml}
         <div class="post-meta">
