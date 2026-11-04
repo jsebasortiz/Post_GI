@@ -22,7 +22,7 @@
   <link rel="icon" type="image/png" href="images/logo.png">
   <meta name="description"
     content="Base de conocimiento corporativa. Consulta guías técnicas, estándares y documentación interna centralizada por módulos.">
-  <link rel="stylesheet" href="css/styles.css?v=1793818551099">
+  <link rel="stylesheet" href="css/styles.css?v=1793819589181">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- Polyfill de Web Crypto API (crypto.subtle.digest SHA-256) para entornos HTTP sin SSL -->
   <script>
@@ -304,7 +304,7 @@
         <div class="nav-controls">
           <button class="btn btn-secondary" id="btnOpenRbacModal" onclick="navigateTo('/rbac'); return false;"
             style="display:none;" title="Roles y Permisos">
-            <i class="fa-solid fa-user-shield" style="color:var(--accent-purple);"></i> <span class="btn-text">Roles &
+            <i class="fa-solid fa-user-shield" style="color:var(--accent-purple);"></i> <span class="btn-text">Roles y
               Permisos</span>
           </button>
           <button class="btn btn-secondary" id="btnOpenCreateArea" onclick="navigateTo('/areas'); return false;"
@@ -319,15 +319,18 @@
             style="display:none;" title="Tipos de Publicación">
             <i class="fa-solid fa-tags" style="color:var(--accent-emerald);"></i> <span class="btn-text">Tipos</span>
           </button>
-          <button class="btn btn-secondary" id="btnCommandPalette" onclick="window.openCommandPalette();" title="Búsqueda Rápida (Ctrl + K)">
-            <i class="fa-solid fa-magnifying-glass"></i> <span class="btn-text">Buscar</span> <kbd class="cmd-palette-kbd" style="margin-left:2px; font-size:0.7rem;">Ctrl K</kbd>
+          <button class="btn btn-secondary" id="btnCommandPalette" onclick="window.openCommandPalette();"
+            title="Búsqueda Rápida (Ctrl + K)">
+            <i class="fa-solid fa-magnifying-glass"></i> <span class="btn-text">Buscar</span> <kbd
+              class="cmd-palette-kbd" style="margin-left:2px; font-size:0.7rem;">Ctrl K</kbd>
           </button>
           <button class="btn btn-secondary" id="btnOpenAiSearch"
             onclick="navigateTo('/buscadorinteligente'); return false;" title="Buscador Inteligente con IA">
             <i class="fa-solid fa-wand-magic-sparkles" style="color:var(--accent-purple);"></i> <span
               class="btn-text">Buscador IA</span>
           </button>
-          <button class="btn btn-primary" id="btnOpenCreatePost" onclick="navigateTo('/posts/create'); return false;" title="Crear">Crear</button>
+          <button class="btn btn-primary" id="btnOpenCreatePost" onclick="navigateTo('/posts/create'); return false;"
+            title="Crear">Crear</button>
           <button class="btn btn-secondary btn-icon-only" id="btnToggleTheme" onclick="toggleTheme()"
             title="Cambiar Tema (Claro / Oscuro)">
             <i id="themeIcon" class="fa-solid fa-moon"></i>
@@ -797,8 +800,7 @@
                 organizados por áreas principales.</p>
             </div>
             <div style="display:flex; gap:0.5rem; align-items:center;">
-              <a href="#/modulos/create" class="btn btn-primary"
-                onclick="navigateTo('/modulos/create'); return false;">
+              <a href="#/modulos/create" class="btn btn-primary" onclick="navigateTo('/modulos/create'); return false;">
                 <i class="fa-solid fa-plus"></i> Nuevo Módulo
               </a>
               <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('/dashboard'); return false;">
@@ -1206,8 +1208,8 @@
                   <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">Modifica el nombre, la descripción o
                     elimina roles de forma directa.</p>
                 </div>
-                <a href="#/roles/create" class="btn btn-primary"
-                  onclick="navigateTo('/roles/create'); return false;"><i class="fa-solid fa-plus"></i> Nuevo Rol</a>
+                <a href="#/roles/create" class="btn btn-primary" onclick="navigateTo('/roles/create'); return false;"><i
+                    class="fa-solid fa-plus"></i> Nuevo Rol</a>
               </div>
 
               <!-- Roles Management Table -->
@@ -1413,14 +1415,15 @@
     </main>
   </div>
 
-  <script type="module" src="js/app.js?v=1793818551099"></script>
+  <script type="module" src="js/app.js?v=1793819589181"></script>
 
   <!-- Command Palette Modal (Ctrl + K) -->
   <div id="cmdPaletteBackdrop" class="cmd-palette-backdrop">
     <div class="cmd-palette-modal">
       <div class="cmd-palette-header">
         <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" id="cmdPaletteInput" class="cmd-palette-input" placeholder="Buscar publicaciones, acciones rápidas, módulos..." autocomplete="off">
+        <input type="text" id="cmdPaletteInput" class="cmd-palette-input"
+          placeholder="Buscar publicaciones, acciones rápidas, módulos..." autocomplete="off">
         <kbd class="cmd-palette-kbd">ESC para salir</kbd>
       </div>
       <div id="cmdPaletteResults" class="cmd-palette-results"></div>

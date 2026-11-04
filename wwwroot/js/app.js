@@ -895,10 +895,10 @@ window.renderAiResponseObject = function(data) {
       }
 
       html += `
-        <li class="ai-relacion-item">
-          <div class="ai-relacion-header-top">
-            <span class="ai-relacion-badge" style="background:${badgeBg}; color:${iconColor}; border-color:${iconColor}33;">
-              ${badgeLabel}
+        <li class="ai-relacion-card" style="--card-accent: ${iconColor};">
+          <div class="ai-relacion-card-header">
+            <span class="ai-relacion-badge" style="background:${badgeBg}; color:${iconColor}; border-color:${iconColor}44;">
+              <i class="fa-solid ${icon}"></i> ${badgeLabel}
             </span>
           </div>
           <div class="ai-relacion-body">${window.formatMarkdownMini(cleanR)}</div>
