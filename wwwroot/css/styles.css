@@ -4341,3 +4341,132 @@ body, body * {
   color: var(--text-main);
 }
 
+
+
+/* ==========================================================================
+   HEADER & NAVBAR GLASSMORPHISM REFINEMENT
+   ========================================================================== */
+header.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: var(--navbar-bg) !important;
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border-bottom: 1px solid var(--bg-card-border);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+  transition: all 0.25s ease;
+}
+
+[data-theme="dark"] header.navbar {
+  box-shadow: 0 4px 25px -2px rgba(0, 0, 0, 0.4);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.nav-btn-cta {
+  box-shadow: 0 4px 14px var(--primary-glow);
+  font-weight: 700 !important;
+  letter-spacing: 0.3px;
+  padding: 0.5rem 1.15rem !important;
+  transition: transform 0.18s ease, box-shadow 0.18s ease !important;
+}
+
+.nav-btn-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
+}
+
+/* Dropdown de Gestión */
+.nav-dropdown-container {
+  position: relative;
+}
+
+.nav-dropdown-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.88rem;
+}
+
+.nav-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 260px;
+  background: var(--bg-card);
+  border: 1px solid var(--bg-card-border);
+  border-radius: 14px;
+  box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.2);
+  padding: 0.5rem;
+  display: none;
+  flex-direction: column;
+  gap: 0.25rem;
+  z-index: 1010;
+  backdrop-filter: blur(20px);
+  animation: navDropdownFade 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav-dropdown-menu.show {
+  display: flex;
+}
+
+@keyframes navDropdownFade {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.nav-dropdown-header {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-muted);
+  font-weight: 700;
+  padding: 0.4rem 0.65rem 0.2rem 0.65rem;
+}
+
+.nav-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  color: var(--text-main);
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.nav-dropdown-item:hover {
+  background: var(--bg-dark);
+  color: var(--primary);
+  transform: translateX(3px);
+}
+
+.nav-dropdown-item i {
+  font-size: 1.1rem;
+  width: 22px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.nav-dropdown-item div {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.nav-dropdown-item strong {
+  font-size: 0.85rem;
+}
+
+.nav-dropdown-item small {
+  font-size: 0.73rem;
+  color: var(--text-muted);
+}
+

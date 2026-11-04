@@ -1016,3 +1016,27 @@ window.handleAiSearchSubmit = async function(event) {
   }
 };
 // Fin de archivo app.js
+
+
+// Global Helpers for Navbar Management Dropdown
+window.toggleAdminMenu = function(e) {
+  if (e) e.stopPropagation();
+  const menu = document.getElementById('adminNavDropdownMenu');
+  if (menu) {
+    menu.classList.toggle('show');
+  }
+};
+
+window.closeAdminMenu = function() {
+  const menu = document.getElementById('adminNavDropdownMenu');
+  if (menu) {
+    menu.classList.remove('show');
+  }
+};
+
+document.addEventListener('click', (e) => {
+  const dropdown = document.getElementById('navAdminDropdownContainer');
+  if (dropdown && !dropdown.contains(e.target)) {
+    window.closeAdminMenu();
+  }
+});

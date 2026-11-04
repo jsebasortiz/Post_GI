@@ -13,12 +13,23 @@ export function updateNavButtonsPermissions() {
   const btnArea = document.getElementById('btnOpenCreateArea');
   const btnTipo = document.getElementById('btnOpenPostTiposModal');
   const btnRbac = document.getElementById('btnOpenRbacModal');
+  const adminDropdown = document.getElementById('navAdminDropdownContainer');
 
-  if (btnPost) btnPost.style.display = hasPermission('posts.create') ? 'inline-flex' : 'none';
-  if (btnModule) btnModule.style.display = hasPermission('modulos.create') ? 'inline-flex' : 'none';
-  if (btnArea) btnArea.style.display = hasPermission('modulos.create') ? 'inline-flex' : 'none';
-  if (btnTipo) btnTipo.style.display = (hasPermission('tipos.manage') || hasPermission('tipos_conocimiento.manage') || hasPermission('modulos.create')) ? 'inline-flex' : 'none';
-  if (btnRbac) btnRbac.style.display = hasPermission('roles.manage') ? 'inline-flex' : 'none';
+  const canCreatePost = hasPermission('posts.create');
+  const canManageModules = hasPermission('modulos.create');
+  const canManageTipos = hasPermission('tipos.manage') || hasPermission('tipos_conocimiento.manage') || hasPermission('modulos.create');
+  const canManageRoles = hasPermission('roles.manage');
+
+  if (btnPost) btnPost.style.display = canCreatePost ? 'inline-flex' : 'none';
+  if (btnModule) btnModule.style.display = canManageModules ? 'flex' : 'none';
+  if (btnArea) btnArea.style.display = canManageModules ? 'flex' : 'none';
+  if (btnTipo) btnTipo.style.display = canManageTipos ? 'flex' : 'none';
+  if (btnRbac) btnRbac.style.display = canManageRoles ? 'flex' : 'none';
+
+  if (adminDropdown) {
+    const hasAnyAdminPerm = canManageModules || canManageTipos || canManageRoles;
+    adminDropdown.style.display = hasAnyAdminPerm ? 'block' : 'none';
+  }
 }
 
 export function renderUserNavArea() {

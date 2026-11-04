@@ -22,7 +22,7 @@
   <link rel="icon" type="image/png" href="images/logo.png">
   <meta name="description"
     content="Base de conocimiento corporativa. Consulta guías técnicas, estándares y documentación interna centralizada por módulos.">
-  <link rel="stylesheet" href="css/styles.css?v=1793819589181">
+  <link rel="stylesheet" href="css/styles.css?v=1793828321269">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- Polyfill de Web Crypto API (crypto.subtle.digest SHA-256) para entornos HTTP sin SSL -->
   <script>
@@ -302,35 +302,69 @@
         </a>
 
         <div class="nav-controls">
-          <button class="btn btn-secondary" id="btnOpenRbacModal" onclick="navigateTo('/rbac'); return false;"
-            style="display:none;" title="Roles y Permisos">
-            <i class="fa-solid fa-user-shield" style="color:var(--accent-purple);"></i> <span class="btn-text">Roles y
-              Permisos</span>
-          </button>
-          <button class="btn btn-secondary" id="btnOpenCreateArea" onclick="navigateTo('/areas'); return false;"
-            title="Gestión de Áreas">
-            <i class="fa-solid fa-sitemap" style="color:var(--accent-cyan);"></i> <span class="btn-text">Áreas</span>
-          </button>
-          <button class="btn btn-secondary" id="btnOpenCreateModule" onclick="navigateTo('/modulos'); return false;"
-            title="Gestión de Módulos">
-            <i class="fa-solid fa-folder-plus"></i> <span class="btn-text">Módulos</span>
-          </button>
-          <button class="btn btn-secondary" id="btnOpenPostTiposModal" onclick="navigateTo('/tipos'); return false;"
-            style="display:none;" title="Tipos de Publicación">
-            <i class="fa-solid fa-tags" style="color:var(--accent-emerald);"></i> <span class="btn-text">Tipos</span>
-          </button>
-          <button class="btn btn-secondary" id="btnCommandPalette" onclick="window.openCommandPalette();"
+          <!-- Búsqueda Rápida Spotlight -->
+          <button class="btn btn-secondary nav-search-trigger" id="btnCommandPalette" onclick="window.openCommandPalette();"
             title="Búsqueda Rápida (Ctrl + K)">
-            <i class="fa-solid fa-magnifying-glass"></i> <span class="btn-text">Buscar</span> <kbd
-              class="cmd-palette-kbd" style="margin-left:2px; font-size:0.7rem;">Ctrl K</kbd>
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <span class="btn-text">Buscar</span>
+            <kbd class="cmd-palette-kbd" style="margin-left:4px; font-size:0.68rem;">Ctrl K</kbd>
           </button>
+
+          <!-- Buscador IA -->
           <button class="btn btn-secondary" id="btnOpenAiSearch"
             onclick="navigateTo('/buscadorinteligente'); return false;" title="Buscador Inteligente con IA">
-            <i class="fa-solid fa-wand-magic-sparkles" style="color:var(--accent-purple);"></i> <span
-              class="btn-text">Buscador IA</span>
+            <i class="fa-solid fa-wand-magic-sparkles" style="color:var(--accent-purple);"></i>
+            <span class="btn-text">Buscador IA</span>
           </button>
-          <button class="btn btn-primary" id="btnOpenCreatePost" onclick="navigateTo('/posts/create'); return false;"
-            title="Crear">Crear</button>
+
+          <!-- Menú Desplegable de Gestión y Administración -->
+          <div class="nav-dropdown-container" id="navAdminDropdownContainer" style="display:none;">
+            <button class="btn btn-secondary nav-dropdown-btn" id="btnToggleAdminMenu" onclick="window.toggleAdminMenu(event);"
+              title="Administración y Catálogos">
+              <i class="fa-solid fa-sliders"></i>
+              <span class="btn-text">Gestión</span>
+              <i class="fa-solid fa-chevron-down nav-dropdown-arrow" style="font-size:0.7rem; margin-left:2px;"></i>
+            </button>
+            <div class="nav-dropdown-menu" id="adminNavDropdownMenu">
+              <div class="nav-dropdown-header">Administración</div>
+              <a href="#/rbac" class="nav-dropdown-item" id="btnOpenRbacModal" onclick="window.closeAdminMenu(); navigateTo('/rbac'); return false;">
+                <i class="fa-solid fa-user-shield" style="color:var(--accent-purple);"></i>
+                <div>
+                  <strong>Roles & Permisos</strong>
+                  <small>Matriz de accesos y usuarios</small>
+                </div>
+              </a>
+              <a href="#/areas" class="nav-dropdown-item" id="btnOpenCreateArea" onclick="window.closeAdminMenu(); navigateTo('/areas'); return false;">
+                <i class="fa-solid fa-sitemap" style="color:var(--accent-cyan);"></i>
+                <div>
+                  <strong>Áreas Organizacionales</strong>
+                  <small>Categorías maestras del portal</small>
+                </div>
+              </a>
+              <a href="#/modulos" class="nav-dropdown-item" id="btnOpenCreateModule" onclick="window.closeAdminMenu(); navigateTo('/modulos'); return false;">
+                <i class="fa-solid fa-folder-plus" style="color:var(--accent-amber);"></i>
+                <div>
+                  <strong>Módulos Temáticos</strong>
+                  <small>Sistemas, procesos y áreas clave</small>
+                </div>
+              </a>
+              <a href="#/tipos" class="nav-dropdown-item" id="btnOpenPostTiposModal" onclick="window.closeAdminMenu(); navigateTo('/tipos'); return false;">
+                <i class="fa-solid fa-tags" style="color:var(--accent-emerald);"></i>
+                <div>
+                  <strong>Tipos de Publicación</strong>
+                  <small>Formatos y tipos de conocimiento</small>
+                </div>
+              </a>
+            </div>
+          </div>
+
+          <!-- Botón de Acción Principal Destacado (CTA) -->
+          <button class="btn btn-primary nav-btn-cta" id="btnOpenCreatePost" onclick="navigateTo('/posts/create'); return false;"
+            title="Crear Publicación">
+            <i class="fa-solid fa-plus"></i> Crear
+          </button>
+
+          <!-- Toggle de Tema -->
           <button class="btn btn-secondary btn-icon-only" id="btnToggleTheme" onclick="toggleTheme()"
             title="Cambiar Tema (Claro / Oscuro)">
             <i id="themeIcon" class="fa-solid fa-moon"></i>
@@ -1415,7 +1449,7 @@
     </main>
   </div>
 
-  <script type="module" src="js/app.js?v=1793819589181"></script>
+  <script type="module" src="js/app.js?v=1793828321269"></script>
 
   <!-- Command Palette Modal (Ctrl + K) -->
   <div id="cmdPaletteBackdrop" class="cmd-palette-backdrop">
