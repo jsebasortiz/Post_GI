@@ -139,3 +139,34 @@ export async function handleDeleteAttachment(adjuntoId, postId, isFromEdit = fal
     });
   }
 }
+
+
+export function initDragAndDropZone(zoneElement, onFilesAdded) {
+  if (!zoneElement) return;
+
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    zoneElement.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    }, false);
+  });
+
+  ['dragenter', 'dragover'].forEach(eventName => {
+    zoneElement.addEventListener(eventName, () => {
+      zoneElement.classList.add('dragover');
+    }, false);
+  });
+
+  ['dragleave', 'drop'].forEach(eventName => {
+    zoneElement.addEventListener(eventName, () => {
+      zoneElement.classList.remove('dragover');
+    }, false);
+  });
+
+  zoneElement.addEventListener('drop', (e) => {
+    const dt = e.dataTransfer;
+    if (dt && dt.files && dt.files.length > 0) {
+      onFilesAdded(Array.from(dt.files));
+    }
+  }, false);
+}

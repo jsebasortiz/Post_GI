@@ -1,3 +1,7 @@
+import {
+  initCommandPalette, initPostDraftAutoSave, initReadingProgressBar, initFormDragAndDrop
+} from './core/ux-enhancements.js';
+import { showToast } from './core/ui-helpers.js';
 window.openPost = function(id) {
   if (!id) return;
   if (window.navigateTo) {
@@ -131,6 +135,10 @@ window.addEventListener('hashchange', handleRoute);
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   initUserSession();
+  initCommandPalette();
+  initPostDraftAutoSave();
+  initReadingProgressBar();
+  initFormDragAndDrop();
 
   const loginForm = document.getElementById('gateLoginForm');
   if (loginForm) {
@@ -156,6 +164,7 @@ Object.assign(window, {
   setTheme,
 
   // UI Helpers
+  showToast,
   startTopProgressBar,
   finishTopProgressBar,
   showRouteSpinner,

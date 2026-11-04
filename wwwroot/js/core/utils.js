@@ -21,6 +21,32 @@ export function formatDate(dateString) {
   return `${day}/${month}/${year}`;
 }
 
+export function formatRelativeTime(dateString) {
+  if (!dateString) return '';
+  const d = new Date(dateString);
+  if (isNaN(d.getTime())) return dateString;
+
+  const now = new Date();
+  const diffInSeconds = Math.floor((now - d) / 1000);
+
+  if (diffInSeconds < 60) return 'Hace un momento';
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  if (diffInMinutes < 60) return `Hace ${diffInMinutes} min`;
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) return `Hace ${diffInHours} h`;
+  const diffInDays = Math.floor(diffInHours / 24);
+  if (diffInDays < 30) return `Hace ${diffInDays} d`;
+  
+  return formatDate(dateString);
+}
+
+export function estimateReadingTime(text) {
+  if (!text) return '1 min';
+  const words = text.trim().split(/\s+/).length;
+  const minutes = Math.max(1, Math.ceil(words / 200));
+  return `${minutes} min`;
+}
+
 export function formatBytes(bytes, decimals = 1) {
   if (!bytes || bytes === 0) return '0 B';
   const k = 1024;

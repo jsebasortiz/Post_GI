@@ -1,6 +1,6 @@
 import { state } from '../core/state.js';
 import { apiFetch } from '../core/api.js';
-import { escapeHtml, formatDate, formatBytes } from '../core/utils.js';
+import { escapeHtml, formatDate, formatRelativeTime, estimateReadingTime, formatBytes } from '../core/utils.js';
 import { getPrixmaSwal, setFormSkeletonState, startTopProgressBar, finishTopProgressBar } from '../core/ui-helpers.js';
 import { hasPermission, showAuthGate } from './auth.js';
 import { getFileMeta, autoSelectDefaultImageCover, renderFilePreviews } from './attachments.js';
@@ -81,13 +81,13 @@ export function renderPostCard(post) {
         <p class="post-summary">${escapeHtml(post.resumen || post.contenido)}</p>
         ${tagsHtml}
         <div class="post-meta">
-          <div class="author-info">
+          <div class="author-info" title="${escapeHtml(post.usuarioNombre)}">
             <div class="avatar-sm">${escapeHtml(post.usuarioNombre.charAt(0).toUpperCase())}</div>
-            <span>${escapeHtml(post.usuarioNombre)}</span>
+            <span class="author-name">${escapeHtml(post.usuarioNombre)}</span>
           </div>
-          <div style="display:flex; gap:0.75rem; align-items:center;">
-            ${attachCount > 0 ? `<span class="post-attachments-count"><i class="fa-solid fa-paperclip"></i> ${attachCount}</span>` : ''}
-            <span style="white-space:nowrap;">${dateStr}</span>
+          <div class="post-meta-right">
+            ${attachCount > 0 ? `<span class="post-attachments-count" title="${attachCount} archivo(s) adjunto(s)"><i class="fa-solid fa-paperclip"></i> ${attachCount}</span>` : ''}
+            <span class="post-card-date" title="${dateStr}">${formatRelativeTime(post.creadoEn)}</span>
           </div>
         </div>
       </div>

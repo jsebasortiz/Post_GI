@@ -213,3 +213,50 @@ export function getPrixmaSwal() {
     fire: (opts) => alert(opts.text || opts.title)
   };
 }
+
+
+/**
+ * Toast Notification system for subtle, non-blocking feedback
+ * @param {string} message Texto a mostrar
+ * @param {'success'|'info'|'warning'|'error'} type Tipo de toast
+ * @param {number} duration Duración en ms (default 3200ms)
+ */
+export function showToast(message, type = 'success', duration = 3200) {
+  let container = document.getElementById('toastContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toastContainer';
+    container.className = 'toast-container';
+    document.body.appendChild(container);
+  }
+
+  const icons = {
+    success: 'fa-circle-check',
+    info: 'fa-circle-info',
+    warning: 'fa-triangle-exclamation',
+    error: 'fa-circle-xmark'
+  };
+
+  const toast = document.createElement('div');
+  toast.className = `toast-item toast-${type}`;
+  toast.innerHTML = `
+    <i class="fa-solid ${icons[type] || icons.info}"></i>
+    <span class="toast-message">${escapeHtml(message)}</span>
+    <button class="toast-close" aria-label="Cerrar">&times;</button>
+  `;
+
+  toast.querySelector('.toast-close').onclick = () => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 250);
+  };
+
+  container.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add('show'));
+
+  setTimeout(() => {
+    if (toast.parentElement) {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 250);
+    }
+  }, duration);
+}
