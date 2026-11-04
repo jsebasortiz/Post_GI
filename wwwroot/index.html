@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Prixma - Portal de Publicaciones & Blogs Corporativos</title>
+  <title>Prixma - Base de datos de conocimiento</title>
   <script>
     (function () {
       var p = window.location.pathname.toLowerCase();
@@ -49,7 +49,7 @@
                 isComposite[i] = candidate;
               }
               hash[primeCounter] = (mathPow(candidate, .5) * maxWord) | 0;
-              k[primeCounter++] = (mathPow(candidate, 1/3) * maxWord) | 0;
+              k[primeCounter++] = (mathPow(candidate, 1 / 3) * maxWord) | 0;
             }
           }
           for (i = 0; i < bytes[lengthProperty]; i++) {
@@ -67,24 +67,24 @@
                 w_j = words[j + i] || 0;
               } else {
                 var gamma0 = ((w[j - 15] >>> 7) | (w[j - 15] << 25)) ^
-                             ((w[j - 15] >>> 18) | (w[j - 15] << 14)) ^
-                             (w[j - 15] >>> 3);
+                  ((w[j - 15] >>> 18) | (w[j - 15] << 14)) ^
+                  (w[j - 15] >>> 3);
                 var gamma1 = ((w[j - 2] >>> 17) | (w[j - 2] << 15)) ^
-                             ((w[j - 2] >>> 19) | (w[j - 2] << 13)) ^
-                             (w[j - 2] >>> 10);
+                  ((w[j - 2] >>> 19) | (w[j - 2] << 13)) ^
+                  (w[j - 2] >>> 10);
                 w_j = (w[j - 16] + gamma0 + w[j - 7] + gamma1) | 0;
               }
               w[j] = w_j;
 
               var s1 = ((hash[4] >>> 6) | (hash[4] << 26)) ^
-                       ((hash[4] >>> 11) | (hash[4] << 21)) ^
-                       ((hash[4] >>> 25) | (hash[4] << 7));
+                ((hash[4] >>> 11) | (hash[4] << 21)) ^
+                ((hash[4] >>> 25) | (hash[4] << 7));
               var ch = (hash[4] & hash[5]) ^ (~hash[4] & hash[6]);
               var temp1 = (hash[7] + s1 + ch + k[j] + w[j]) | 0;
 
               var s0 = ((hash[0] >>> 2) | (hash[0] << 30)) ^
-                       ((hash[0] >>> 13) | (hash[0] << 19)) ^
-                       ((hash[0] >>> 22) | (hash[0] << 10));
+                ((hash[0] >>> 13) | (hash[0] << 19)) ^
+                ((hash[0] >>> 22) | (hash[0] << 10));
               var maj = (hash[0] & hash[1]) ^ (hash[0] & hash[2]) ^ (hash[1] & hash[2]);
               var temp2 = (s0 + maj) | 0;
 
@@ -125,7 +125,7 @@
               configurable: true,
               writable: true
             });
-          } catch (err) {}
+          } catch (err) { }
         }
       }
     })();
@@ -176,7 +176,8 @@
             </div>
             <h1 class="login-hero-title">El Portal del Conocimiento Corporativo</h1>
             <p class="login-hero-desc">
-              Plataforma unificada para la gestión y difusión de artículos, manuales, normativas y blogs organizacionales
+              Plataforma unificada para la gestión y difusión de artículos, manuales, normativas y blogs
+              organizacionales
               con inicio de sesión único de Microsoft 365.
             </p>
 
@@ -187,7 +188,8 @@
                 </div>
                 <div class="login-feature-text">
                   <h4>Autenticación Única Microsoft 365 (SSO)</h4>
-                  <p>Inicia sesión con un solo clic con tu cuenta corporativa institucional sin recordar nuevas claves.</p>
+                  <p>Inicia sesión con un solo clic con tu cuenta corporativa institucional sin recordar nuevas claves.
+                  </p>
                 </div>
               </div>
 
@@ -246,10 +248,10 @@
           <div class="m365-login-container">
             <button type="button" class="btn btn-microsoft-sso" id="btnMicrosoftLogin" onclick="handleMicrosoftLogin()">
               <svg class="ms-logo-svg" viewBox="0 0 21 21" width="22" height="22" aria-hidden="true">
-                <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
-                <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
-                <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
-                <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+                <rect x="1" y="1" width="9" height="9" fill="#f25022" />
+                <rect x="11" y="1" width="9" height="9" fill="#7fba00" />
+                <rect x="1" y="11" width="9" height="9" fill="#00a4ef" />
+                <rect x="11" y="11" width="9" height="9" fill="#ffb900" />
               </svg>
               <span id="btnMicrosoftText">Iniciar Sesión con Microsoft 365</span>
             </button>
@@ -265,7 +267,8 @@
             <i class="fa-solid fa-triangle-exclamation"></i>
             <div>
               <strong>Configuración de Azure requerida:</strong>
-              <p>El <code>ClientId</code> de Microsoft 365 aún no ha sido configurado en <code>appsettings.json</code>. Consulta la guía de configuración para vincular el registro de Azure Entra ID.</p>
+              <p>El <code>ClientId</code> de Microsoft 365 aún no ha sido configurado en <code>appsettings.json</code>.
+                Consulta la guía de configuración para vincular el registro de Azure Entra ID.</p>
             </div>
           </div>
 
@@ -315,9 +318,10 @@
             style="display:none;" title="Tipos de Publicación">
             <i class="fa-solid fa-tags" style="color:var(--accent-emerald);"></i> <span class="btn-text">Tipos</span>
           </button>
-                    <button class="btn btn-secondary" id="btnOpenAiSearch" onclick="navigateTo('#/buscadorinteligente'); return false;"
-            title="Buscador Inteligente con IA">
-            <i class="fa-solid fa-wand-magic-sparkles" style="color:var(--accent-purple);"></i> <span class="btn-text">Buscador IA</span>
+          <button class="btn btn-secondary" id="btnOpenAiSearch"
+            onclick="navigateTo('#/buscadorinteligente'); return false;" title="Buscador Inteligente con IA">
+            <i class="fa-solid fa-wand-magic-sparkles" style="color:var(--accent-purple);"></i> <span
+              class="btn-text">Buscador IA</span>
           </button>
           <button class="btn btn-primary" id="btnOpenCreatePost" onclick="navigateTo('#/posts/create'); return false;"
             title="Crear Publicación">
@@ -406,13 +410,15 @@
         <div class="modal-card post-form-card">
           <div class="modal-header">
             <div>
-              <h2 style="margin:0;"><i class="fa-solid fa-pen-to-square" style="color:var(--primary);"></i> Nueva Publicación</h2>
-              <p style="font-size:0.85rem; color:var(--text-muted); margin:0.25rem 0 0 0;">Diligencia la información técnica o corporativa para compartir con el equipo.</p>
+              <h2 style="margin:0;"><i class="fa-solid fa-pen-to-square" style="color:var(--primary);"></i> Nueva
+                Publicación</h2>
+              <p style="font-size:0.85rem; color:var(--text-muted); margin:0.25rem 0 0 0;">Diligencia la información
+                técnica o corporativa para compartir con el equipo.</p>
             </div>
           </div>
           <div class="modal-body" style="padding: 1.75rem;">
             <form id="createPostForm" onsubmit="handleCreatePost(event)">
-              
+
               <!-- SECCIÓN 1: CLASIFICACIÓN Y CATEGORIZACIÓN -->
               <div class="post-form-section">
                 <div class="post-form-section-title">
@@ -420,21 +426,25 @@
                 </div>
                 <div class="form-row" style="margin-bottom: 1rem;">
                   <div class="form-group" style="margin-bottom: 0;">
-                    <label class="form-label" for="selectCategoriaPadre"><i class="fa-solid fa-layer-group" style="color:var(--primary);"></i> Área Principal</label>
+                    <label class="form-label" for="selectCategoriaPadre"><i class="fa-solid fa-layer-group"
+                        style="color:var(--primary);"></i> Área Principal</label>
                     <select id="selectCategoriaPadre" onchange="onPostCategoriaChange(this.value)" required></select>
                   </div>
                   <div class="form-group" style="margin-bottom: 0;">
-                    <label class="form-label" for="selectModulo"><i class="fa-solid fa-folder" style="color:var(--accent-purple);"></i> Módulo Temático</label>
+                    <label class="form-label" for="selectModulo"><i class="fa-solid fa-folder"
+                        style="color:var(--accent-purple);"></i> Módulo Temático</label>
                     <select id="selectModulo" required></select>
                   </div>
                 </div>
                 <div class="form-row">
                   <div class="form-group" style="margin-bottom: 0;">
-                    <label class="form-label" for="selectTipo"><i class="fa-solid fa-tag" style="color:var(--accent-cyan);"></i> Tipo de Publicación</label>
+                    <label class="form-label" for="selectTipo"><i class="fa-solid fa-tag"
+                        style="color:var(--accent-cyan);"></i> Tipo de Publicación</label>
                     <select id="selectTipo" required></select>
                   </div>
                   <div class="form-group" style="margin-bottom: 0;">
-                    <label class="form-label" for="selectTipoConocimiento"><i class="fa-solid fa-brain" style="color:var(--accent-emerald);"></i> Tipo de Conocimiento</label>
+                    <label class="form-label" for="selectTipoConocimiento"><i class="fa-solid fa-brain"
+                        style="color:var(--accent-emerald);"></i> Tipo de Conocimiento</label>
                     <select id="selectTipoConocimiento"></select>
                   </div>
                 </div>
@@ -447,22 +457,28 @@
                 </div>
 
                 <div class="form-group">
-                  <label class="form-label" for="postTitulo">Título de la Publicación <span style="color:var(--accent-rose);">*</span></label>
-                  <input type="text" id="postTitulo" class="form-control" style="font-size:1.05rem; font-weight:600;" placeholder="Ej: Guía de configuración de VPN corporativa y acceso remoto" required>
+                  <label class="form-label" for="postTitulo">Título de la Publicación <span
+                      style="color:var(--accent-rose);">*</span></label>
+                  <input type="text" id="postTitulo" class="form-control" style="font-size:1.05rem; font-weight:600;"
+                    placeholder="Ej: Guía de configuración de VPN corporativa y acceso remoto" required>
                 </div>
 
                 <!-- Input interactivo de Tags / Palabras Clave -->
                 <div class="form-group">
-                  <label class="form-label" for="postTagInput"><i class="fa-solid fa-hashtag" style="color:var(--primary);"></i> Palabras Clave / Etiquetas</label>
-                  <div class="tag-input-container" id="postTagContainer" onclick="document.getElementById('postTagInput').focus()">
+                  <label class="form-label" for="postTagInput"><i class="fa-solid fa-hashtag"
+                      style="color:var(--primary);"></i> Palabras Clave / Etiquetas</label>
+                  <div class="tag-input-container" id="postTagContainer"
+                    onclick="document.getElementById('postTagInput').focus()">
                     <div id="postTagChips" style="display:contents;"></div>
-                    <input type="text" id="postTagInput" class="tag-input-field" placeholder="Escribe una etiqueta y presiona Enter o Coma...">
+                    <input type="text" id="postTagInput" class="tag-input-field"
+                      placeholder="Escribe una etiqueta y presiona Enter o Coma...">
                   </div>
                   <!-- Input oculto para compatibilidad con backend -->
                   <input type="hidden" id="postPalabrasClave">
-                  
+
                   <div class="tag-suggestions">
-                    <span style="font-size:0.75rem; color:var(--text-muted);"><i class="fa-solid fa-lightbulb"></i> Sugerencias:</span>
+                    <span style="font-size:0.75rem; color:var(--text-muted);"><i class="fa-solid fa-lightbulb"></i>
+                      Sugerencias:</span>
                     <span class="tag-suggestion-pill" onclick="addPostTag('sql')">+ sql</span>
                     <span class="tag-suggestion-pill" onclick="addPostTag('azure')">+ azure</span>
                     <span class="tag-suggestion-pill" onclick="addPostTag('seguridad')">+ seguridad</span>
@@ -473,13 +489,19 @@
                 </div>
 
                 <div class="form-group">
-                  <label class="form-label" for="postResumen">Resumen Ejecutivo o Introducción <span style="font-size:0.8rem; color:var(--text-muted); font-weight:normal;">(Visible en tarjetas y búsquedas de IA)</span></label>
-                  <textarea id="postResumen" rows="2" class="form-control" placeholder="Breve síntesis de los objetivos o temas clave que aborda esta publicación..."></textarea>
+                  <label class="form-label" for="postResumen">Resumen Ejecutivo o Introducción <span
+                      style="font-size:0.8rem; color:var(--text-muted); font-weight:normal;">(Visible en tarjetas y
+                      búsquedas de IA)</span></label>
+                  <textarea id="postResumen" rows="2" class="form-control"
+                    placeholder="Breve síntesis de los objetivos o temas clave que aborda esta publicación..."></textarea>
                 </div>
 
                 <div class="form-group" style="margin-bottom:0;">
-                  <label class="form-label" for="postContenido">Cuerpo / Contenido Completo del Blog <span style="color:var(--accent-rose);">*</span></label>
-                  <textarea id="postContenido" rows="7" class="form-control" placeholder="Escribe el desarrollo completo del artículo, pasos técnicos, recomendaciones o normativas..." required></textarea>
+                  <label class="form-label" for="postContenido">Cuerpo / Contenido Completo del Blog <span
+                      style="color:var(--accent-rose);">*</span></label>
+                  <textarea id="postContenido" rows="7" class="form-control"
+                    placeholder="Escribe el desarrollo completo del artículo, pasos técnicos, recomendaciones o normativas..."
+                    required></textarea>
                 </div>
               </div>
 
@@ -491,15 +513,20 @@
                 <div class="form-group" style="margin-bottom:0;">
                   <div class="file-upload-zone" onclick="document.getElementById('fileInput').click()">
                     <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
-                    <p style="font-weight:600; margin:0.5rem 0 0.25rem 0;">Arrastra archivos o haz clic para explorar en tu equipo</p>
-                    <span style="font-size:0.8rem; color:var(--text-muted);">Admite imágenes (JPG, PNG, WEBP), PDF, Word, Excel, PowerPoint, ZIP</span>
-                    <input type="file" id="fileInput" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.txt" style="display:none" onchange="handleFileSelect(event)">
+                    <p style="font-weight:600; margin:0.5rem 0 0.25rem 0;">Arrastra archivos o haz clic para explorar en
+                      tu equipo</p>
+                    <span style="font-size:0.8rem; color:var(--text-muted);">Admite imágenes (JPG, PNG, WEBP), PDF,
+                      Word, Excel, PowerPoint, ZIP</span>
+                    <input type="file" id="fileInput" multiple
+                      accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.txt" style="display:none"
+                      onchange="handleFileSelect(event)">
                   </div>
                   <div class="file-previews" id="filePreviews" style="margin-top:1rem;"></div>
                 </div>
               </div>
 
-              <div style="display:flex; justify-content:flex-end; align-items:center; gap:1rem; margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--bg-card-border);">
+              <div
+                style="display:flex; justify-content:flex-end; align-items:center; gap:1rem; margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--bg-card-border);">
                 <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('#/dashboard'); return false;">
                   Cancelar
                 </a>
@@ -615,11 +642,12 @@
         </div>
       </div>
 
-            <!-- 4. POST DETAIL VIEW -->
+      <!-- 4. POST DETAIL VIEW -->
       <div id="viewPostDetail" class="app-view view-hidden">
         <div class="post-detail-container">
           <div class="post-detail-top-nav">
-            <a href="#/dashboard" class="btn btn-secondary" onclick="if(window.history.length > 1) { window.history.back(); } else { navigateTo('#/dashboard'); } return false;">
+            <a href="#/dashboard" class="btn btn-secondary"
+              onclick="if(window.history.length > 1) { window.history.back(); } else { navigateTo('#/dashboard'); } return false;">
               <i class="fa-solid fa-arrow-left"></i> Volver
             </a>
             <div id="detailHeaderActions" style="display:flex; gap:0.5rem; align-items:center;"></div>
@@ -1205,17 +1233,23 @@
 
             <!-- Tab 3: Permission Matrix -->
             <div id="rbacTabMatrix" class="view-hidden">
-              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem;">
+              <div
+                style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem;">
                 <div>
-                  <h3 style="font-size:1.1rem; color:var(--text-main); margin-bottom:0.25rem;">Configurar Permisos por Rol</h3>
-                  <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">Asigna o revoca accesos específicos para cada rol del sistema.</p>
+                  <h3 style="font-size:1.1rem; color:var(--text-main); margin-bottom:0.25rem;">Configurar Permisos por
+                    Rol</h3>
+                  <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">Asigna o revoca accesos específicos
+                    para cada rol del sistema.</p>
                 </div>
                 <div style="display:flex; gap:0.5rem; align-items:center;">
-                  <div style="display:flex; background:var(--bg-input); padding:3px; border-radius:8px; border:1px solid var(--bg-card-border);">
-                    <button class="btn btn-sm" id="btnRbacViewCardsIndex" onclick="switchRbacMatrixView('cards')" style="border:none; padding:0.35rem 0.75rem; font-size:0.8rem; border-radius:6px; background:var(--primary); color:white;">
+                  <div
+                    style="display:flex; background:var(--bg-input); padding:3px; border-radius:8px; border:1px solid var(--bg-card-border);">
+                    <button class="btn btn-sm" id="btnRbacViewCardsIndex" onclick="switchRbacMatrixView('cards')"
+                      style="border:none; padding:0.35rem 0.75rem; font-size:0.8rem; border-radius:6px; background:var(--primary); color:white;">
                       <i class="fa-solid fa-border-all"></i> Tarjetas Lado a Lado
                     </button>
-                    <button class="btn btn-sm" id="btnRbacViewTableIndex" onclick="switchRbacMatrixView('table')" style="border:none; padding:0.35rem 0.75rem; font-size:0.8rem; border-radius:6px; background:transparent; color:var(--text-muted);">
+                    <button class="btn btn-sm" id="btnRbacViewTableIndex" onclick="switchRbacMatrixView('table')"
+                      style="border:none; padding:0.35rem 0.75rem; font-size:0.8rem; border-radius:6px; background:transparent; color:var(--text-muted);">
                       <i class="fa-solid fa-table-cells"></i> Matriz Comparativa
                     </button>
                   </div>
@@ -1304,7 +1338,7 @@
         </div>
       </div>
 
-                <!-- VISTA BUSCADOR INTELIGENTE IA (Ruta: /buscadorinteligente) -->
+      <!-- VISTA BUSCADOR INTELIGENTE IA (Ruta: /buscadorinteligente) -->
       <div id="viewAiSearch" class="app-view view-hidden">
         <div class="ai-search-hero ai-search-hero-compact">
           <div class="ai-search-header-row">
@@ -1316,7 +1350,9 @@
 
           <form id="aiSearchForm" class="ai-search-bar" onsubmit="handleAiSearchSubmit(event)">
             <i class="fa-solid fa-magnifying-glass ai-search-icon"></i>
-            <input type="text" id="aiSearchInput" placeholder="Pregunta sobre módulos, guías, arquitectura, seguridad, bases de datos o soporte..." autocomplete="off" required>
+            <input type="text" id="aiSearchInput"
+              placeholder="Pregunta sobre módulos, guías, arquitectura, seguridad, bases de datos o soporte..."
+              autocomplete="off" required>
             <button type="submit" id="btnAiSearchSubmit" class="btn btn-primary">
               <i class="fa-solid fa-bolt"></i> Analizar
             </button>
@@ -1364,7 +1400,7 @@
               <i class="fa-regular fa-copy"></i> Copiar
             </button>
           </div>
-          
+
           <div id="aiResultsContent" class="ai-results-body"></div>
 
           <div class="ai-results-footer">
