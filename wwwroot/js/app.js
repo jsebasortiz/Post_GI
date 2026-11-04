@@ -380,7 +380,7 @@ window.enviarPreguntaChat = async function(event) {
   if (sendBtn) sendBtn.disabled = true;
 
   try {
-    const res = await fetch('/api/Chat/ask', {
+    const res = await apiFetch('/api/Chat/ask', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pregunta })
@@ -450,7 +450,7 @@ window.handleAiSearchSubmit = async function(event) {
   if (btn) btn.disabled = true;
 
   try {
-    const res = await fetch('/api/Chat/ask', {
+    const res = await apiFetch('/api/Chat/ask', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pregunta })
@@ -980,7 +980,7 @@ window.handleAiSearchSubmit = async function(event) {
   if (btn) btn.disabled = true;
 
   try {
-    const res = await fetch('/api/Chat/ask', {
+    const res = await apiFetch('/api/Chat/ask', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pregunta })

@@ -23,12 +23,12 @@ export function getPostCoverUrl(post) {
     const imgAdj = post.adjuntos.find(a => isImageUrl(a.archivoUrl));
     if (imgAdj) return imgAdj.archivoUrl;
   }
-  return '/images/portada.jpg';
+  return 'images/portada.jpg';
 }
 
 export function renderPostCard(post) {
   const coverUrl = getPostCoverUrl(post);
-  const coverHtml = `<img src="${coverUrl}" alt="${escapeHtml(post.titulo)}" loading="lazy" onerror="this.onerror=null; this.src='/images/portada.jpg';">`;
+  const coverHtml = `<img src="${coverUrl}" alt="${escapeHtml(post.titulo)}" loading="lazy" onerror="this.onerror=null; this.src='images/portada.jpg';">`;
 
   const dateStr = formatDate(post.creadoEn);
   const attachCount = post.adjuntos ? post.adjuntos.length : 0;
