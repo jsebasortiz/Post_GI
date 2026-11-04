@@ -92,7 +92,6 @@ export async function handleRoute() {
     if (rawPath.startsWith('/post/')) {
       const pId = parseInt(rawPath.replace('/post/', '').split('?')[0].split('/')[0], 10);
       if (!isNaN(pId) && pId > 0) {
-        window.history.replaceState({}, '', (basePath ? basePath : '') + '#/post/' + pId);
         rawPath = '/post/' + pId;
       }
     }

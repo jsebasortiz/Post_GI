@@ -1,7 +1,10 @@
-window.openPostInNewTab = function(id) {
+window.openPost = function(id) {
   if (!id) return;
-  const url = window.location.origin + '/#/post/' + id;
-  window.open(url, '_blank');
+  if (window.navigateTo) {
+    window.navigateTo('/post/' + id);
+  } else {
+    window.location.href = '/post/' + id;
+  }
 };
 /**
  * Prixma App Main Entry Point (Modular ES6 Architecture)
@@ -923,7 +926,7 @@ window.renderAiResponseObject = function(data) {
       const fecha = p.fecha || p.Fecha || '';
       const desc = p.descripcion || p.Descripcion || '';
 
-      const clickAction = id ? `onclick="window.openPostInNewTab(${id})"` : `onclick="navigateTo('#/dashboard');"`;
+      const clickAction = id ? `onclick="window.openPost(${id})"` : `onclick="navigateTo('/dashboard');"`;
 
       html += `
         <div class="ai-card-post" ${clickAction} title="Clic para abrir esta publicación">
@@ -935,7 +938,7 @@ window.renderAiResponseObject = function(data) {
                 ${tipo ? `<span class="ai-pill ai-pill-tipo"><i class="fa-solid fa-tag"></i> ${escapeHtml(tipo)}</span>` : ''}
               </div>
               ${id ? `
-                <button class="ai-btn-view-post" onclick="event.stopPropagation(); window.openPostInNewTab(${id})" title="Abrir publicación">
+                <button class="ai-btn-view-post" onclick="event.stopPropagation(); window.openPost(${id})" title="Abrir publicación">
                   <i class="fa-solid fa-arrow-up-right-from-square"></i>
                 </button>
               ` : ''}

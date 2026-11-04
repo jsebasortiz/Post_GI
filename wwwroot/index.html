@@ -294,36 +294,36 @@
     <!-- Navbar Header -->
     <header class="navbar">
       <div class="container nav-container">
-        <a href="#/dashboard" class="brand" onclick="navigateTo('#/dashboard'); return false;">
+        <a href="#/dashboard" class="brand" onclick="navigateTo('/dashboard'); return false;">
           <img src="images/logo.png" alt="Prixma Logo" class="brand-logo-img">
           <span>Prixma <small style="font-size:0.65rem; color:var(--accent-cyan); font-weight:normal;">
               CentroAguas</small></span>
         </a>
 
         <div class="nav-controls">
-          <button class="btn btn-secondary" id="btnOpenRbacModal" onclick="navigateTo('#/rbac'); return false;"
+          <button class="btn btn-secondary" id="btnOpenRbacModal" onclick="navigateTo('/rbac'); return false;"
             style="display:none;" title="Roles y Permisos">
             <i class="fa-solid fa-user-shield" style="color:var(--accent-purple);"></i> <span class="btn-text">Roles &
               Permisos</span>
           </button>
-          <button class="btn btn-secondary" id="btnOpenCreateArea" onclick="navigateTo('#/areas'); return false;"
+          <button class="btn btn-secondary" id="btnOpenCreateArea" onclick="navigateTo('/areas'); return false;"
             title="Gestión de Áreas">
             <i class="fa-solid fa-sitemap" style="color:var(--accent-cyan);"></i> <span class="btn-text">Áreas</span>
           </button>
-          <button class="btn btn-secondary" id="btnOpenCreateModule" onclick="navigateTo('#/modulos'); return false;"
+          <button class="btn btn-secondary" id="btnOpenCreateModule" onclick="navigateTo('/modulos'); return false;"
             title="Gestión de Módulos">
             <i class="fa-solid fa-folder-plus"></i> <span class="btn-text">Módulos</span>
           </button>
-          <button class="btn btn-secondary" id="btnOpenPostTiposModal" onclick="navigateTo('#/tipos'); return false;"
+          <button class="btn btn-secondary" id="btnOpenPostTiposModal" onclick="navigateTo('/tipos'); return false;"
             style="display:none;" title="Tipos de Publicación">
             <i class="fa-solid fa-tags" style="color:var(--accent-emerald);"></i> <span class="btn-text">Tipos</span>
           </button>
           <button class="btn btn-secondary" id="btnOpenAiSearch"
-            onclick="navigateTo('#/buscadorinteligente'); return false;" title="Buscador Inteligente con IA">
+            onclick="navigateTo('/buscadorinteligente'); return false;" title="Buscador Inteligente con IA">
             <i class="fa-solid fa-wand-magic-sparkles" style="color:var(--accent-purple);"></i> <span
               class="btn-text">Buscador IA</span>
           </button>
-          <button class="btn btn-primary" id="btnOpenCreatePost" onclick="navigateTo('#/posts/create'); return false;"
+          <button class="btn btn-primary" id="btnOpenCreatePost" onclick="navigateTo('/posts/create'); return false;"
             title="Crear Publicación">
             <i class="fa-solid fa-pen-to-square"></i>
           </button>
@@ -403,7 +403,7 @@
       <!-- 2. CREATE POST VIEW -->
       <div id="viewCreatePost" class="app-view view-hidden">
         <div style="margin-bottom: 1.25rem;">
-          <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('#/dashboard'); return false;">
+          <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('/dashboard'); return false;">
             <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
           </a>
         </div>
@@ -527,7 +527,7 @@
 
               <div
                 style="display:flex; justify-content:flex-end; align-items:center; gap:1rem; margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--bg-card-border);">
-                <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('#/dashboard'); return false;">
+                <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('/dashboard'); return false;">
                   Cancelar
                 </a>
                 <button type="submit" class="btn btn-primary" id="btnSubmitPost" style="padding:0.65rem 1.75rem;">
@@ -647,7 +647,7 @@
         <div class="post-detail-container">
           <div class="post-detail-top-nav">
             <a href="#/dashboard" class="btn btn-secondary"
-              onclick="if(window.history.length > 1) { window.history.back(); } else { navigateTo('#/dashboard'); } return false;">
+              onclick="if(window.history.length > 1) { window.history.back(); } else { navigateTo('/dashboard'); } return false;">
               <i class="fa-solid fa-arrow-left"></i> Volver
             </a>
             <div id="detailHeaderActions" style="display:flex; gap:0.5rem; align-items:center;"></div>
@@ -696,10 +696,10 @@
                 principales del portal de publicaciones.</p>
             </div>
             <div style="display:flex; gap:0.5rem; align-items:center;">
-              <a href="#/areas/create" class="btn btn-primary" onclick="navigateTo('#/areas/create'); return false;">
+              <a href="#/areas/create" class="btn btn-primary" onclick="navigateTo('/areas/create'); return false;">
                 <i class="fa-solid fa-plus"></i> Nueva Área
               </a>
-              <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('#/dashboard'); return false;">
+              <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('/dashboard'); return false;">
                 <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
               </a>
             </div>
@@ -712,7 +712,7 @@
 
       <div id="viewAreaCreate" class="app-view view-hidden">
         <div style="margin-bottom: 1.5rem;">
-          <a href="#/areas" class="btn btn-secondary" onclick="navigateTo('#/areas'); return false;">
+          <a href="#/areas" class="btn btn-secondary" onclick="navigateTo('/areas'); return false;">
             <i class="fa-solid fa-arrow-left"></i> Volver a Gestión de Áreas
           </a>
         </div>
@@ -735,7 +735,7 @@
                   placeholder="Breve descripción del área..."></textarea>
               </div>
               <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:1.5rem;">
-                <a href="#/areas" class="btn btn-secondary" onclick="navigateTo('#/areas'); return false;">Cancelar</a>
+                <a href="#/areas" class="btn btn-secondary" onclick="navigateTo('/areas'); return false;">Cancelar</a>
                 <button type="submit" class="btn btn-primary" id="btnSaveArea">
                   <i class="fa-solid fa-floppy-disk"></i> Guardar Área
                 </button>
@@ -797,10 +797,10 @@
             </div>
             <div style="display:flex; gap:0.5rem; align-items:center;">
               <a href="#/modulos/create" class="btn btn-primary"
-                onclick="navigateTo('#/modulos/create'); return false;">
+                onclick="navigateTo('/modulos/create'); return false;">
                 <i class="fa-solid fa-plus"></i> Nuevo Módulo
               </a>
-              <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('#/dashboard'); return false;">
+              <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('/dashboard'); return false;">
                 <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
               </a>
             </div>
@@ -813,7 +813,7 @@
 
       <div id="viewModuleCreate" class="app-view view-hidden">
         <div style="margin-bottom: 1.5rem;">
-          <a href="#/modulos" class="btn btn-secondary" onclick="navigateTo('#/modulos'); return false;">
+          <a href="#/modulos" class="btn btn-secondary" onclick="navigateTo('/modulos'); return false;">
             <i class="fa-solid fa-arrow-left"></i> Volver a Gestión de Módulos
           </a>
         </div>
@@ -844,7 +844,7 @@
               </div>
               <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:1.5rem;">
                 <a href="#/modulos" class="btn btn-secondary"
-                  onclick="navigateTo('#/modulos'); return false;">Cancelar</a>
+                  onclick="navigateTo('/modulos'); return false;">Cancelar</a>
                 <button type="submit" class="btn btn-primary" id="btnSaveModule">
                   <i class="fa-solid fa-floppy-disk"></i> Guardar Módulo
                 </button>
@@ -914,7 +914,7 @@
                 tipos de publicación y tipos de conocimiento de la plataforma.</p>
             </div>
             <div>
-              <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('#/dashboard'); return false;">
+              <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('/dashboard'); return false;">
                 <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
               </a>
             </div>
@@ -942,7 +942,7 @@
                   <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">Tipos de contenido para artículos
                     (Guía, Incidencia, Manual, etc.).</p>
                 </div>
-                <a href="#/tipos/create" class="btn btn-primary" onclick="navigateTo('#/tipos/create'); return false;">
+                <a href="#/tipos/create" class="btn btn-primary" onclick="navigateTo('/tipos/create'); return false;">
                   <i class="fa-solid fa-plus"></i> Nuevo Tipo
                 </a>
               </div>
@@ -960,7 +960,7 @@
                     clasificar los artículos (Técnico, Funcional, etc.).</p>
                 </div>
                 <a href="#/tipos-conocimiento/create" class="btn btn-primary"
-                  onclick="navigateTo('#/tipos-conocimiento/create'); return false;">
+                  onclick="navigateTo('/tipos-conocimiento/create'); return false;">
                   <i class="fa-solid fa-plus"></i> Nuevo Tipo de Conocimiento
                 </a>
               </div>
@@ -972,7 +972,7 @@
 
       <div id="viewPostTiposCreate" class="app-view view-hidden">
         <div style="margin-bottom: 1.5rem;">
-          <a href="#/tipos" class="btn btn-secondary" onclick="navigateTo('#/tipos'); return false;">
+          <a href="#/tipos" class="btn btn-secondary" onclick="navigateTo('/tipos'); return false;">
             <i class="fa-solid fa-arrow-left"></i> Volver a Tipos de Publicación
           </a>
         </div>
@@ -995,7 +995,7 @@
                   placeholder="Breve descripción del propósito de este tipo..."></textarea>
               </div>
               <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:1.5rem;">
-                <a href="#/tipos" class="btn btn-secondary" onclick="navigateTo('#/tipos'); return false;">Cancelar</a>
+                <a href="#/tipos" class="btn btn-secondary" onclick="navigateTo('/tipos'); return false;">Cancelar</a>
                 <button type="submit" class="btn btn-primary" id="btnSavePostTipo">
                   <i class="fa-solid fa-floppy-disk"></i> Guardar Tipo
                 </button>
@@ -1050,7 +1050,7 @@
       <div id="viewTipoConocimientoCreate" class="app-view view-hidden">
         <div style="margin-bottom: 1.5rem;">
           <a href="#/tipos-conocimiento" class="btn btn-secondary"
-            onclick="navigateTo('#/tipos-conocimiento'); return false;">
+            onclick="navigateTo('/tipos-conocimiento'); return false;">
             <i class="fa-solid fa-arrow-left"></i> Volver a Tipos de Conocimiento
           </a>
         </div>
@@ -1074,7 +1074,7 @@
               </div>
               <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:1.5rem;">
                 <a href="#/tipos-conocimiento" class="btn btn-secondary"
-                  onclick="navigateTo('#/tipos-conocimiento'); return false;">Cancelar</a>
+                  onclick="navigateTo('/tipos-conocimiento'); return false;">Cancelar</a>
                 <button type="submit" class="btn btn-primary" id="btnSaveTipoConocimiento">
                   <i class="fa-solid fa-floppy-disk"></i> Guardar Tipo
                 </button>
@@ -1136,7 +1136,7 @@
             style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
             <h2 style="margin:0;"><i class="fa-solid fa-user-shield" style="color:var(--accent-purple);"></i> Gestión de
               Roles y Permisos (RBAC)</h2>
-            <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('#/dashboard'); return false;">
+            <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('/dashboard'); return false;">
               <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
             </a>
           </div>
@@ -1206,7 +1206,7 @@
                     elimina roles de forma directa.</p>
                 </div>
                 <a href="#/roles/create" class="btn btn-primary"
-                  onclick="navigateTo('#/roles/create'); return false;"><i class="fa-solid fa-plus"></i> Nuevo Rol</a>
+                  onclick="navigateTo('/roles/create'); return false;"><i class="fa-solid fa-plus"></i> Nuevo Rol</a>
               </div>
 
               <!-- Roles Management Table -->
@@ -1264,7 +1264,7 @@
 
       <div id="viewRoleCreate" class="app-view view-hidden">
         <div style="margin-bottom: 1.5rem;">
-          <a href="#/rbac" class="btn btn-secondary" onclick="navigateTo('#/rbac'); return false;">
+          <a href="#/rbac" class="btn btn-secondary" onclick="navigateTo('/rbac'); return false;">
             <i class="fa-solid fa-arrow-left"></i> Volver a Roles y Permisos
           </a>
         </div>
@@ -1287,7 +1287,7 @@
                   placeholder="Descripción de las responsabilidades y alcance del rol..."></textarea>
               </div>
               <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:1.5rem;">
-                <a href="#/rbac" class="btn btn-secondary" onclick="navigateTo('#/rbac'); return false;">Cancelar</a>
+                <a href="#/rbac" class="btn btn-secondary" onclick="navigateTo('/rbac'); return false;">Cancelar</a>
                 <button type="submit" class="btn btn-primary" id="btnSaveRole">
                   <i class="fa-solid fa-floppy-disk"></i> Guardar Rol
                 </button>

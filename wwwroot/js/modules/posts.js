@@ -15,6 +15,20 @@ export function isImageUrl(url) {
   return validExtensions.some(ext => cleanUrl.endsWith(ext)) || cleanUrl.startsWith('data:image/');
 }
 
+// Catálogo de portadas predeterminadas en 10 colores vibrantes
+const DEFAULT_PORTADAS = [
+  'images/portada-azul.jpg',
+  'images/portada-esmeralda.jpg',
+  'images/portada-turquesa.jpg',
+  'images/portada-purpura.jpg',
+  'images/portada-indigo.jpg',
+  'images/portada-magenta.jpg',
+  'images/portada-rojo.jpg',
+  'images/portada-naranja.jpg',
+  'images/portada-dorado.jpg',
+  'images/portada-verde.jpg'
+];
+
 export function getPostCoverUrl(post) {
   if (post.portadaUrl && isImageUrl(post.portadaUrl)) {
     return post.portadaUrl;
@@ -23,7 +37,10 @@ export function getPostCoverUrl(post) {
     const imgAdj = post.adjuntos.find(a => isImageUrl(a.archivoUrl));
     if (imgAdj) return imgAdj.archivoUrl;
   }
-  return 'images/portada.jpg';
+  // Asignar determinísticamente una de las 10 portadas según el ID del post
+  const idNum = Number(post.id) || 0;
+  const index = Math.abs(idNum) % DEFAULT_PORTADAS.length;
+  return DEFAULT_PORTADAS[index];
 }
 
 export function renderPostCard(post) {
@@ -486,10 +503,10 @@ export async function openDetailView(postId) {
       `;
     }
 
-    // Portada si existe
+    // Portada: si el post no tiene imagen propia, se oculta el contenedor para no invadir la lectura
     const coverContainer = document.getElementById('detailCoverContainer');
     if (coverContainer) {
-      if (post.portadaUrl && isImageUrl(post.portadaUrl)) {
+      if (post.portadaUrl && isImageUrl(post.portadaUrl) && !post.portadaUrl.startsWith('images/portada')) {
         coverContainer.innerHTML = `<div style="max-height:360px; overflow:hidden; border-radius:12px; margin-bottom:1.5rem; box-shadow:0 8px 24px rgba(0,0,0,0.15);"><img src="${post.portadaUrl}" alt="${escapeHtml(post.titulo)}" style="width:100%; height:100%; object-fit:cover; display:block;"></div>`;
       } else {
         coverContainer.innerHTML = '';

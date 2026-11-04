@@ -430,6 +430,20 @@ public class PostService : IPostService
         return string.IsNullOrEmpty(str) ? "post" : str;
     }
 
+    private static readonly string[] DefaultCoverVariants = new[]
+    {
+        "images/portada-azul.jpg",
+        "images/portada-esmeralda.jpg",
+        "images/portada-turquesa.jpg",
+        "images/portada-purpura.jpg",
+        "images/portada-indigo.jpg",
+        "images/portada-magenta.jpg",
+        "images/portada-rojo.jpg",
+        "images/portada-naranja.jpg",
+        "images/portada-dorado.jpg",
+        "images/portada-verde.jpg"
+    };
+
     private static PostResponseDto MapToResponseDto(Post post)
     {
         // Filtrar solo los adjuntos con EstadoId == 1 (Activos)
@@ -439,6 +453,14 @@ public class PostService : IPostService
                 a.EsPortada && IsImageFile(a.MimeType, a.ArchivoNombreOriginal)
             )
             ?? activeAdjuntos.FirstOrDefault(a => IsImageFile(a.MimeType, a.ArchivoNombreOriginal));
+
+        string? finalCoverUrl = portada?.ArchivoUrl;
+        if (string.IsNullOrEmpty(finalCoverUrl))
+        {
+            // Asignación de portada en base a 10 colores aleatorios/variados por ID de post
+            int colorIdx = (int)(post.Id % (ulong)DefaultCoverVariants.Length);
+            finalCoverUrl = DefaultCoverVariants[colorIdx];
+        }
 
         return new PostResponseDto
         {
@@ -464,7 +486,7 @@ public class PostService : IPostService
             Visitas = post.Visitas,
             CreadoEn = post.CreadoEn,
             ActualizadoEn = post.ActualizadoEn,
-            PortadaUrl = portada?.ArchivoUrl,
+            PortadaUrl = finalCoverUrl,
             Adjuntos = activeAdjuntos
                 .Select(a => new AdjuntoResponseDto
                 {
