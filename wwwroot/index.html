@@ -22,7 +22,7 @@
   <link rel="icon" type="image/png" href="images/logo.png">
   <meta name="description"
     content="Base de conocimiento corporativa. Consulta guías técnicas, estándares y documentación interna centralizada por módulos.">
-  <link rel="stylesheet" href="css/styles.css?v=1793828571099">
+  <link rel="stylesheet" href="css/styles.css?v=1793883900000">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- Polyfill de Web Crypto API (crypto.subtle.digest SHA-256) para entornos HTTP sin SSL -->
   <script>
@@ -397,30 +397,30 @@
 
           <!-- Glassmorphic Toolbar Filter Bar -->
           <div class="filter-toolbar-card">
-            <!-- Category Tabs Segment -->
-            <div class="filter-toolbar-segment">
+            <!-- Fila 1: Áreas en Segmented Control -->
+            <div class="filter-toolbar-segment-areas">
               <div class="main-categories-tabs" id="mainCategoriesTabs">
                 <button class="category-tab active" onclick="switchMainCategory(null, this)">
                   <i class="fa-solid fa-layer-group"></i> Todas las Áreas
                 </button>
-                <button class="category-tab cat-apps" onclick="switchMainCategory('apps', this)">
+                <button class="category-tab" onclick="switchMainCategory('apps', this)">
                   <i class="fa-solid fa-rocket"></i> Apps
                 </button>
-                <button class="category-tab cat-infra" onclick="switchMainCategory('infraestructura', this)">
+                <button class="category-tab" onclick="switchMainCategory('infraestructura', this)">
                   <i class="fa-solid fa-server"></i> Infraestructura
                 </button>
               </div>
             </div>
 
-            <div class="filter-toolbar-divider"></div>
-
-            <!-- Submodules Filter Segment -->
-            <div class="filter-toolbar-segment modules-segment">
+            <!-- Fila 2: Cinta de Módulos con Scroll Horizontal -->
+            <div class="filter-toolbar-segment-modules">
               <span class="modules-filter-label">
                 <i class="fa-solid fa-filter"></i> Módulos:
               </span>
-              <div class="modules-filter" id="modulesFilter">
-                <button class="module-pill active" onclick="filterByModule(null, this)">Todos</button>
+              <div class="modules-filter-scroll-wrapper">
+                <div class="modules-filter" id="modulesFilter">
+                  <button class="module-pill active" onclick="filterByModule(null, this)">Todos los Módulos</button>
+                </div>
               </div>
             </div>
           </div>
@@ -1449,7 +1449,7 @@
     </main>
   </div>
 
-  <script type="module" src="js/app.js?v=1793828571099"></script>
+  <script type="module" src="js/app.js?v=1793883900000"></script>
 
   <!-- Command Palette Modal (Ctrl + K) -->
   <div id="cmdPaletteBackdrop" class="cmd-palette-backdrop">

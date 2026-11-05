@@ -4,6 +4,7 @@ import { escapeHtml } from '../core/utils.js';
 import { getPrixmaSwal, setFormSkeletonState, getTableSkeletonHtml, setFormReadOnlyMode } from '../core/ui-helpers.js';
 import { hasPermission } from './auth.js';
 import { getAllAreas, populateAreaSelects } from './areas.js';
+import { loadPosts } from './posts.js';
 
 export async function loadModulos() {
   try {
@@ -49,18 +50,25 @@ export function updateModulePillActiveState() {
   });
 }
 
-export function filterByModule(moduloId, btnElement) {
-  state.currentModuloId = moduloId;
+export async function filterByModule(moduloId, btnElement) {
+  state.currentModuloId = moduloId ? parseInt(moduloId, 10) : null;
   updateModulePillActiveState();
-  if (window.navigateTo) {
-    if (moduloId) {
-      window.navigateTo(`/modulo/${moduloId}`);
-    } else if (state.currentCategoriaPadre) {
-      window.navigateTo(`/area/${encodeURIComponent(state.currentCategoriaPadre)}`);
-    } else {
-      window.navigateTo('/dashboard');
-    }
+
+  // Actualizar URL sin recarga completa
+  let targetPath = '/dashboard';
+  if (state.currentModuloId) {
+    targetPath = `/modulo/${state.currentModuloId}`;
+  } else if (state.currentCategoriaPadre) {
+    targetPath = `/area/${encodeURIComponent(state.currentCategoriaPadre)}`;
   }
+
+  if (window.history && window.history.pushState) {
+    const basePath = (window.getAppBasePath ? window.getAppBasePath() : '');
+    window.history.pushState({}, '', basePath + targetPath);
+  }
+
+  // Cargar publicaciones directamente con el nuevo filtro
+  await loadPosts(1);
 }
 
 export function onPostCategoriaChange(cat) {
@@ -87,320 +95,239 @@ export function updatePostSubmoduloSelect(cat) {
 }
 
 export function populateModuloAreaSelect() {
-  const select = document.getElementById('moduloCategoriaPadre');
-  if (!select) return;
   const areas = getAllAreas();
-  select.innerHTML = areas.map(a => `<option value="${escapeHtml(a.code)}">${escapeHtml(a.name)}</option>`).join('');
+  const selectEl = document.getElementById('moduloAreaSelect');
+  const editSelectEl = document.getElementById('editModuloAreaSelect');
+
+  let html = '<option value="">Selecciona un Área</option>';
+  areas.forEach(area => {
+    html += `<option value="${area.id}">${escapeHtml(area.name)} (${escapeHtml(area.code)})</option>`;
+  });
+
+  if (selectEl) selectEl.innerHTML = html;
+  if (editSelectEl) editSelectEl.innerHTML = html;
 }
 
-let modulesCurrentPage = 1;
-const modulesPageSize = 5;
+// -------------------------------------------------------------
+// CRUD DE MÓDULOS (VISTAS COMPLETAS TIPO SAAS)
+// -------------------------------------------------------------
+export async function loadModulesList(page = 1) {
+  const tbody = document.getElementById('modulesTableBody');
+  const pagination = document.getElementById('modulesPagination');
+  if (!tbody) return;
 
-export async function loadModulesList() {
-  const container = document.getElementById('modulesListContainer');
-  if (!container) return;
-
-  container.innerHTML = getTableSkeletonHtml(5, 4);
+  tbody.innerHTML = getTableSkeletonHtml(5, 5);
 
   try {
-    const res = await apiFetch('/api/modulos?soloActivos=true');
-    if (!res.ok) throw new Error('Error al obtener los módulos.');
+    const res = await apiFetch(`/api/modulos/paged?page=${page}&pageSize=10`);
+    if (!res.ok) throw new Error('Error al cargar la lista de módulos.');
 
-    const modulos = await res.json();
-    if (!modulos || modulos.length === 0) {
-      container.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-muted);">No hay módulos registrados.</div>';
+    const data = await res.json();
+    const modules = data.items || [];
+    const totalPages = data.totalPages || 1;
+    const currentPage = data.currentPage || 1;
+
+    if (modules.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:2rem; color:var(--text-muted);">No hay módulos registrados.</td></tr>';
+      if (pagination) pagination.innerHTML = '';
       return;
     }
 
-    const totalItems = modulos.length;
-    const totalPages = Math.ceil(totalItems / modulesPageSize) || 1;
+    tbody.innerHTML = modules.map(m => {
+      const areaName = m.area ? m.area.nombre : (m.categoriaPadre || 'General');
+      const isActivo = m.estadoId === 1;
+      const statusBadge = isActivo
+        ? '<span class="status-badge status-active"><span class="status-dot"></span> Activo</span>'
+        : '<span class="status-badge status-inactive"><span class="status-dot"></span> Inactivo</span>';
 
-    if (modulesCurrentPage > totalPages) modulesCurrentPage = totalPages;
-    if (modulesCurrentPage < 1) modulesCurrentPage = 1;
+      return `
+        <tr>
+          <td><strong>${escapeHtml(m.nombre)}</strong></td>
+          <td><code style="color:var(--primary); font-size:0.85rem;">${escapeHtml(m.slug)}</code></td>
+          <td><span class="badge badge-module">${escapeHtml(areaName)}</span></td>
+          <td>${statusBadge}</td>
+          <td>
+            <div style="display:flex; gap:0.4rem; justify-content:flex-end;">
+              <button class="btn btn-secondary btn-sm" onclick="navigateTo('/modulos/show/${m.id}')" title="Ver Módulo">
+                <i class="fa-solid fa-eye"></i>
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="navigateTo('/modulos/edit/${m.id}')" title="Editar Módulo">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </button>
+              <button class="btn btn-danger btn-sm" onclick="handleInactivarModulo(${m.id}, '${escapeHtml(m.nombre)}')" title="Eliminar / Inactivar">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
 
-    const startIndex = (modulesCurrentPage - 1) * modulesPageSize;
-    const pageModules = modulos.slice(startIndex, startIndex + modulesPageSize);
-
-    let html = `
-      <div class="table-responsive">
-        <table class="rbac-table" style="width:100%; border-collapse:collapse;">
-          <thead>
-            <tr style="text-align:left; border-bottom:1px solid var(--bg-card-border); color:var(--text-muted); font-size:0.85rem;">
-              <th style="padding:0.75rem;">Nombre del Módulo</th>
-              <th style="padding:0.75rem;">Área Principal</th>
-              <th style="padding:0.75rem;">Descripción</th>
-              <th style="padding:0.75rem; text-align:right;">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${pageModules.map(m => `
-              <tr>
-                <td style="padding:0.75rem; font-weight:600; color:var(--text-main);">${escapeHtml(m.nombre)}</td>
-                <td style="padding:0.75rem;"><span class="badge" style="background:var(--bg-card-border); color:var(--accent-cyan); font-size:0.75rem; padding:2px 8px; border-radius:10px;">${escapeHtml(m.area ? m.area.nombre : 'General')}</span></td>
-                <td style="padding:0.75rem; color:var(--text-muted); font-size:0.85rem;">${escapeHtml(m.descripcion || 'Sin descripción')}</td>
-                <td style="padding:0.75rem; text-align:right;">
-                  <div style="display:flex; gap:0.5rem; justify-content:flex-end; align-items:center;">
-                    <button class="btn btn-secondary" onclick="navigateTo('/modulos/show/' + ${m.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem; color:var(--accent-cyan); border-color:rgba(6,182,212,0.3);" title="Ver Módulo">
-                      <i class="fa-solid fa-eye"></i> Ver
-                    </button>
-                    <button class="btn btn-secondary" onclick="navigateTo('/modulos/edit/' + ${m.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem;" title="Editar Módulo">
-                      <i class="fa-solid fa-pen"></i> Editar
-                    </button>
-                    <button class="btn btn-secondary" onclick="handleInactivarModulo(${m.id})" style="padding:0.35rem 0.65rem; font-size:0.8rem; color:var(--accent-rose); border-color:rgba(244,63,94,0.3);" title="Eliminar Módulo">
-                      <i class="fa-solid fa-trash-can"></i> Eliminar
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-    `;
-
-    if (totalItems > modulesPageSize) {
-      const prevDisabled = modulesCurrentPage === 1 ? 'disabled' : '';
-      const nextDisabled = modulesCurrentPage === totalPages ? 'disabled' : '';
-      html += `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; padding-top:0.75rem; border-top:1px solid var(--bg-card-border); font-size:0.85rem; color:var(--text-muted);">
-          <span>Página ${modulesCurrentPage} de ${totalPages} (${totalItems} módulos en total)</span>
-          <div style="display:flex; gap:0.5rem;">
-            <button class="btn btn-secondary" style="padding:0.3rem 0.75rem; font-size:0.8rem;" ${prevDisabled} onclick="changeModulesPage(-1)">
-              <i class="fa-solid fa-chevron-left"></i> Anterior
-            </button>
-            <button class="btn btn-secondary" style="padding:0.3rem 0.75rem; font-size:0.8rem;" ${nextDisabled} onclick="changeModulesPage(1)">
-              Siguiente <i class="fa-solid fa-chevron-right"></i>
-            </button>
+    if (pagination) {
+      pagination.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; width:100%; font-size:0.88rem; color:var(--text-muted);">
+          <span>Página ${currentPage} de ${totalPages}</span>
+          <div style="display:flex; gap:0.4rem;">
+            <button class="btn btn-secondary btn-sm" ${currentPage <= 1 ? 'disabled' : ''} onclick="changeModulesPage(${currentPage - 1})">Anterior</button>
+            <button class="btn btn-secondary btn-sm" ${currentPage >= totalPages ? 'disabled' : ''} onclick="changeModulesPage(${currentPage + 1})">Siguiente</button>
           </div>
         </div>
       `;
-    } else {
-      html += `<div style="margin-top:1rem; padding-top:0.75rem; border-top:1px solid var(--bg-card-border); font-size:0.85rem; color:var(--text-muted);">Mostrando ${totalItems} módulo(s)</div>`;
     }
-
-    container.innerHTML = html;
   } catch (err) {
-    container.innerHTML = `<div style="color:var(--accent-rose); text-align:center;">${escapeHtml(err.message)}</div>`;
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:2rem; color:var(--accent-rose);">${escapeHtml(err.message)}</td></tr>`;
   }
 }
 
-export function changeModulesPage(delta) {
-  modulesCurrentPage += delta;
-  loadModulesList();
+export function changeModulesPage(p) {
+  loadModulesList(p);
 }
 
 export async function handleCreateModule(event) {
-  if (event) event.preventDefault();
-  const categoriaPadre = document.getElementById('moduloCategoriaPadre').value;
-  const nombre = document.getElementById('moduloNombre').value.trim();
-  const descripcion = document.getElementById('moduloDesc').value.trim();
+  event.preventDefault();
+  const nombre = document.getElementById('moduleNombre').value.trim();
+  const slug = document.getElementById('moduleSlug').value.trim();
+  const areaId = document.getElementById('moduloAreaSelect').value;
+  const descripcion = document.getElementById('moduleDescripcion').value.trim();
 
-  if (!nombre) return;
+  if (!nombre) {
+    getPrixmaSwal().fire({ icon: 'warning', title: 'Atención', text: 'El nombre del módulo es obligatorio.' });
+    return;
+  }
 
   try {
+    const payload = {
+      nombre,
+      slug: slug || nombre.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
+      areaId: areaId ? parseInt(areaId, 10) : null,
+      descripcion,
+      estadoId: 1
+    };
+
     const res = await apiFetch('/api/modulos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ categoriaPadre, nombre, descripcion })
+      body: JSON.stringify(payload)
     });
 
     if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.message || 'Error al crear el módulo.');
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Error al crear el módulo.');
     }
-
-    const form = document.getElementById('createModuleForm');
-    if (form) form.reset();
-    await loadModulos();
-    if (window.navigateTo) window.navigateTo('/modulos');
 
     getPrixmaSwal().fire({
       icon: 'success',
-      title: 'Módulo Creado',
-      text: `El módulo "${nombre}" ha sido registrado.`,
-      timer: 2000,
+      title: '¡Módulo Creado!',
+      text: 'El nuevo módulo ha sido registrado exitosamente.',
+      timer: 1800,
       showConfirmButton: false
     });
+
+    await loadModulos();
+    navigateTo('/modulos');
   } catch (err) {
-    getPrixmaSwal().fire({
-      icon: 'error',
-      title: 'Error al Crear Módulo',
-      text: err.message
-    });
+    getPrixmaSwal().fire({ icon: 'error', title: 'Error', text: err.message });
   }
 }
 
-export function openEditModuleModal(id) {
-  setFormSkeletonState('editModuleModal', true);
-  if (window.navigateTo) window.navigateTo('/modulos/edit/' + id);
-  populateAreaSelects();
-  const modulo = (state.allModulosCache || []).find(m => m.id === id || m.id === parseInt(id, 10));
-  if (modulo) {
-    const idInput = document.getElementById('editModuleId');
-    const nameInput = document.getElementById('editModuloNombre');
-    const descInput = document.getElementById('editModuloDesc');
-    const catSelect = document.getElementById('editModuloCategoriaPadre');
+export async function loadModuleForShow(id) {
+  switchAppView('viewModuleShow');
+  setFormSkeletonState('moduleShowCard', true);
 
-    if (idInput) idInput.value = modulo.id;
-    if (nameInput) nameInput.value = modulo.nombre || '';
-    if (descInput) descInput.value = modulo.descripcion || '';
+  try {
+    const res = await apiFetch(`/api/modulos/${id}`);
+    if (!res.ok) throw new Error('No se pudo cargar la información del módulo.');
 
-    if (catSelect) {
-      const catCode = modulo.categoriaPadre || (modulo.area ? modulo.area.codigo : 'apps');
-      catSelect.value = catCode;
-    }
+    const m = await res.json();
+    document.getElementById('showModuleTitle').innerText = m.nombre;
+    document.getElementById('showModuleSlug').innerText = m.slug;
+    document.getElementById('showModuleArea').innerText = m.area ? m.area.nombre : (m.categoriaPadre || 'General');
+    document.getElementById('showModuleDescripcion').innerText = m.descripcion || 'Sin descripción asignada.';
+    document.getElementById('showModuleEstado').innerHTML = m.estadoId === 1
+      ? '<span class="status-badge status-active"><span class="status-dot"></span> Activo</span>'
+      : '<span class="status-badge status-inactive"><span class="status-dot"></span> Inactivo</span>';
+
+    const editBtn = document.getElementById('btnShowModuleEdit');
+    if (editBtn) editBtn.onclick = () => navigateTo(`/modulos/edit/${m.id}`);
+  } catch (err) {
+    getPrixmaSwal().fire({ icon: 'error', title: 'Error', text: err.message });
+    navigateTo('/modulos');
+  } finally {
+    setFormSkeletonState('moduleShowCard', false);
   }
-  setTimeout(() => setFormSkeletonState('editModuleModal', false), 250);
 }
 
-export async function handleUpdateModule(event) {
-  if (event) event.preventDefault();
+export async function loadModuleForEdit(id) {
+  switchAppView('viewModuleEdit');
+  setFormSkeletonState('editModuleForm', true);
+  populateModuloAreaSelect();
+
+  try {
+    const res = await apiFetch(`/api/modulos/${id}`);
+    if (!res.ok) throw new Error('No se pudo cargar el módulo para edición.');
+
+    const m = await res.json();
+    document.getElementById('editModuleId').value = m.id;
+    document.getElementById('editModuleNombre').value = m.nombre;
+    document.getElementById('editModuleSlug').value = m.slug;
+    if (m.areaId) document.getElementById('editModuloAreaSelect').value = m.areaId;
+    document.getElementById('editModuleDescripcion').value = m.descripcion || '';
+    document.getElementById('editModuleEstado').value = m.estadoId;
+
+    state.initialModuleEditState = {
+      nombre: m.nombre,
+      slug: m.slug,
+      areaId: m.areaId,
+      descripcion: m.descripcion || '',
+      estadoId: m.estadoId
+    };
+  } catch (err) {
+    getPrixmaSwal().fire({ icon: 'error', title: 'Error', text: err.message });
+    navigateTo('/modulos');
+  } finally {
+    setFormSkeletonState('editModuleForm', false);
+  }
+}
+
+export function hasModuleEditChanged() {
+  if (!state.initialModuleEditState) return false;
+  const current = {
+    nombre: document.getElementById('editModuleNombre')?.value.trim(),
+    slug: document.getElementById('editModuleSlug')?.value.trim(),
+    areaId: parseInt(document.getElementById('editModuloAreaSelect')?.value, 10) || null,
+    descripcion: document.getElementById('editModuleDescripcion')?.value.trim(),
+    estadoId: parseInt(document.getElementById('editModuleEstado')?.value, 10)
+  };
+  return JSON.stringify(current) !== JSON.stringify(state.initialModuleEditState);
+}
+
+export async function handleSaveEditModule(event) {
+  event.preventDefault();
   const id = document.getElementById('editModuleId').value;
-  const nombre = document.getElementById('editModuloNombre').value.trim();
-  const categoriaPadre = document.getElementById('editModuloCategoriaPadre').value;
-  const descripcion = document.getElementById('editModuloDesc').value.trim();
+  const nombre = document.getElementById('editModuleNombre').value.trim();
+  const slug = document.getElementById('editModuleSlug').value.trim();
+  const areaId = document.getElementById('editModuloAreaSelect').value;
+  const descripcion = document.getElementById('editModuleDescripcion').value.trim();
+  const estadoId = parseInt(document.getElementById('editModuleEstado').value, 10);
 
-  if (!id || !nombre) return;
-
-  const confirmResult = await getPrixmaSwal().fire({
-    title: '¿Guardar cambios?',
-    text: `¿Deseas guardar los cambios realizados en el módulo "${nombre}"?`,
-    icon: 'question',
-    showCancelButton: true,
-    confirmButtonColor: '#3b82f6',
-    cancelButtonColor: '#475569',
-    confirmButtonText: '<i class="fa-solid fa-floppy-disk"></i> Sí, guardar',
-    cancelButtonText: 'Cancelar'
-  });
-
-  if (!confirmResult.isConfirmed) return;
+  if (!nombre) {
+    getPrixmaSwal().fire({ icon: 'warning', title: 'Atención', text: 'El nombre del módulo no puede quedar vacío.' });
+    return;
+  }
 
   try {
+    const payload = {
+      nombre,
+      slug,
+      areaId: areaId ? parseInt(areaId, 10) : null,
+      descripcion,
+      estadoId
+    };
+
     const res = await apiFetch(`/api/modulos/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nombre, categoriaPadre, descripcion })
-    });
-
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.message || 'Error al actualizar el módulo.');
-    }
-
-    await loadModulos();
-
-    getPrixmaSwal().fire({
-      icon: 'success',
-      title: 'Módulo Actualizado',
-      text: `El módulo "${nombre}" fue actualizado correctamente.`,
-      timer: 2000,
-      showConfirmButton: false
-    });
-  } catch (err) {
-    getPrixmaSwal().fire({
-      icon: 'error',
-      title: 'Error al Actualizar Módulo',
-      text: err.message
-    });
-  }
-}
-
-export async function handleInactivarModulo(id) {
-  const modulo = (state.allModulosCache || []).find(m => m.id === id || m.id === parseInt(id));
-  const nombre = modulo ? modulo.nombre : 'este módulo';
-
-  const result = await getPrixmaSwal().fire({
-    title: '¿Eliminar módulo?',
-    text: `El módulo "${nombre}" se eliminará y dejará de mostrarse en los filtros.`,
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#ef4444',
-    cancelButtonColor: '#475569',
-    confirmButtonText: '<i class="fa-solid fa-trash-can"></i> Sí, eliminar',
-    cancelButtonText: 'Cancelar'
-  });
-
-  if (!result.isConfirmed) return false;
-
-  try {
-    const res = await apiFetch(`/api/modulos/${id}`, {
-      method: 'DELETE'
-    });
-
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.message || 'No se pudo eliminar el módulo.');
-    }
-
-    getPrixmaSwal().fire({
-      icon: 'success',
-      title: 'Módulo Eliminado',
-      text: `El módulo "${nombre}" ha sido eliminado correctamente.`,
-      timer: 2000,
-      showConfirmButton: false
-    });
-
-    if (state.currentModuloId === id) filterByModule(null, null);
-    await loadModulos();
-    loadModulesList();
-    return true;
-  } catch (err) {
-    getPrixmaSwal().fire({
-      icon: 'error',
-      title: 'Error al Eliminar Módulo',
-      text: err.message
-    });
-    return false;
-  }
-}
-
-export async function handleEditModuloInline(id, currentName, currentCat, currentDesc) {
-  const areas = getAllAreas();
-  const areaOptionsHtml = areas.map(a => `<option value="${escapeHtml(a.code)}" ${a.code === currentCat ? 'selected' : ''}>${escapeHtml(a.name)}</option>`).join('');
-
-  const { value: formValues } = await getPrixmaSwal().fire({
-    title: 'Editar Módulo',
-    html: `
-      <div style="text-align:left; display:flex; flex-direction:column; gap:0.75rem;">
-        <div>
-          <label style="font-size:0.85rem; color:var(--text-muted); display:block; margin-bottom:4px;">Área Principal</label>
-          <select id="swal-select-modulo-cat" class="swal2-input" style="width:100%; margin:0; height:42px; padding:0 0.75rem;">
-            ${areaOptionsHtml}
-          </select>
-        </div>
-        <div>
-          <label style="font-size:0.85rem; color:var(--text-muted); display:block; margin-bottom:4px;">Nombre del Módulo</label>
-          <input id="swal-input-modulo-nombre" class="swal2-input" style="width:100%; margin:0;" value="${escapeHtml(currentName)}">
-        </div>
-        <div>
-          <label style="font-size:0.85rem; color:var(--text-muted); display:block; margin-bottom:4px;">Descripción</label>
-          <input id="swal-input-modulo-desc" class="swal2-input" style="width:100%; margin:0;" value="${escapeHtml(currentDesc)}">
-        </div>
-      </div>
-    `,
-    focusConfirm: false,
-    showCancelButton: true,
-    confirmButtonText: 'Guardar Cambios',
-    cancelButtonText: 'Cancelar',
-    preConfirm: () => {
-      const categoriaPadre = document.getElementById('swal-select-modulo-cat').value;
-      const nombre = document.getElementById('swal-input-modulo-nombre').value.trim();
-      const descripcion = document.getElementById('swal-input-modulo-desc').value.trim();
-      if (!nombre) {
-        getPrixmaSwal().showValidationMessage('El nombre es requerido');
-        return false;
-      }
-      return { categoriaPadre, nombre, descripcion };
-    }
-  });
-
-  if (!formValues) return;
-
-  try {
-    const res = await apiFetch(`/api/modulos/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formValues)
+      body: JSON.stringify(payload)
     });
 
     if (!res.ok) {
@@ -408,143 +335,100 @@ export async function handleEditModuloInline(id, currentName, currentCat, curren
       throw new Error(err.message || 'Error al actualizar el módulo.');
     }
 
-    await loadModulos();
-    loadModulesList();
-
     getPrixmaSwal().fire({
       icon: 'success',
       title: 'Módulo Actualizado',
-      text: 'El módulo fue actualizado correctamente.',
+      text: 'Los cambios han sido guardados correctamente.',
       timer: 1800,
       showConfirmButton: false
     });
-  } catch (err) {
-    getPrixmaSwal().fire({
-      icon: 'error',
-      title: 'Error',
-      text: err.message
-    });
-  }
-}
 
-// Dedicated View Functions for Module Detail / Edit View
-export let editModuleInitialValues = { categoriaPadre: '', nombre: '', descripcion: '' };
-
-export async function loadModuleForShow(id) {
-  if (window.switchAppView) window.switchAppView('viewModuleEdit');
-  populateModuloAreaSelect();
-  await loadModuleForEdit(id);
-  setFormReadOnlyMode('editModuleForm', true, 'Detalles del Módulo', 'fa-eye');
-}
-
-export async function loadModuleForEdit(id) {
-  setFormReadOnlyMode('editModuleForm', false);
-  setFormSkeletonState('editModuleForm', true);
-  try {
-    const res = await apiFetch(`/api/modulos/${id}`);
-    if (res.ok) {
-      const mod = await res.json();
-      const idEl = document.getElementById('editModuleId');
-      const nombreEl = document.getElementById('editModuloNombre');
-      const descEl = document.getElementById('editModuloDesc');
-      const catSelect = document.getElementById('editModuloCategoriaPadre');
-      const catVal = mod.categoriaPadre || (mod.area ? mod.area.codigo : '');
-
-      if (idEl) idEl.value = mod.id;
-      if (nombreEl) nombreEl.value = mod.nombre || '';
-      if (descEl) descEl.value = mod.descripcion || '';
-      if (catSelect) catSelect.value = catVal;
-
-      editModuleInitialValues = {
-        categoriaPadre: (catVal || '').trim(),
-        nombre: (mod.nombre || '').trim(),
-        descripcion: (mod.descripcion || '').trim()
-      };
-    }
-  } catch (e) {
-    console.error('Error cargando módulo para edición:', e);
-  } finally {
-    setTimeout(() => setFormSkeletonState('editModuleForm', false), 250);
-  }
-}
-
-export function hasModuleEditChanged() {
-  if (document.getElementById('editModuleForm')?.dataset.readOnly === 'true') return false;
-  const cat = (document.getElementById('editModuloCategoriaPadre')?.value || '').trim();
-  const nombre = (document.getElementById('editModuloNombre')?.value || '').trim();
-  const desc = (document.getElementById('editModuloDesc')?.value || '').trim();
-  return cat !== editModuleInitialValues.categoriaPadre ||
-    nombre !== editModuleInitialValues.nombre ||
-    desc !== editModuleInitialValues.descripcion;
-}
-
-export async function handleSaveEditModule(event) {
-  if (event) event.preventDefault();
-  const id = document.getElementById('editModuleId').value;
-  const categoriaPadre = document.getElementById('editModuloCategoriaPadre').value;
-  const nombre = document.getElementById('editModuloNombre').value.trim();
-  const descripcion = document.getElementById('editModuloDesc').value.trim();
-  if (!id || !nombre) return;
-
-  const hasChanged = hasModuleEditChanged();
-
-  const confirmResult = await getPrixmaSwal().fire({
-    title: '¿Guardar cambios?',
-    text: hasChanged
-      ? `¿Deseas guardar las modificaciones realizadas en el módulo "${nombre}"?`
-      : `¿Deseas guardar la información del módulo "${nombre}"?`,
-    icon: 'question',
-    showCancelButton: true,
-    confirmButtonColor: '#2563eb',
-    cancelButtonColor: '#64748b',
-    confirmButtonText: '<i class="fa-solid fa-floppy-disk"></i> Sí, guardar',
-    cancelButtonText: 'Cancelar'
-  });
-
-  if (!confirmResult.isConfirmed) return;
-
-  try {
-    const res = await apiFetch(`/api/modulos/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ categoriaPadre, nombre, descripcion })
-    });
-    if (!res.ok) throw new Error('Error al actualizar el módulo.');
+    state.initialModuleEditState = null;
     await loadModulos();
-    getPrixmaSwal().fire({ icon: 'success', title: 'Módulo Actualizado', text: 'Los cambios fueron guardados correctamente.', timer: 1800, showConfirmButton: false });
-    if (window.navigateTo) window.navigateTo('/modulos');
+    navigateTo('/modulos');
   } catch (err) {
     getPrixmaSwal().fire({ icon: 'error', title: 'Error', text: err.message });
   }
 }
 
-export async function handleCancelEditModule(event) {
+export function handleCancelEditModule(event) {
   if (event) event.preventDefault();
-
   if (hasModuleEditChanged()) {
-    const confirmResult = await getPrixmaSwal().fire({
+    getPrixmaSwal().fire({
       title: '¿Descartar cambios?',
-      text: 'Has realizado modificaciones en este módulo. ¿Estás seguro de que deseas salir sin guardar?',
-      icon: 'warning',
+      text: 'Tienes modificaciones sin guardar en este módulo.',
+      icon: 'question',
       showCancelButton: true,
-      confirmButtonColor: '#e11d48',
-      cancelButtonColor: '#64748b',
-      confirmButtonText: '<i class="fa-solid fa-arrow-left"></i> Sí, descartar',
+      confirmButtonText: 'Sí, salir',
       cancelButtonText: 'Continuar editando'
+    }).then(res => {
+      if (res.isConfirmed) {
+        state.initialModuleEditState = null;
+        navigateTo('/modulos');
+      }
     });
-
-    if (!confirmResult.isConfirmed) return;
+  } else {
+    state.initialModuleEditState = null;
+    navigateTo('/modulos');
   }
-
-  if (window.navigateTo) window.navigateTo('/modulos');
 }
 
 export async function handleDeleteModuleFromForm() {
   const id = document.getElementById('editModuleId').value;
-  if (id) {
-    const success = await handleInactivarModulo(id);
-    if (success) {
-      if (window.navigateTo) window.navigateTo('/modulos');
-    }
+  const nombre = document.getElementById('editModuleNombre').value;
+  if (!id) return;
+  const deleted = await handleInactivarModulo(id, nombre);
+  if (deleted) {
+    state.initialModuleEditState = null;
+    navigateTo('/modulos');
   }
+}
+
+export async function handleInactivarModulo(id, nombre) {
+  const result = await getPrixmaSwal().fire({
+    title: '¿Eliminar módulo?',
+    text: `¿Estás seguro de que deseas eliminar o inactivar el módulo "${nombre}"?`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#ef4444',
+    confirmButtonText: '<i class="fa-solid fa-trash-can"></i> Sí, eliminar',
+    cancelButtonText: 'Cancelar'
+  });
+
+  if (!result.isConfirmed) return false;
+
+  try {
+    const res = await apiFetch(`/api/modulos/${id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'No fue posible eliminar el módulo.');
+    }
+
+    getPrixmaSwal().fire({
+      icon: 'success',
+      title: 'Módulo Inactivado',
+      text: `El módulo "${nombre}" ha sido inactivado correctamente.`,
+      timer: 1800,
+      showConfirmButton: false
+    });
+
+    await loadModulos();
+    loadModulesList();
+    return true;
+  } catch (err) {
+    getPrixmaSwal().fire({ icon: 'error', title: 'Error', text: err.message });
+    return false;
+  }
+}
+
+export function openEditModuleModal(id) {
+  navigateTo(`/modulos/edit/${id}`);
+}
+
+export async function handleUpdateModule(event) {
+  return handleSaveEditModule(event);
+}
+
+export function handleEditModuloInline(id) {
+  navigateTo(`/modulos/edit/${id}`);
 }

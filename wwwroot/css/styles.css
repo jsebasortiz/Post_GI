@@ -4702,3 +4702,167 @@ header.navbar {
   padding: 2px 6px;
 }
 
+
+
+/* ==========================================================================
+   SEGMENTED CONTROL & MODULE CHIPS OVERHAUL (Discovery Toolbar)
+   ========================================================================== */
+
+.filter-toolbar-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  background: var(--bg-card) !important;
+  border: 1px solid var(--bg-card-border);
+  border-radius: var(--radius-lg);
+  padding: 0.85rem 1.15rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+  backdrop-filter: blur(16px);
+  margin-top: 1rem;
+}
+
+/* Fila 1: Segmented Control de Áreas */
+.filter-toolbar-segment-areas {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.filter-toolbar-segment-areas::-webkit-scrollbar {
+  display: none;
+}
+
+.main-categories-tabs {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bg-dark);
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid var(--bg-card-border);
+  gap: 3px;
+  white-space: nowrap;
+}
+
+.category-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+  padding: 0.45rem 1rem;
+  border-radius: 9px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-heading);
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.category-tab:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+[data-theme="dark"] .category-tab:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.category-tab.active {
+  background: var(--bg-card) !important;
+  color: var(--primary) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+  font-weight: 700;
+}
+
+[data-theme="dark"] .category-tab.active {
+  background: #1e293b !important;
+  color: #60a5fa !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+/* Fila 2: Cinta Horizontal de Módulos */
+.filter-toolbar-segment-modules {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--bg-card-border);
+  position: relative;
+}
+
+.modules-filter-label {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  font-weight: 700;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.modules-filter-scroll-wrapper {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding-bottom: 2px;
+  gap: 0.45rem;
+  mask-image: linear-gradient(to right, black 94%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black 94%, transparent 100%);
+}
+
+.modules-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.module-pill {
+  padding: 0.35rem 0.85rem;
+  border-radius: 20px;
+  background: var(--bg-dark);
+  border: 1px solid var(--bg-card-border);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.18s ease;
+  flex-shrink: 0;
+}
+
+.module-pill:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-glow);
+}
+
+.module-pill.active {
+  background: var(--primary) !important;
+  color: #ffffff !important;
+  border-color: var(--primary) !important;
+  font-weight: 600;
+  box-shadow: 0 2px 8px var(--primary-glow);
+}
+
+.module-pill.active::before {
+  content: "✓";
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
