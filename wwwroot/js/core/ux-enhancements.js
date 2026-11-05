@@ -204,7 +204,11 @@ export function initPostDraftAutoSave() {
         showToast('Borrador previo recuperado automáticamente.', 'info', 4000);
         if (inputs.titulo && !inputs.titulo.value) inputs.titulo.value = draft.titulo || '';
         if (inputs.resumen && !inputs.resumen.value) inputs.resumen.value = draft.resumen || '';
-        if (inputs.contenido && !inputs.contenido.value) inputs.contenido.value = draft.contenido || '';
+        if (inputs.contenido && !inputs.contenido.value) {
+          inputs.contenido.value = draft.contenido || '';
+          const editorEl = document.getElementById('postContenidoEditor');
+          if (editorEl) editorEl.innerHTML = draft.contenido || '';
+        }
         if (inputs.palabrasClave && !inputs.palabrasClave.value) inputs.palabrasClave.value = draft.palabrasClave || '';
       }
     }

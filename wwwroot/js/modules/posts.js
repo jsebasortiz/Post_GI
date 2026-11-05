@@ -7,6 +7,7 @@ import { getFileMeta, autoSelectDefaultImageCover, renderFilePreviews } from './
 import { populateAreaSelects } from './areas.js';
 import { loadModulos } from './modulos.js';
 import { loadEditPostTipos, loadTiposConocimiento } from './tipos.js';
+import { cleanAndSanitizeHtml, initHtmlEditor, setEditorContent, syncEditorToTextarea } from '../core/editor.js';
 
 export function isImageUrl(url) {
   if (!url) return false;
@@ -260,6 +261,7 @@ export function debounceSearch() {
 // Gestor de Etiquetas Interactivas (Interactive Tag Input)
 // ==========================================================================
 export let postTagsList = [];
+export let editPostTagsList = [];
 
 export function renderPostTags() {
   const container = document.getElementById('postTagChips');
@@ -323,6 +325,70 @@ export function initPostTagInput() {
   }
 }
 
+export function renderEditPostTags() {
+  const container = document.getElementById('editPostTagChips');
+  const hiddenInput = document.getElementById('editPostPalabrasClave');
+  if (!container || !hiddenInput) return;
+
+  container.innerHTML = editPostTagsList.map((tag, idx) => `
+    <span class="tag-chip">
+      <i class="fa-solid fa-hashtag" style="font-size:0.65rem; opacity:0.8;"></i>
+      <span>${escapeHtml(tag)}</span>
+      <button type="button" class="tag-chip-remove" onclick="removeEditPostTag(${idx})" title="Eliminar etiqueta">&times;</button>
+    </span>
+  `).join('');
+
+  hiddenInput.value = editPostTagsList.join(', ');
+}
+
+export function addEditPostTag(rawTag) {
+  if (!rawTag) return;
+  const clean = rawTag.trim().toLowerCase().replace(/[^a-záéíóúüñ0-9\-_\s]/g, '').trim();
+  if (clean && !editPostTagsList.includes(clean)) {
+    editPostTagsList.push(clean);
+    renderEditPostTags();
+  }
+  const input = document.getElementById('editPostTagInput');
+  if (input) input.value = '';
+}
+
+export function removeEditPostTag(index) {
+  if (index >= 0 && index < editPostTagsList.length) {
+    editPostTagsList.splice(index, 1);
+    renderEditPostTags();
+  }
+}
+
+export function initEditPostTagInput(initialTags = '') {
+  editPostTagsList = [];
+  const hidden = document.getElementById('editPostPalabrasClave');
+  const rawTags = (initialTags !== undefined && initialTags !== null) ? String(initialTags) : (hidden ? hidden.value : '');
+
+  if (rawTags) {
+    editPostTagsList = rawTags.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+  }
+  renderEditPostTags();
+
+  const input = document.getElementById('editPostTagInput');
+  if (input && !input.dataset.tagBound) {
+    input.dataset.tagBound = 'true';
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ',') {
+        e.preventDefault();
+        addEditPostTag(input.value);
+      } else if (e.key === 'Backspace' && !input.value && editPostTagsList.length > 0) {
+        removeEditPostTag(editPostTagsList.length - 1);
+      }
+    });
+
+    input.addEventListener('blur', () => {
+      if (input.value.trim()) {
+        addEditPostTag(input.value);
+      }
+    });
+  }
+}
+
 export async function handleCreatePost(event) {
   if (event) event.preventDefault();
 
@@ -352,7 +418,13 @@ export async function handleCreatePost(event) {
     formData.append('PalabrasClave', document.getElementById('postPalabrasClave').value.trim());
     formData.append('Titulo', document.getElementById('postTitulo').value);
     formData.append('Resumen', document.getElementById('postResumen').value);
-    formData.append('Contenido', document.getElementById('postContenido').value);
+    const postEditorEl = document.getElementById('postContenidoEditor');
+    const postTextareaEl = document.getElementById('postContenido');
+    if (postEditorEl && postTextareaEl) {
+      syncEditorToTextarea(postEditorEl, postTextareaEl);
+    }
+    const cleanContent = cleanAndSanitizeHtml(postTextareaEl ? postTextareaEl.value : '');
+    formData.append('Contenido', cleanContent);
     formData.append('Estado', 'publicado');
     formData.append('PortadaIndex', state.coverIndex);
 
@@ -372,6 +444,8 @@ export async function handleCreatePost(event) {
 
     const form = document.getElementById('createPostForm');
     if (form) form.reset();
+    const createEditorEl = document.getElementById('postContenidoEditor');
+    if (createEditorEl) createEditorEl.innerHTML = '';
     state.selectedFiles = [];
     renderFilePreviews();
     postTagsList = [];
@@ -541,9 +615,14 @@ export async function openDetailView(postId) {
       }
     }
 
-    // Contenido Completo del Blog
-    if (document.getElementById('detailContent')) {
-      document.getElementById('detailContent').innerText = post.contenido || 'Sin contenido registrado.';
+    // Contenido Completo del Blog (Renderizado HTML limpio y sanitizado)
+    const detailContentEl = document.getElementById('detailContent');
+    if (detailContentEl) {
+      if (post.contenido) {
+        detailContentEl.innerHTML = cleanAndSanitizeHtml(post.contenido);
+      } else {
+        detailContentEl.innerText = 'Sin contenido registrado.';
+      }
     }
 
     // Palabras Clave / Etiquetas
@@ -632,6 +711,11 @@ export function openEditModal(postId) {
 
 export function hasPostEditChanged() {
   if (!state.currentEditingPost) return false;
+  const editEditorEl = document.getElementById('editPostContenidoEditor');
+  const editTextareaEl = document.getElementById('editPostContenido');
+  if (editEditorEl && editTextareaEl) {
+    syncEditorToTextarea(editEditorEl, editTextareaEl);
+  }
   const catVal = (document.getElementById('editSelectCategoriaPadre')?.value || '').trim();
   const modVal = String(document.getElementById('editSelectModulo')?.value || '').trim();
   const tipoVal = String(document.getElementById('editSelectTipo')?.value || '').trim();
@@ -709,6 +793,8 @@ export async function openEditView(postId) {
     if (tituloEl) tituloEl.value = post.titulo || '';
     if (resumenEl) resumenEl.value = post.resumen || '';
     if (contenidoEl) contenidoEl.value = post.contenido || '';
+    setEditorContent('editPostContenidoEditor', 'editPostContenido', post.contenido || '');
+    initHtmlEditor('editPostContenidoEditor', 'editPostContenido');
 
     const catSelect = document.getElementById('editSelectCategoriaPadre');
     if (catSelect) {
@@ -726,10 +812,7 @@ export async function openEditView(postId) {
       tcSelect.value = post.tipoConocimientoId || '';
     }
 
-    const tagsInput = document.getElementById('editPostPalabrasClave');
-    if (tagsInput) {
-      tagsInput.value = post.palabrasClave || '';
-    }
+    initEditPostTagInput(post.palabrasClave || '');
 
     const existingContainer = document.getElementById('editExistingAdjuntos');
     if (existingContainer) {
@@ -933,6 +1016,12 @@ export async function handleSaveEditPost(event) {
     return;
   }
 
+  const editEditorEl = document.getElementById('editPostContenidoEditor');
+  const editTextareaEl = document.getElementById('editPostContenido');
+  if (editEditorEl && editTextareaEl) {
+    syncEditorToTextarea(editEditorEl, editTextareaEl);
+  }
+
   const updateDto = {
     moduloId: moduloId,
     tipoId: tipoId,
@@ -940,7 +1029,7 @@ export async function handleSaveEditPost(event) {
     palabrasClave: (document.getElementById('editPostPalabrasClave')?.value || '').trim(),
     titulo: (document.getElementById('editPostTitulo')?.value || '').trim(),
     resumen: (document.getElementById('editPostResumen')?.value || '').trim(),
-    contenido: (document.getElementById('editPostContenido')?.value || '').trim(),
+    contenido: cleanAndSanitizeHtml((document.getElementById('editPostContenido')?.value || '').trim()),
     estado: 'publicado'
   };
 

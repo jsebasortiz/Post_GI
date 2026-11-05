@@ -3,6 +3,7 @@ import { getAppBasePath } from '../core/utils.js';
 import { startTopProgressBar, finishTopProgressBar } from '../core/ui-helpers.js';
 import { showAuthGate, hasPermission, renderUserNavArea } from '../modules/auth.js';
 import { loadPosts, openDetailView, openEditView, initPostTagInput } from '../modules/posts.js';
+import { initHtmlEditor } from '../core/editor.js';
 import { loadAreas, loadAreasList, renderAreaTabs, populateAreaSelects } from '../modules/areas.js';
 import { loadModulos, loadModulesList, updateModulePillActiveState, populateModuloAreaSelect, updatePostSubmoduloSelect } from '../modules/modulos.js';
 import { loadPostTipos, loadPostTiposList, loadTiposConocimiento, loadTiposConocimientoList, switchTiposSubTab } from '../modules/tipos.js';
@@ -276,6 +277,7 @@ export async function handleRoute() {
       const catSelect = document.getElementById('selectCategoriaPadre');
       updatePostSubmoduloSelect(catSelect ? catSelect.value : '');
       initPostTagInput();
+      initHtmlEditor('postContenidoEditor', 'postContenido');
     } else if (cleanHash.startsWith('/posts/edit/')) {
       if (!hasPermission('posts.edit') && !hasPermission('posts.create')) {
         navigateTo('/dashboard');

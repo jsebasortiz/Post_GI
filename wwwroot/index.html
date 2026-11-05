@@ -539,11 +539,114 @@
                 </div>
 
                 <div class="form-group" style="margin-bottom:0;">
-                  <label class="form-label" for="postContenido">Cuerpo / Contenido Completo del Blog <span
+                  <label class="form-label" for="postContenidoEditor">Cuerpo / Contenido Completo del Blog <span
                       style="color:var(--accent-rose);">*</span></label>
-                  <textarea id="postContenido" rows="7" class="form-control"
-                    placeholder="Escribe el desarrollo completo del artículo, pasos técnicos, recomendaciones o normativas..."
-                    required></textarea>
+
+                  <div class="html-editor-wrapper">
+                    <!-- Barra de herramientas de formato HTML -->
+                    <div class="html-editor-toolbar" id="postToolbar">
+                      <!-- Tipografía y Fuente -->
+                      <div class="html-editor-group">
+                        <select class="html-editor-select" title="Familia tipográfica"
+                          onchange="execEditorCommand('fontName', this.value); this.selectedIndex=0;">
+                          <option value="" disabled selected>Fuente</option>
+                          <option value="Inter, sans-serif">Inter (Predeterminada)</option>
+                          <option value="'Segoe UI', sans-serif">Segoe UI</option>
+                          <option value="Arial, sans-serif">Arial</option>
+                          <option value="'Courier New', monospace">Courier (Código)</option>
+                          <option value="Georgia, serif">Georgia</option>
+                          <option value="'Times New Roman', serif">Times New Roman</option>
+                        </select>
+
+                        <select class="html-editor-select" title="Tamaño de encabezado o texto"
+                          onchange="execEditorCommand('formatBlock', this.value); this.selectedIndex=0;">
+                          <option value="" disabled selected>Tamaño / Estilo</option>
+                          <option value="<p>">Párrafo normal</option>
+                          <option value="<h1>">Título Principal (H1)</option>
+                          <option value="<h2>">Título Secundario (H2)</option>
+                          <option value="<h3>">Encabezado Sección (H3)</option>
+                          <option value="<h4>">Subencabezado (H4)</option>
+                          <option value="<blockquote>">Cita destacada</option>
+                          <option value="<pre>">Bloque de código</option>
+                        </select>
+                      </div>
+
+                      <div class="html-editor-separator"></div>
+
+                      <!-- Estilos básicos -->
+                      <div class="html-editor-group">
+                        <button type="button" class="html-editor-btn" title="Negrita (Ctrl+B)"
+                          onclick="execEditorCommand('bold')"><i class="fa-solid fa-bold"></i></button>
+                        <button type="button" class="html-editor-btn" title="Cursiva (Ctrl+I)"
+                          onclick="execEditorCommand('italic')"><i class="fa-solid fa-italic"></i></button>
+                        <button type="button" class="html-editor-btn" title="Subrayado (Ctrl+U)"
+                          onclick="execEditorCommand('underline')"><i class="fa-solid fa-underline"></i></button>
+                        <button type="button" class="html-editor-btn" title="Tachado"
+                          onclick="execEditorCommand('strikeThrough')"><i
+                            class="fa-solid fa-strikethrough"></i></button>
+                      </div>
+
+                      <div class="html-editor-separator"></div>
+
+                      <!-- Alineaciones -->
+                      <div class="html-editor-group">
+                        <button type="button" class="html-editor-btn" title="Alinear a la izquierda"
+                          onclick="execEditorCommand('justifyLeft')"><i class="fa-solid fa-align-left"></i></button>
+                        <button type="button" class="html-editor-btn" title="Centrar"
+                          onclick="execEditorCommand('justifyCenter')"><i class="fa-solid fa-align-center"></i></button>
+                        <button type="button" class="html-editor-btn" title="Alinear a la derecha"
+                          onclick="execEditorCommand('justifyRight')"><i class="fa-solid fa-align-right"></i></button>
+                        <button type="button" class="html-editor-btn" title="Justificar"
+                          onclick="execEditorCommand('justifyFull')"><i class="fa-solid fa-align-justify"></i></button>
+                      </div>
+
+                      <div class="html-editor-separator"></div>
+
+                      <!-- Listas e Indentación -->
+                      <div class="html-editor-group">
+                        <button type="button" class="html-editor-btn" title="Lista con viñetas"
+                          onclick="execEditorCommand('insertUnorderedList')"><i
+                            class="fa-solid fa-list-ul"></i></button>
+                        <button type="button" class="html-editor-btn" title="Lista numerada"
+                          onclick="execEditorCommand('insertOrderedList')"><i class="fa-solid fa-list-ol"></i></button>
+                        <button type="button" class="html-editor-btn" title="Disminuir sangría"
+                          onclick="execEditorCommand('outdent')"><i class="fa-solid fa-outdent"></i></button>
+                        <button type="button" class="html-editor-btn" title="Aumentar sangría"
+                          onclick="execEditorCommand('indent')"><i class="fa-solid fa-indent"></i></button>
+                      </div>
+
+                      <div class="html-editor-separator"></div>
+
+                      <!-- Colores, Enlaces y Limpiar -->
+                      <div class="html-editor-group">
+                        <button type="button" class="html-editor-btn html-editor-color-btn" title="Color de texto">
+                          <i class="fa-solid fa-palette"></i>
+                          <input type="color" class="html-editor-color-input"
+                            onchange="execEditorCommand('foreColor', this.value)">
+                        </button>
+                        <button type="button" class="html-editor-btn html-editor-color-btn"
+                          title="Color de fondo / Resaltador">
+                          <i class="fa-solid fa-highlighter"></i>
+                          <input type="color" value="#fef08a" class="html-editor-color-input"
+                            onchange="execEditorCommand('hiliteColor', this.value)">
+                        </button>
+                        <button type="button" class="html-editor-btn" title="Insertar Bloque de Código"
+                          onclick="insertCodeBlock()"><i class="fa-solid fa-code"></i></button>
+                        <button type="button" class="html-editor-btn" title="Línea divisoria horizontal"
+                          onclick="execEditorCommand('insertHorizontalRule')"><i class="fa-solid fa-minus"></i></button>
+                        <button type="button" class="html-editor-btn" title="Quitar formato"
+                          onclick="execEditorCommand('removeFormat')"><i class="fa-solid fa-eraser"></i></button>
+                      </div>
+                    </div>
+
+                    <!-- Área de edición enriquecida -->
+                    <div id="postContenidoEditor" class="html-editor-content" contenteditable="true"
+                      data-placeholder="Escribe el desarrollo completo del artículo con formato, encabezados, colores y alineación...">
+                    </div>
+                  </div>
+
+                  <!-- Textarea real para validación y persistencia -->
+                  <textarea id="postContenido" style="display:none;" required></textarea>
                 </div>
               </div>
 
@@ -623,11 +726,29 @@
                 </div>
               </div>
 
+              <!-- Input interactivo de Tags / Palabras Clave en Edición -->
               <div class="form-group">
-                <label class="form-label" for="editPostPalabrasClave"><i class="fa-solid fa-hashtag"></i> Palabras Clave
-                  / Etiquetas (separadas por comas)</label>
-                <input type="text" id="editPostPalabrasClave" class="form-control"
-                  placeholder="Ej: sql, azure, respaldo, procedimiento">
+                <label class="form-label" for="editPostTagInput"><i class="fa-solid fa-hashtag"
+                    style="color:var(--primary);"></i> Palabras Clave / Etiquetas</label>
+                <div class="tag-input-container" id="editPostTagContainer"
+                  onclick="document.getElementById('editPostTagInput').focus()">
+                  <div id="editPostTagChips" style="display:contents;"></div>
+                  <input type="text" id="editPostTagInput" class="tag-input-field"
+                    placeholder="Escribe una etiqueta y presiona Enter o Coma...">
+                </div>
+                <!-- Input oculto para compatibilidad con backend y formularios -->
+                <input type="hidden" id="editPostPalabrasClave">
+
+                <div class="tag-suggestions">
+                  <span style="font-size:0.75rem; color:var(--text-muted);"><i class="fa-solid fa-lightbulb"></i>
+                    Sugerencias:</span>
+                  <span class="tag-suggestion-pill" onclick="addEditPostTag('sql')">+ sql</span>
+                  <span class="tag-suggestion-pill" onclick="addEditPostTag('azure')">+ azure</span>
+                  <span class="tag-suggestion-pill" onclick="addEditPostTag('seguridad')">+ seguridad</span>
+                  <span class="tag-suggestion-pill" onclick="addEditPostTag('sieweb')">+ sieweb</span>
+                  <span class="tag-suggestion-pill" onclick="addEditPostTag('tutorial')">+ tutorial</span>
+                  <span class="tag-suggestion-pill" onclick="addEditPostTag('soporte')">+ soporte</span>
+                </div>
               </div>
 
               <div class="form-group">
@@ -643,9 +764,109 @@
               </div>
 
               <div class="form-group">
-                <label class="form-label" for="editPostContenido">Contenido Completo del Blog</label>
-                <textarea id="editPostContenido" rows="6" class="form-control" placeholder="Cuerpo del artículo..."
-                  required></textarea>
+                <label class="form-label" for="editPostContenidoEditor">Contenido Completo del Blog</label>
+
+                <div class="html-editor-wrapper">
+                  <!-- Barra de herramientas de edición -->
+                  <div class="html-editor-toolbar" id="editPostToolbar">
+                    <!-- Tipografía y Fuente -->
+                    <div class="html-editor-group">
+                      <select class="html-editor-select" title="Familia tipográfica"
+                        onchange="execEditorCommand('fontName', this.value); this.selectedIndex=0;">
+                        <option value="" disabled selected>Fuente</option>
+                        <option value="Inter, sans-serif">Inter (Predeterminada)</option>
+                        <option value="'Segoe UI', sans-serif">Segoe UI</option>
+                        <option value="Arial, sans-serif">Arial</option>
+                        <option value="'Courier New', monospace">Courier (Código)</option>
+                        <option value="Georgia, serif">Georgia</option>
+                        <option value="'Times New Roman', serif">Times New Roman</option>
+                      </select>
+
+                      <select class="html-editor-select" title="Tamaño de encabezado o texto"
+                        onchange="execEditorCommand('formatBlock', this.value); this.selectedIndex=0;">
+                        <option value="" disabled selected>Tamaño / Estilo</option>
+                        <option value="<p>">Párrafo normal</option>
+                        <option value="<h1>">Título Principal (H1)</option>
+                        <option value="<h2>">Título Secundario (H2)</option>
+                        <option value="<h3>">Encabezado Sección (H3)</option>
+                        <option value="<h4>">Subencabezado (H4)</option>
+                        <option value="<blockquote>">Cita destacada</option>
+                        <option value="<pre>">Bloque de código</option>
+                      </select>
+                    </div>
+
+                    <div class="html-editor-separator"></div>
+
+                    <!-- Estilos básicos -->
+                    <div class="html-editor-group">
+                      <button type="button" class="html-editor-btn" title="Negrita (Ctrl+B)"
+                        onclick="execEditorCommand('bold')"><i class="fa-solid fa-bold"></i></button>
+                      <button type="button" class="html-editor-btn" title="Cursiva (Ctrl+I)"
+                        onclick="execEditorCommand('italic')"><i class="fa-solid fa-italic"></i></button>
+                      <button type="button" class="html-editor-btn" title="Subrayado (Ctrl+U)"
+                        onclick="execEditorCommand('underline')"><i class="fa-solid fa-underline"></i></button>
+                      <button type="button" class="html-editor-btn" title="Tachado"
+                        onclick="execEditorCommand('strikeThrough')"><i class="fa-solid fa-strikethrough"></i></button>
+                    </div>
+
+                    <div class="html-editor-separator"></div>
+
+                    <!-- Alineaciones -->
+                    <div class="html-editor-group">
+                      <button type="button" class="html-editor-btn" title="Alinear a la izquierda"
+                        onclick="execEditorCommand('justifyLeft')"><i class="fa-solid fa-align-left"></i></button>
+                      <button type="button" class="html-editor-btn" title="Centrar"
+                        onclick="execEditorCommand('justifyCenter')"><i class="fa-solid fa-align-center"></i></button>
+                      <button type="button" class="html-editor-btn" title="Alinear a la derecha"
+                        onclick="execEditorCommand('justifyRight')"><i class="fa-solid fa-align-right"></i></button>
+                      <button type="button" class="html-editor-btn" title="Justificar"
+                        onclick="execEditorCommand('justifyFull')"><i class="fa-solid fa-align-justify"></i></button>
+                    </div>
+
+                    <div class="html-editor-separator"></div>
+
+                    <!-- Listas e Indentación -->
+                    <div class="html-editor-group">
+                      <button type="button" class="html-editor-btn" title="Lista con viñetas"
+                        onclick="execEditorCommand('insertUnorderedList')"><i class="fa-solid fa-list-ul"></i></button>
+                      <button type="button" class="html-editor-btn" title="Lista numerada"
+                        onclick="execEditorCommand('insertOrderedList')"><i class="fa-solid fa-list-ol"></i></button>
+                      <button type="button" class="html-editor-btn" title="Disminuir sangría"
+                        onclick="execEditorCommand('outdent')"><i class="fa-solid fa-outdent"></i></button>
+                      <button type="button" class="html-editor-btn" title="Aumentar sangría"
+                        onclick="execEditorCommand('indent')"><i class="fa-solid fa-indent"></i></button>
+                    </div>
+
+                    <div class="html-editor-separator"></div>
+
+                    <!-- Colores, Enlaces y Limpiar -->
+                    <div class="html-editor-group">
+                      <button type="button" class="html-editor-btn html-editor-color-btn" title="Color de texto">
+                        <i class="fa-solid fa-palette"></i>
+                        <input type="color" class="html-editor-color-input"
+                          onchange="execEditorCommand('foreColor', this.value)">
+                      </button>
+                      <button type="button" class="html-editor-btn html-editor-color-btn"
+                        title="Color de fondo / Resaltador">
+                        <i class="fa-solid fa-highlighter"></i>
+                        <input type="color" value="#fef08a" class="html-editor-color-input"
+                          onchange="execEditorCommand('hiliteColor', this.value)">
+                      </button>
+                      <button type="button" class="html-editor-btn" title="Insertar Bloque de Código"
+                        onclick="insertCodeBlock()"><i class="fa-solid fa-code"></i></button>
+                      <button type="button" class="html-editor-btn" title="Línea divisoria horizontal"
+                        onclick="execEditorCommand('insertHorizontalRule')"><i class="fa-solid fa-minus"></i></button>
+                      <button type="button" class="html-editor-btn" title="Quitar formato"
+                        onclick="execEditorCommand('removeFormat')"><i class="fa-solid fa-eraser"></i></button>
+                    </div>
+                  </div>
+
+                  <!-- Área editable enriquecida para edición -->
+                  <div id="editPostContenidoEditor" class="html-editor-content" contenteditable="true"
+                    data-placeholder="Edita el cuerpo del artículo..."></div>
+                </div>
+
+                <textarea id="editPostContenido" style="display:none;" required></textarea>
               </div>
 
               <div class="form-group">

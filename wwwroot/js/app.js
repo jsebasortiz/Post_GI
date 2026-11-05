@@ -1,3 +1,4 @@
+import { cleanAndSanitizeHtml, execEditorCommand, formatEditorLink, insertCodeBlock, formatInlineCode, initHtmlEditor, setEditorContent, syncEditorToTextarea } from './core/editor.js';
 import {
   initCommandPalette, initPostDraftAutoSave, initReadingProgressBar, initFormDragAndDrop
 } from './core/ux-enhancements.js';
@@ -72,6 +73,7 @@ import {
 } from './modules/rbac.js';
 import {
   renderPostTags, addPostTag, removePostTag, initPostTagInput,
+  renderEditPostTags, addEditPostTag, removeEditPostTag, initEditPostTagInput,
   isImageUrl, getPostCoverUrl, renderPostCard, loadPosts, renderPaginationControls,
   goToPage, debounceSearch, handleCreatePost, openDetailView, openDetailModal,
   openEditView, openEditModal, hasPostEditChanged, handleCancelEditPost,
@@ -315,6 +317,18 @@ Object.assign(window, {
   addPostTag,
   removePostTag,
   initPostTagInput,
+  renderEditPostTags,
+  addEditPostTag,
+  removeEditPostTag,
+  initEditPostTagInput,
+  cleanAndSanitizeHtml,
+  execEditorCommand,
+  formatEditorLink,
+  insertCodeBlock,
+  formatInlineCode,
+  initHtmlEditor,
+  setEditorContent,
+  syncEditorToTextarea,
   isImageUrl,
   getPostCoverUrl,
   renderPostCard,
