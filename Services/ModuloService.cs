@@ -2,6 +2,7 @@ using BlogApp.Data;
 using BlogApp.DTOs;
 using BlogApp.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using System.Text.RegularExpressions;
 
 namespace BlogApp.Services;
@@ -28,10 +29,18 @@ public interface IModuloService
 public class ModuloService : IModuloService
 {
     private readonly BlogDbContext _context;
+    private readonly IMemoryCache _cache;
 
-    public ModuloService(BlogDbContext context)
+    private const string PostTiposActiveKey = "catalog_posttipos_active";
+    private const string PostTiposAllKey = "catalog_posttipos_all";
+    private const string TiposConocimientoActiveKey = "catalog_tiposconocimiento_active";
+    private const string TiposConocimientoAllKey = "catalog_tiposconocimiento_all";
+    private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(10);
+
+    public ModuloService(BlogDbContext context, IMemoryCache cache)
     {
         _context = context;
+        _cache = cache;
     }
 
     public async Task<List<Modulo>> GetModulosAsync(string? categoriaPadre = null, bool soloActivos = true)
@@ -115,12 +124,21 @@ public class ModuloService : IModuloService
 
     public async Task<List<PostTipo>> GetPostTiposAsync(bool soloActivos = true)
     {
+        string cacheKey = soloActivos ? PostTiposActiveKey : PostTiposAllKey;
+        if (_cache.TryGetValue(cacheKey, out List<PostTipo>? cached) && cached != null)
+        {
+            return cached;
+        }
+
         var query = _context.PostTipos.Include(pt => pt.Rol).AsQueryable();
         if (soloActivos)
         {
             query = query.Where(pt => pt.EstadoId == 1);
         }
-        return await query.OrderBy(pt => pt.Nombre).ToListAsync();
+
+        var result = await query.OrderBy(pt => pt.Nombre).ToListAsync();
+        _cache.Set(cacheKey, result, CacheDuration);
+        return result;
     }
 
     public async Task<PostTipo?> GetPostTipoByIdAsync(byte id)
@@ -145,6 +163,8 @@ public class ModuloService : IModuloService
         {
             tipo.Rol = await _context.Roles.FirstOrDefaultAsync(r => r.Id == dto.RolId.Value);
         }
+
+        InvalidatePostTiposCache();
         return tipo;
     }
 
@@ -170,6 +190,8 @@ public class ModuloService : IModuloService
         {
             tipo.Rol = null;
         }
+
+        InvalidatePostTiposCache();
         return tipo;
     }
 
@@ -180,17 +202,27 @@ public class ModuloService : IModuloService
 
         tipo.EstadoId = 2; // Inactivado (borrado lógico)
         await _context.SaveChangesAsync();
+        InvalidatePostTiposCache();
         return true;
     }
 
     public async Task<List<TipoConocimiento>> GetTiposConocimientoAsync(bool soloActivos = true)
     {
+        string cacheKey = soloActivos ? TiposConocimientoActiveKey : TiposConocimientoAllKey;
+        if (_cache.TryGetValue(cacheKey, out List<TipoConocimiento>? cached) && cached != null)
+        {
+            return cached;
+        }
+
         var query = _context.TiposConocimiento.AsQueryable();
         if (soloActivos)
         {
             query = query.Where(tc => tc.EstadoId == 1);
         }
-        return await query.OrderBy(tc => tc.Nombre).ToListAsync();
+
+        var result = await query.OrderBy(tc => tc.Nombre).ToListAsync();
+        _cache.Set(cacheKey, result, CacheDuration);
+        return result;
     }
 
     public async Task<TipoConocimiento?> GetTipoConocimientoByIdAsync(byte id)
@@ -210,6 +242,7 @@ public class ModuloService : IModuloService
 
         _context.TiposConocimiento.Add(tc);
         await _context.SaveChangesAsync();
+        InvalidateTiposConocimientoCache();
         return tc;
     }
 
@@ -226,6 +259,7 @@ public class ModuloService : IModuloService
         tc.Descripcion = string.IsNullOrWhiteSpace(dto.Descripcion) ? null : dto.Descripcion.Trim();
 
         await _context.SaveChangesAsync();
+        InvalidateTiposConocimientoCache();
         return tc;
     }
 
@@ -236,7 +270,20 @@ public class ModuloService : IModuloService
 
         tc.EstadoId = 2;
         await _context.SaveChangesAsync();
+        InvalidateTiposConocimientoCache();
         return true;
+    }
+
+    private void InvalidatePostTiposCache()
+    {
+        _cache.Remove(PostTiposActiveKey);
+        _cache.Remove(PostTiposAllKey);
+    }
+
+    private void InvalidateTiposConocimientoCache()
+    {
+        _cache.Remove(TiposConocimientoActiveKey);
+        _cache.Remove(TiposConocimientoAllKey);
     }
 
     private static string Slugify(string phrase)

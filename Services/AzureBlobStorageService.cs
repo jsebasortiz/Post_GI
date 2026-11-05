@@ -52,38 +52,77 @@ public class AzureBlobStorageService : IFileStorageService
                 _logger.LogWarning("[Azure Blob] Advertencia en CreateIfNotExists: {Message}", exAccess.Message);
             }
 
-            // 2. Definir ruta y nombre de Blob único: {subDirectory}/{yyyy}/{MM}/{guid}{ext}
-            var now = DateTime.UtcNow;
-            var extension = Path.GetExtension(file.FileName);
-            var blobName = $"{subDirectory}/{now:yyyy}/{now:MM}/{Guid.NewGuid():N}{extension}";
+            // Optimización de imágenes a WebP
+            Stream uploadStream;
+            string finalMimeType;
+            string finalExtension;
+            long finalLength;
+            bool isCustomStream = false;
 
-            var blobClient = containerClient.GetBlobClient(blobName);
-
-            // 3. Subir el archivo directamente a Azure Storage con ContentType adecuado
-            using (var stream = file.OpenReadStream())
+            if (ImageOptimizationHelper.IsSupportedImage(file.FileName, file.ContentType))
             {
+                try
+                {
+                    var opt = await ImageOptimizationHelper.OptimizeToWebpAsync(file);
+                    uploadStream = opt.Stream;
+                    finalMimeType = opt.ContentType;
+                    finalExtension = opt.Extension;
+                    finalLength = opt.Size;
+                    isCustomStream = true;
+                }
+                catch
+                {
+                    uploadStream = file.OpenReadStream();
+                    finalMimeType = file.ContentType ?? "application/octet-stream";
+                    finalExtension = Path.GetExtension(file.FileName);
+                    finalLength = file.Length;
+                }
+            }
+            else
+            {
+                uploadStream = file.OpenReadStream();
+                finalMimeType = file.ContentType ?? "application/octet-stream";
+                finalExtension = Path.GetExtension(file.FileName);
+                finalLength = file.Length;
+            }
+
+            try
+            {
+                // 2. Definir ruta y nombre de Blob único: {subDirectory}/{yyyy}/{MM}/{guid}{ext}
+                var now = DateTime.UtcNow;
+                var blobName = $"{subDirectory}/{now:yyyy}/{now:MM}/{Guid.NewGuid():N}{finalExtension}";
+                var blobClient = containerClient.GetBlobClient(blobName);
+
+                // 3. Subir el archivo directamente a Azure Storage con ContentType adecuado
                 var headers = new BlobHttpHeaders
                 {
-                    ContentType = file.ContentType ?? "application/octet-stream"
+                    ContentType = finalMimeType
                 };
 
-                await blobClient.UploadAsync(stream, new BlobUploadOptions
+                await blobClient.UploadAsync(uploadStream, new BlobUploadOptions
                 {
                     HttpHeaders = headers
                 });
+
+                // 4. Generar URL segura con SAS Token (Shared Access Signature) para lecturas
+                var blobUrl = GetSasUrl(blobClient);
+                Console.WriteLine($"[Azure Blob SUCCESS] Archivo subido a Azure con SAS Token: {blobUrl}");
+                _logger.LogInformation("[Azure Blob] Archivo subido exitosamente a Azure: {BlobUrl}", blobUrl);
+
+                return new StoredFileInfo(
+                    ArchivoUrl: blobUrl,
+                    ArchivoNombreOriginal: file.FileName,
+                    MimeType: finalMimeType,
+                    TamanioBytes: (ulong)finalLength
+                );
             }
-
-            // 4. Generar URL segura con SAS Token (Shared Access Signature) para lecturas
-            var blobUrl = GetSasUrl(blobClient);
-            Console.WriteLine($"[Azure Blob SUCCESS] Archivo subido a Azure con SAS Token: {blobUrl}");
-            _logger.LogInformation("[Azure Blob] Archivo subido exitosamente a Azure: {BlobUrl}", blobUrl);
-
-            return new StoredFileInfo(
-                ArchivoUrl: blobUrl,
-                ArchivoNombreOriginal: file.FileName,
-                MimeType: file.ContentType ?? "application/octet-stream",
-                TamanioBytes: (ulong)file.Length
-            );
+            finally
+            {
+                if (isCustomStream)
+                {
+                    await uploadStream.DisposeAsync();
+                }
+            }
         }
         catch (Exception ex)
         {
@@ -104,51 +143,54 @@ public class AzureBlobStorageService : IFileStorageService
                     BlobContainerName = blobClient.BlobContainerName,
                     BlobName = blobClient.Name,
                     Resource = "b",
-                    StartsOn = DateTimeOffset.UtcNow.AddMinutes(-10),
-                    ExpiresOn = DateTimeOffset.UtcNow.AddYears(10), // SAS Token para lectura pública de blogs
-                    Protocol = SasProtocol.Https
+                    ExpiresOn = DateTimeOffset.UtcNow.AddYears(10)
                 };
+
                 sasBuilder.SetPermissions(BlobSasPermissions.Read);
                 return blobClient.GenerateSasUri(sasBuilder).ToString();
             }
+
+            return blobClient.Uri.ToString();
         }
         catch (Exception ex)
         {
-            _logger.LogWarning("[Azure SAS] No se pudo generar el SAS Token: {Message}", ex.Message);
+            _logger.LogWarning(ex, "[Azure Blob] No se pudo generar SAS Token con credenciales compartidas. Usando URI directa.");
+            return blobClient.Uri.ToString();
         }
-
-        return blobClient.Uri.ToString();
     }
 
-    public bool DeleteFile(string relativeOrAbsoluteUrl)
+    public bool DeleteFile(string relativeUrl)
     {
-        if (string.IsNullOrWhiteSpace(relativeOrAbsoluteUrl))
+        if (string.IsNullOrWhiteSpace(relativeUrl))
             return false;
 
-        if (string.IsNullOrWhiteSpace(_connectionString) || !relativeOrAbsoluteUrl.StartsWith("http"))
+        // Si es URL de Azure Blob Storage
+        if (relativeUrl.Contains(".blob.core.windows.net"))
         {
-            return _localStorageService.DeleteFile(relativeOrAbsoluteUrl);
-        }
-
-        try
-        {
-            var containerClient = new BlobContainerClient(_connectionString, _containerName);
-            var uri = new Uri(relativeOrAbsoluteUrl);
-            var blobName = uri.AbsolutePath.TrimStart('/');
-
-            // Si la ruta incluye el nombre del contenedor
-            if (blobName.StartsWith(_containerName + "/"))
+            try
             {
-                blobName = blobName.Substring(_containerName.Length + 1);
-            }
+                if (string.IsNullOrWhiteSpace(_connectionString))
+                    return false;
 
-            var blobClient = containerClient.GetBlobClient(blobName);
-            return blobClient.DeleteIfExists().Value;
+                var uri = new Uri(relativeUrl);
+                var blobName = uri.AbsolutePath.TrimStart('/');
+                var firstSlash = blobName.IndexOf('/');
+                if (firstSlash >= 0)
+                {
+                    blobName = blobName.Substring(firstSlash + 1);
+                }
+
+                var containerClient = new BlobContainerClient(_connectionString, _containerName);
+                var blobClient = containerClient.GetBlobClient(blobName);
+                return blobClient.DeleteIfExists();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[Azure Blob] Error al eliminar el blob: {Url}", relativeUrl);
+                return false;
+            }
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "[Azure Blob] Error al eliminar el blob de Azure Storage: {Url}", relativeOrAbsoluteUrl);
-            return false;
-        }
+
+        return _localStorageService.DeleteFile(relativeUrl);
     }
 }

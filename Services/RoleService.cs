@@ -2,6 +2,7 @@ using BlogApp.Data;
 using BlogApp.DTOs;
 using BlogApp.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace BlogApp.Services;
 
@@ -20,10 +21,14 @@ public interface IRoleService
 public class RoleService : IRoleService
 {
     private readonly BlogDbContext _context;
+    private readonly IMemoryCache _cache;
+    private const string PermisosAllCacheKey = "catalog_permisos_all";
+    private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(15);
 
-    public RoleService(BlogDbContext context)
+    public RoleService(BlogDbContext context, IMemoryCache cache)
     {
         _context = context;
+        _cache = cache;
     }
 
     public async Task<List<RolResponseDto>> GetRolesAsync()
@@ -40,17 +45,25 @@ public class RoleService : IRoleService
 
     public async Task<List<PermisoDto>> GetPermisosAsync()
     {
+        if (_cache.TryGetValue(PermisosAllCacheKey, out List<PermisoDto>? cached) && cached != null)
+        {
+            return cached;
+        }
+
         var permisos = await _context.Permisos
             .OrderBy(p => p.Id)
             .ToListAsync();
 
-        return permisos.Select(p => new PermisoDto
+        var result = permisos.Select(p => new PermisoDto
         {
             Id = p.Id,
             Codigo = p.Codigo,
             Nombre = p.Nombre,
             Descripcion = p.Descripcion
         }).ToList();
+
+        _cache.Set(PermisosAllCacheKey, result, CacheDuration);
+        return result;
     }
 
     public async Task<RolResponseDto> CreateRolAsync(CreateRolDto dto)

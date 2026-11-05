@@ -40,6 +40,7 @@ else
 }
 
 builder.Services.AddHttpClient();
+builder.Services.AddMemoryCache();
 
 // Registro de servicios de la aplicación
 builder.Services.AddHttpClient();

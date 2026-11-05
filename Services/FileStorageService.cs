@@ -47,24 +47,67 @@ public class FileStorageService : IFileStorageService
             Directory.CreateDirectory(uploadsFolder);
         }
 
-        // Generar nombre de archivo único para evitar colisiones
-        var extension = Path.GetExtension(file.FileName);
-        var uniqueFileName = $"{Guid.NewGuid():N}{extension}";
-        var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+        // Si es una imagen soportada, optimizar y convertir a WebP
+        Stream uploadStream;
+        string finalMimeType;
+        string finalExtension;
+        long finalLength;
+        bool isCustomStream = false;
 
-        using (var stream = new FileStream(filePath, FileMode.Create))
+        if (ImageOptimizationHelper.IsSupportedImage(file.FileName, file.ContentType))
         {
-            await file.CopyToAsync(stream);
+            try
+            {
+                var opt = await ImageOptimizationHelper.OptimizeToWebpAsync(file);
+                uploadStream = opt.Stream;
+                finalMimeType = opt.ContentType;
+                finalExtension = opt.Extension;
+                finalLength = opt.Size;
+                isCustomStream = true;
+            }
+            catch
+            {
+                uploadStream = file.OpenReadStream();
+                finalMimeType = file.ContentType ?? "application/octet-stream";
+                finalExtension = Path.GetExtension(file.FileName);
+                finalLength = file.Length;
+            }
+        }
+        else
+        {
+            uploadStream = file.OpenReadStream();
+            finalMimeType = file.ContentType ?? "application/octet-stream";
+            finalExtension = Path.GetExtension(file.FileName);
+            finalLength = file.Length;
         }
 
-        var relativeUrl = $"/{folderRelativePath.Replace('\\', '/')}/{uniqueFileName}";
+        try
+        {
+            // Generar nombre de archivo único para evitar colisiones
+            var uniqueFileName = $"{Guid.NewGuid():N}{finalExtension}";
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
-        return new StoredFileInfo(
-            ArchivoUrl: relativeUrl,
-            ArchivoNombreOriginal: file.FileName,
-            MimeType: file.ContentType ?? "application/octet-stream",
-            TamanioBytes: (ulong)file.Length
-        );
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await uploadStream.CopyToAsync(fileStream);
+            }
+
+            var relativeUrl = $"/{folderRelativePath.Replace('\\', '/')}/{uniqueFileName}";
+
+            return new StoredFileInfo(
+                ArchivoUrl: relativeUrl,
+                ArchivoNombreOriginal: file.FileName,
+                MimeType: finalMimeType,
+                TamanioBytes: (ulong)finalLength
+            );
+        }
+        finally
+        {
+            if (isCustomStream)
+            {
+                await uploadStream.DisposeAsync();
+            }
+        }
     }
 
     public bool DeleteFile(string relativeUrl)

@@ -2,6 +2,7 @@ using BlogApp.Data;
 using BlogApp.DTOs;
 using BlogApp.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using System.Text.RegularExpressions;
 
 namespace BlogApp.Services;
@@ -9,21 +10,32 @@ namespace BlogApp.Services;
 public class AreaService : IAreaService
 {
     private readonly BlogDbContext _context;
+    private readonly IMemoryCache _cache;
+    private const string AreasActiveCacheKey = "catalog_areas_active";
+    private const string AreasAllCacheKey = "catalog_areas_all";
+    private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(10);
 
-    public AreaService(BlogDbContext context)
+    public AreaService(BlogDbContext context, IMemoryCache cache)
     {
         _context = context;
+        _cache = cache;
     }
 
     public async Task<List<AreaResponseDto>> GetAreasAsync(bool soloActivas = true)
     {
+        string cacheKey = soloActivas ? AreasActiveCacheKey : AreasAllCacheKey;
+        if (_cache.TryGetValue(cacheKey, out List<AreaResponseDto>? cached) && cached != null)
+        {
+            return cached;
+        }
+
         var query = _context.Areas.AsQueryable();
         if (soloActivas)
         {
             query = query.Where(a => a.EstadoId == 1);
         }
 
-        return await query
+        var result = await query
             .OrderBy(a => a.Nombre)
             .Select(a => new AreaResponseDto
             {
@@ -36,6 +48,9 @@ public class AreaService : IAreaService
                 CreadoEn = a.CreadoEn
             })
             .ToListAsync();
+
+        _cache.Set(cacheKey, result, CacheDuration);
+        return result;
     }
 
     public async Task<AreaResponseDto?> GetAreaByIdAsync(ushort id)
@@ -73,6 +88,7 @@ public class AreaService : IAreaService
                 existing.Nombre = nombreClean;
                 existing.Descripcion = string.IsNullOrWhiteSpace(dto.Descripcion) ? null : dto.Descripcion.Trim();
                 await _context.SaveChangesAsync();
+                InvalidateCache();
                 return new AreaResponseDto
                 {
                     Id = existing.Id,
@@ -98,6 +114,7 @@ public class AreaService : IAreaService
 
         _context.Areas.Add(area);
         await _context.SaveChangesAsync();
+        InvalidateCache();
 
         return new AreaResponseDto
         {
@@ -124,6 +141,7 @@ public class AreaService : IAreaService
         area.Descripcion = string.IsNullOrWhiteSpace(dto.Descripcion) ? null : dto.Descripcion.Trim();
 
         await _context.SaveChangesAsync();
+        InvalidateCache();
 
         return new AreaResponseDto
         {
@@ -144,7 +162,14 @@ public class AreaService : IAreaService
 
         area.EstadoId = 2; // Borrado lógico (Inactivo)
         await _context.SaveChangesAsync();
+        InvalidateCache();
         return true;
+    }
+
+    private void InvalidateCache()
+    {
+        _cache.Remove(AreasActiveCacheKey);
+        _cache.Remove(AreasAllCacheKey);
     }
 
     private static string GenerateSlug(string text)
