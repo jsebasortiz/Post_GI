@@ -181,59 +181,13 @@ async function searchContent(query) {
 }
 
 /* ==========================================================================
-   Autosave Form Draft System
+   Autosave Form Draft System (Desactivado a solicitud del usuario)
    ========================================================================== */
 export function initPostDraftAutoSave() {
-  const form = document.getElementById('createPostForm');
-  if (!form) return;
-
-  const DRAFT_KEY = 'prixma_post_draft_v1';
-  const inputs = {
-    titulo: document.getElementById('postTitulo'),
-    resumen: document.getElementById('postResumen'),
-    contenido: document.getElementById('postContenido'),
-    palabrasClave: document.getElementById('postPalabrasClave')
-  };
-
-  // Check if draft exists on load
+  // Limpiar cualquier borrador previo que haya quedado almacenado en localStorage
   try {
-    const rawDraft = localStorage.getItem(DRAFT_KEY);
-    if (rawDraft) {
-      const draft = JSON.parse(rawDraft);
-      if (draft.titulo || draft.contenido) {
-        showToast('Borrador previo recuperado automáticamente.', 'info', 4000);
-        if (inputs.titulo && !inputs.titulo.value) inputs.titulo.value = draft.titulo || '';
-        if (inputs.resumen && !inputs.resumen.value) inputs.resumen.value = draft.resumen || '';
-        if (inputs.contenido && !inputs.contenido.value) {
-          inputs.contenido.value = draft.contenido || '';
-          const editorEl = document.getElementById('postContenidoEditor');
-          if (editorEl) editorEl.innerHTML = draft.contenido || '';
-        }
-        if (inputs.palabrasClave && !inputs.palabrasClave.value) inputs.palabrasClave.value = draft.palabrasClave || '';
-      }
-    }
+    localStorage.removeItem('prixma_post_draft_v1');
   } catch (e) {}
-
-  // Periodic autosave every 8 seconds if there are changes
-  setInterval(() => {
-    if (!inputs.titulo && !inputs.contenido) return;
-    const hasData = (inputs.titulo?.value?.trim() || inputs.contenido?.value?.trim());
-    if (hasData) {
-      const draft = {
-        titulo: inputs.titulo?.value || '',
-        resumen: inputs.resumen?.value || '',
-        contenido: inputs.contenido?.value || '',
-        palabrasClave: inputs.palabrasClave?.value || '',
-        updatedAt: new Date().toISOString()
-      };
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-    }
-  }, 8000);
-
-  // Clear draft on successful submit
-  form.addEventListener('submit', () => {
-    localStorage.removeItem(DRAFT_KEY);
-  });
 }
 
 /* ==========================================================================
