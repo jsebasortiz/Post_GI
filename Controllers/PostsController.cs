@@ -2,6 +2,7 @@ using BlogApp.DTOs;
 using BlogApp.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace BlogApp.Controllers;
 
@@ -56,14 +57,29 @@ public class PostsController : ControllerBase
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
+        // Validación de seguridad de identidad: Obtener UsuarioId directamente desde el token JWT
+        var claimId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+        if (ulong.TryParse(claimId, out ulong authenticatedUserId) && authenticatedUserId > 0)
+        {
+            dto.UsuarioId = authenticatedUserId;
+        }
+
         try
         {
             var createdPost = await _postService.CreatePostAsync(dto);
             return CreatedAtAction(nameof(GetPostById), new { id = createdPost.Id }, createdPost);
         }
-        catch (Exception ex)
+        catch (ArgumentException ex)
         {
             return BadRequest(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Error interno al registrar la publicación.", detail = ex.Message });
         }
     }
 
@@ -71,9 +87,22 @@ public class PostsController : ControllerBase
     [Authorize(Roles = "Administrador,Editor")]
     public async Task<IActionResult> UpdatePost(ulong id, [FromBody] UpdatePostDto dto)
     {
-        var updatedPost = await _postService.UpdatePostAsync(id, dto);
-        if (updatedPost == null) return NotFound(new { message = "Publicación no encontrada" });
-        return Ok(updatedPost);
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        try
+        {
+            var updatedPost = await _postService.UpdatePostAsync(id, dto);
+            if (updatedPost == null) return NotFound(new { message = "Publicación no encontrada" });
+            return Ok(updatedPost);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Error interno al actualizar la publicación.", detail = ex.Message });
+        }
     }
 
     [HttpDelete("{id:long}")]
@@ -89,15 +118,23 @@ public class PostsController : ControllerBase
     [Authorize(Roles = "Administrador,Editor")]
     public async Task<IActionResult> AddAdjunto(ulong id, IFormFile file, [FromQuery] bool esPortada = false)
     {
-        if (file == null || file.Length == 0)
+        try
         {
-            return BadRequest(new { message = "Por favor selecciona un archivo válido." });
+            FileValidationHelper.ValidateFile(file);
+
+            var adjunto = await _postService.AddAdjuntoToPostAsync(id, file, esPortada);
+            if (adjunto == null) return NotFound(new { message = "Publicación no encontrada" });
+
+            return Ok(adjunto);
         }
-
-        var adjunto = await _postService.AddAdjuntoToPostAsync(id, file, esPortada);
-        if (adjunto == null) return NotFound(new { message = "Publicación no encontrada" });
-
-        return Ok(adjunto);
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Error al subir el archivo adjunto.", detail = ex.Message });
+        }
     }
 
     [HttpDelete("adjuntos/{adjuntoId:long}")]
@@ -118,4 +155,3 @@ public class PostsController : ControllerBase
         return Ok(new { message = "Portada actualizada correctamente" });
     }
 }
-

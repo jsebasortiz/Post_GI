@@ -337,6 +337,8 @@ Object.assign(window, {
   goToPage,
   debounceSearch,
   handleCreatePost,
+  hasPostCreateChanged,
+  handleCancelCreatePost,
   openDetailView,
   openDetailModal,
   openEditView,

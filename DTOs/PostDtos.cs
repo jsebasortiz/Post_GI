@@ -1,29 +1,69 @@
+using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
+
 namespace BlogApp.DTOs;
 
 public class CreatePostDto
 {
     public ulong UsuarioId { get; set; }
+
+    [Required(ErrorMessage = "El módulo es requerido.")]
+    [Range(1, ushort.MaxValue, ErrorMessage = "Debes seleccionar un módulo válido.")]
     public ushort ModuloId { get; set; }
+
+    [Required(ErrorMessage = "El tipo de publicación es requerido.")]
+    [Range(1, byte.MaxValue, ErrorMessage = "Debes seleccionar un tipo de publicación válido.")]
     public byte TipoId { get; set; }
+
     public byte? TipoConocimientoId { get; set; }
+
+    [MaxLength(255, ErrorMessage = "Las palabras clave no pueden superar 255 caracteres.")]
     public string? PalabrasClave { get; set; }
+
+    [Required(ErrorMessage = "El título de la publicación es requerido.")]
+    [StringLength(200, MinimumLength = 5, ErrorMessage = "El título debe tener entre 5 y 200 caracteres.")]
     public string Titulo { get; set; } = string.Empty;
+
+    [MaxLength(500, ErrorMessage = "El resumen no puede superar 500 caracteres.")]
     public string? Resumen { get; set; }
+
+    [Required(ErrorMessage = "El contenido de la publicación es requerido.")]
+    [MinLength(10, ErrorMessage = "El contenido debe tener al menos 10 caracteres.")]
     public string Contenido { get; set; } = string.Empty;
+
     public string Estado { get; set; } = "publicado";
+
     public int? PortadaIndex { get; set; } = 0;
+
     public List<IFormFile>? Archivos { get; set; }
 }
 
 public class UpdatePostDto
 {
+    [Required(ErrorMessage = "El módulo es requerido.")]
+    [Range(1, ushort.MaxValue, ErrorMessage = "Debes seleccionar un módulo válido.")]
     public ushort ModuloId { get; set; }
+
+    [Required(ErrorMessage = "El tipo de publicación es requerido.")]
+    [Range(1, byte.MaxValue, ErrorMessage = "Debes seleccionar un tipo de publicación válido.")]
     public byte TipoId { get; set; }
+
     public byte? TipoConocimientoId { get; set; }
+
+    [MaxLength(255, ErrorMessage = "Las palabras clave no pueden superar 255 caracteres.")]
     public string? PalabrasClave { get; set; }
+
+    [Required(ErrorMessage = "El título de la publicación es requerido.")]
+    [StringLength(200, MinimumLength = 5, ErrorMessage = "El título debe tener entre 5 y 200 caracteres.")]
     public string Titulo { get; set; } = string.Empty;
+
+    [MaxLength(500, ErrorMessage = "El resumen no puede superar 500 caracteres.")]
     public string? Resumen { get; set; }
+
+    [Required(ErrorMessage = "El contenido de la publicación es requerido.")]
+    [MinLength(10, ErrorMessage = "El contenido debe tener al menos 10 caracteres.")]
     public string Contenido { get; set; } = string.Empty;
+
     public string Estado { get; set; } = "publicado";
 }
 

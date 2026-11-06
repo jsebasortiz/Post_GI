@@ -445,7 +445,7 @@
       <!-- 2. CREATE POST VIEW -->
       <div id="viewCreatePost" class="app-view view-hidden">
         <div style="margin-bottom: 1.25rem;">
-          <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('/dashboard'); return false;">
+          <a href="#/dashboard" class="btn btn-secondary" onclick="handleCancelCreatePost(event); return false;">
             <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
           </a>
         </div>
@@ -672,7 +672,7 @@
 
               <div
                 style="display:flex; justify-content:flex-end; align-items:center; gap:1rem; margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--bg-card-border);">
-                <a href="#/dashboard" class="btn btn-secondary" onclick="navigateTo('/dashboard'); return false;">
+                <a href="#/dashboard" class="btn btn-secondary" onclick="handleCancelCreatePost(event); return false;">
                   Cancelar
                 </a>
                 <button type="submit" class="btn btn-primary" id="btnSubmitPost" style="padding:0.65rem 1.75rem;">

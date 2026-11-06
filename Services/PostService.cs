@@ -160,8 +160,54 @@ public class PostService : IPostService
         return MapToResponseDto(post);
     }
 
+    private static string StripHtmlTags(string? html)
+    {
+        if (string.IsNullOrWhiteSpace(html)) return string.Empty;
+        var noTags = System.Text.RegularExpressions.Regex.Replace(html, "<.*?>", string.Empty);
+        return System.Net.WebUtility.HtmlDecode(noTags).Trim();
+    }
+
+    private async Task ValidateForeignKeysAsync(ushort moduloId, byte tipoId, byte? tipoConocimientoId)
+    {
+        var moduloExists = await _context.Modulos.AnyAsync(m => m.Id == moduloId && m.EstadoId == 1);
+        if (!moduloExists)
+        {
+            throw new ArgumentException("El módulo seleccionado no existe o se encuentra inactivo.");
+        }
+
+        var tipoExists = await _context.PostTipos.AnyAsync(pt => pt.Id == tipoId && pt.EstadoId == 1);
+        if (!tipoExists)
+        {
+            throw new ArgumentException("El tipo de publicación seleccionado no existe o se encuentra inactivo.");
+        }
+
+        if (tipoConocimientoId.HasValue && tipoConocimientoId.Value > 0)
+        {
+            var tcExists = await _context.TiposConocimiento.AnyAsync(tc => tc.Id == tipoConocimientoId.Value && tc.EstadoId == 1);
+            if (!tcExists)
+            {
+                throw new ArgumentException("El tipo de conocimiento seleccionado no existe o se encuentra inactivo.");
+            }
+        }
+    }
+
     public async Task<PostResponseDto> CreatePostAsync(CreatePostDto dto)
     {
+        // 1. Validar que el contenido HTML tenga texto significativo real
+        var plainText = StripHtmlTags(dto.Contenido);
+        if (string.IsNullOrWhiteSpace(plainText) || plainText.Length < 5)
+        {
+            throw new ArgumentException("El contenido de la publicación debe incluir texto descriptivo o código visible.");
+        }
+
+        // 2. Validar existencia y estado de llaves foráneas
+        await ValidateForeignKeysAsync(dto.ModuloId, dto.TipoId, dto.TipoConocimientoId);
+
+        // 3. Validar lista de archivos
+        if (dto.Archivos != null && dto.Archivos.Count > 0)
+        {
+            FileValidationHelper.ValidateFilesList(dto.Archivos);
+        }
         var slug = await GenerateUniqueSlugAsync(dto.Titulo);
 
         var post = new Post
@@ -250,6 +296,14 @@ public class PostService : IPostService
         var post = await _context.Posts.FirstOrDefaultAsync(p => p.Id == id && p.EstadoId == 1);
         if (post == null)
             return null;
+
+        var plainText = StripHtmlTags(dto.Contenido);
+        if (string.IsNullOrWhiteSpace(plainText) || plainText.Length < 5)
+        {
+            throw new ArgumentException("El contenido de la publicación debe incluir texto descriptivo o código visible.");
+        }
+
+        await ValidateForeignKeysAsync(dto.ModuloId, dto.TipoId, dto.TipoConocimientoId);
 
         if (post.Titulo != dto.Titulo)
         {

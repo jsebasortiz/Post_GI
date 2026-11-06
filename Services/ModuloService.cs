@@ -67,6 +67,14 @@ public class ModuloService : IModuloService
 
     public async Task<Modulo> CreateModuloAsync(CreateModuloDto dto)
     {
+        if (string.IsNullOrWhiteSpace(dto.Nombre))
+            throw new ArgumentException("El nombre del módulo es requerido.");
+
+        var existingName = await _context.Modulos
+            .AnyAsync(m => m.Nombre.ToLower() == dto.Nombre.Trim().ToLower() && m.EstadoId == 1);
+        if (existingName)
+            throw new InvalidOperationException($"Ya existe un módulo activo registrado con el nombre '{dto.Nombre.Trim()}'.");
+
         string slug = Slugify(dto.Nombre);
         string cat = string.IsNullOrWhiteSpace(dto.CategoriaPadre) ? "apps" : dto.CategoriaPadre.Trim().ToLower();
 
@@ -117,6 +125,12 @@ public class ModuloService : IModuloService
         var modulo = await _context.Modulos.FirstOrDefaultAsync(m => m.Id == id);
         if (modulo == null) return false;
 
+        var hasPosts = await _context.Posts.AnyAsync(p => p.ModuloId == id && p.EstadoId == 1);
+        if (hasPosts)
+        {
+            throw new InvalidOperationException("No se puede inactivar este módulo porque tiene publicaciones activas asociadas.");
+        }
+
         modulo.EstadoId = 2;
         await _context.SaveChangesAsync();
         return true;
@@ -148,6 +162,13 @@ public class ModuloService : IModuloService
 
     public async Task<PostTipo> CreatePostTipoAsync(CreatePostTipoDto dto)
     {
+        if (string.IsNullOrWhiteSpace(dto.Nombre))
+            throw new ArgumentException("El nombre del tipo de publicación es requerido.");
+
+        var exists = await _context.PostTipos.AnyAsync(pt => pt.Nombre.ToLower() == dto.Nombre.Trim().ToLower() && pt.EstadoId == 1);
+        if (exists)
+            throw new InvalidOperationException($"Ya existe un tipo de publicación con el nombre '{dto.Nombre.Trim()}'.");
+
         var tipo = new PostTipo
         {
             Nombre = dto.Nombre,
@@ -200,6 +221,12 @@ public class ModuloService : IModuloService
         var tipo = await _context.PostTipos.FirstOrDefaultAsync(pt => pt.Id == id);
         if (tipo == null) return false;
 
+        var hasPosts = await _context.Posts.AnyAsync(p => p.TipoId == id && p.EstadoId == 1);
+        if (hasPosts)
+        {
+            throw new InvalidOperationException("No se puede inactivar este tipo de publicación porque tiene publicaciones activas asociadas.");
+        }
+
         tipo.EstadoId = 2; // Inactivado (borrado lógico)
         await _context.SaveChangesAsync();
         InvalidatePostTiposCache();
@@ -232,6 +259,13 @@ public class ModuloService : IModuloService
 
     public async Task<TipoConocimiento> CreateTipoConocimientoAsync(CreateTipoConocimientoDto dto)
     {
+        if (string.IsNullOrWhiteSpace(dto.Nombre))
+            throw new ArgumentException("El nombre del tipo de conocimiento es requerido.");
+
+        var exists = await _context.TiposConocimiento.AnyAsync(t => t.Nombre.ToLower() == dto.Nombre.Trim().ToLower() && t.EstadoId == 1);
+        if (exists)
+            throw new InvalidOperationException($"Ya existe un tipo de conocimiento con el nombre '{dto.Nombre.Trim()}'.");
+
         var tc = new TipoConocimiento
         {
             Nombre = dto.Nombre.Trim(),
